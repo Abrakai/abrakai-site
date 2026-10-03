@@ -1,0 +1,7 @@
+# 阿布拉．凱工作室官網：Cloudflare 靜態網站（推到 GitHub main 分支會自動部署）
+name = "abrakai-site"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+not_found_handling = "404-page"
