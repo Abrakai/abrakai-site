@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>圖片去背｜阿布拉．凱工作室 AI 小工具箱</title>
+<meta name="description" content="免費 AI 圖片去背：自動分離人物或商品，下載透明背景 PNG。圖片不會上傳。">
+<link rel="icon" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="/" aria-label="阿布拉．凱工作室 首頁"><img src="/assets/logo-128.png" alt="" width="40" height="40"><span>阿布拉．凱工作室<small>AbraKai Studio</small></span></a>
+  <nav class="nav-links" aria-label="主選單"><a href="/#services">服務</a><a href="/tools/">小工具</a><a href="/#line">LINE 服務</a><a href="/#works">作品</a><a href="/#events">課程講座</a></nav>
+  <a class="btn btn-line" href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">加 LINE 聊聊</a>
+</div></header>
+<main class="page">
+  <p class="crumb"><a href="/">首頁</a> ／ <a href="/tools/">AI 小工具箱</a> ／ 圖片去背</p>
+  <h1>圖片去背</h1>
+  <p class="lead">AI 自動把人物或商品從背景中分離，下載透明背景的 PNG，也可以換成純色背景。</p>
+  <div class="panel">
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="選擇要去背的圖片">把圖片拖到這裡，或點一下選擇圖片<input id="file" type="file" accept="image/*"></div>
+    <p class="privacy">第一次使用需要下載 AI 模型（約 40 MB），之後會記在瀏覽器裡，速度就快了。建議用 Wi-Fi。</p>
+    <p id="msg" class="status-msg" role="status" aria-live="polite"></p>
+  </div>
+  <div id="result" class="panel result" hidden>
+    <h2>結果</h2>
+    <div class="row" style="align-items:start">
+      <figure style="margin:0;flex:1 1 240px"><figcaption class="privacy">原圖</figcaption><img id="before" alt="原圖" style="border-radius:10px;border:1px solid var(--line)"></figure>
+      <figure style="margin:0;flex:1 1 240px"><figcaption class="privacy">去背後</figcaption><div id="afterBox" class="checker" style="border-radius:10px;border:1px solid var(--line)"><img id="after" alt="去背後的圖片"></div></figure>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:0 1 220px"><label for="bgMode">背景</label><select id="bgMode"><option value="none">透明</option><option value="#FFFFFF">白色</option><option value="custom">自訂顏色</option></select></div>
+      <div class="field" style="flex:0 1 120px"><label for="bgColor">自訂顏色</label><input id="bgColor" type="color" value="#E9F1FF"></div>
+    </div>
+    <div class="row"><button id="dl" class="btn btn-line" type="button">下載 PNG</button><a class="btn btn-ghost" href="/tools/sticker.html">拿去做 LINE 貼圖</a></div>
+  </div>
+  <p class="privacy">🔒 圖片只在你的瀏覽器裡處理，不會上傳到任何伺服器。</p>
+  <p class="privacy">去背功能使用 IMG.LY 開源的 <a href="https://github.com/imgly/background-removal-js" target="_blank" rel="noopener">background-removal</a>（AGPL-3.0 授權）。本頁原始碼依同一授權公開於 <a href="https://github.com/Abrakai/abrakai-site" target="_blank" rel="noopener">GitHub</a>。</p>
+</main>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+let cutout = null, lib = null;
+const msg = (t, err) => { $("msg").className = "status-msg" + (err ? " err" : ""); $("msg").textContent = t; };
+async function loadLib() {
+  if (!lib) lib = await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm");
+  return lib;
+}
+async function compose() {
+  const bmp = await createImageBitmap(cutout), cv = document.createElement("canvas");
+  cv.width = bmp.width; cv.height = bmp.height; const ctx = cv.getContext("2d");
+  const mode = $("bgMode").value;
+  if (mode !== "none") { ctx.fillStyle = mode === "custom" ? $("bgColor").value : mode; ctx.fillRect(0, 0, cv.width, cv.height); }
+  ctx.drawImage(bmp, 0, 0);
+  return new Promise((r) => cv.toBlob(r, "image/png"));
+}
+async function refresh() { if (cutout) $("after").src = URL.createObjectURL(await compose()); }
+async function run(file) {
+  if (!file || !file.type.startsWith("image/")) return msg("請選擇圖片檔（JPG、PNG、WebP）。", true);
+  $("result").hidden = false; $("before").src = URL.createObjectURL(file); $("after").removeAttribute("src");
+  try {
+    msg("載入 AI 模型中…");
+    const { removeBackground } = await loadLib();
+    const t0 = performance.now();
+    cutout = await removeBackground(file, {
+      progress: (key, cur, total) => { if (key.startsWith("fetch")) msg(`下載 AI 模型中… ${Math.round((cur / total) * 100)}%`); else msg("AI 去背處理中…"); },
+      output: { format: "image/png" },
+    });
+    await refresh();
+    msg(`完成，用時 ${((performance.now() - t0) / 1000).toFixed(1)} 秒。`);
+  } catch (e) {
+    console.error(e);
+    msg("去背失敗：可能是網路中斷或瀏覽器版本太舊，請更新瀏覽器後再試一次。", true);
+  }
+}
+const d = $("drop"), inp = $("file");
+d.addEventListener("click", () => inp.click());
+d.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inp.click(); } });
+["dragenter", "dragover"].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.add("over"); }));
+["dragleave", "drop"].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.remove("over"); }));
+d.addEventListener("drop", (e) => run(e.dataTransfer.files[0]));
+inp.addEventListener("change", () => run(inp.files[0]));
+$("bgMode").addEventListener("change", refresh); $("bgColor").addEventListener("input", refresh);
+$("dl").onclick = async () => { if (!cutout) return; const a = document.createElement("a"); a.href = URL.createObjectURL(await compose()); a.download = "removed-background.png"; a.click(); };
+</script>
+<footer><div class="foot"><span>© 2026 阿布拉．凱工作室｜<span class="latin">AbraKai Studio</span></span>
+<a href="/tools/">AI 小工具箱</a><a href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">LINE 聯絡</a></div></footer>
+</body>
+</html>

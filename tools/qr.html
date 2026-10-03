@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Code 產生器｜阿布拉．凱工作室 AI 小工具箱</title>
+<meta name="description" content="免費 QR Code 產生器：網址、LINE 加好友、Wi-Fi，可換顏色、放 Logo、下載 PNG 與 SVG。">
+<link rel="icon" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="/" aria-label="阿布拉．凱工作室 首頁"><img src="/assets/logo-128.png" alt="" width="40" height="40"><span>阿布拉．凱工作室<small>AbraKai Studio</small></span></a>
+  <nav class="nav-links" aria-label="主選單"><a href="/#services">服務</a><a href="/tools/">小工具</a><a href="/#line">LINE 服務</a><a href="/#works">作品</a><a href="/#events">課程講座</a></nav>
+  <a class="btn btn-line" href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">加 LINE 聊聊</a>
+</div></header>
+<main class="page">
+  <p class="crumb"><a href="/">首頁</a> ／ <a href="/tools/">AI 小工具箱</a> ／ QR Code 產生器</p>
+  <h1>QR Code 產生器</h1>
+  <p class="lead">網址、LINE 好友、Wi-Fi 都能做成 QR Code，可以換顏色、放 Logo，下載高解析度圖片。</p>
+
+  <div class="panel">
+    <h2>要放什麼內容</h2>
+    <div class="field">
+      <label for="kind">類型</label>
+      <select id="kind">
+        <option value="text">網址或文字</option>
+        <option value="line">LINE 加好友</option>
+        <option value="wifi">Wi-Fi 連線</option>
+      </select>
+    </div>
+    <div id="f-text" class="field"><label for="text">網址或文字</label><input id="text" type="text" value="https://abrakai-studio.com" autocomplete="off"></div>
+    <div id="f-line" class="field" hidden><label for="lineId">LINE 加好友網址或官方帳號 ID</label>
+      <input id="lineId" type="text" placeholder="https://lin.ee/xxxx 或 @abc1234" autocomplete="off"></div>
+    <div id="f-wifi" hidden>
+      <div class="row">
+        <div class="field"><label for="ssid">Wi-Fi 名稱</label><input id="ssid" type="text" autocomplete="off"></div>
+        <div class="field"><label for="pass">密碼</label><input id="pass" type="text" autocomplete="off"></div>
+        <div class="field"><label for="enc">加密方式</label><select id="enc"><option value="WPA">WPA／WPA2／WPA3</option><option value="WEP">WEP</option><option value="nopass">沒有密碼</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>樣式</h2>
+    <div class="row">
+      <div class="field"><label for="fg">圖案顏色</label><input id="fg" type="color" value="#0E1A2B"></div>
+      <div class="field"><label for="bg">背景顏色</label><input id="bg" type="color" value="#FFFFFF"></div>
+      <div class="field"><label for="size">下載尺寸</label><select id="size"><option>512</option><option selected>1024</option><option>2048</option></select></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input id="transparent" type="checkbox"> 透明背景（適合放在設計稿上）</label>
+    <div class="field"><label for="logo">中間放 Logo（選填）</label><input id="logo" type="file" accept="image/*"></div>
+    <p class="privacy">放 Logo 時會自動提高容錯等級，讓 QR Code 仍然掃得到。圖案顏色請比背景深，掃描才會穩定。</p>
+  </div>
+
+  <div class="panel result">
+    <h2>預覽</h2>
+    <canvas id="out" width="1024" height="1024" style="width:min(320px,100%);height:auto;border:1px solid var(--line);border-radius:10px" class="checker"></canvas>
+    <p id="msg" class="status-msg" role="status"></p>
+    <div class="row"><button id="dlPng" class="btn btn-line" type="button">下載 PNG</button><button id="dlSvg" class="btn btn-ghost" type="button">下載 SVG</button></div>
+  </div>
+</main>
+<script src="/assets/vendor/qrcode.js"></script>
+<script>
+// 支援中文：用 UTF-8 編碼
+qrcode.stringToBytes = (s) => Array.from(new TextEncoder().encode(s));
+const $ = (id) => document.getElementById(id);
+let logoImg = null;
+
+function payload() {
+  const k = $("kind").value;
+  if (k === "line") {
+    const v = $("lineId").value.trim();
+    if (!v) return "";
+    if (/^https?:\/\//.test(v)) return v;
+    return "https://line.me/R/ti/p/" + encodeURIComponent(v.startsWith("@") ? v : "@" + v);
+  }
+  if (k === "wifi") {
+    const esc = (s) => s.replace(/([\\;,:"])/g, "\\$1");
+    if (!$("ssid").value) return "";
+    return `WIFI:T:${$("enc").value};S:${esc($("ssid").value)};P:${$("enc").value === "nopass" ? "" : esc($("pass").value)};;`;
+  }
+  return $("text").value.trim();
+}
+
+function matrix(data) {
+  const qr = qrcode(0, logoImg ? "H" : "M");
+  qr.addData(data); qr.make();
+  const n = qr.getModuleCount();
+  return { n, dark: (r, c) => qr.isDark(r, c) };
+}
+
+function draw() {
+  ["text", "line", "wifi"].forEach((k) => { $("f-" + k).hidden = $("kind").value !== k; });
+  const data = payload(), cv = $("out"), ctx = cv.getContext("2d");
+  const S = +$("size").value; cv.width = cv.height = S;
+  ctx.clearRect(0, 0, S, S);
+  if (!data) { $("msg").textContent = "請先輸入內容。"; return; }
+  let m;
+  try { m = matrix(data); } catch (e) { $("msg").className = "status-msg err"; $("msg").textContent = "內容太長，QR Code 放不下，請縮短內容。"; return; }
+  $("msg").className = "status-msg"; $("msg").textContent = `內容長度 ${new TextEncoder().encode(data).length} 位元組。`;
+  const quiet = 4, cell = S / (m.n + quiet * 2);
+  if (!$("transparent").checked) { ctx.fillStyle = $("bg").value; ctx.fillRect(0, 0, S, S); }
+  ctx.fillStyle = $("fg").value;
+  for (let r = 0; r < m.n; r++) for (let c = 0; c < m.n; c++)
+    if (m.dark(r, c)) ctx.fillRect(Math.floor((c + quiet) * cell), Math.floor((r + quiet) * cell), Math.ceil(cell), Math.ceil(cell));
+  if (logoImg) {
+    const box = S * 0.22, pad = box * 0.12, x = (S - box) / 2;
+    ctx.fillStyle = $("transparent").checked ? "#FFFFFF" : $("bg").value;
+    ctx.beginPath(); ctx.roundRect(x - pad, x - pad, box + pad * 2, box + pad * 2, box * 0.18); ctx.fill();
+    const r = Math.min(box / logoImg.width, box / logoImg.height), w = logoImg.width * r, h = logoImg.height * r;
+    ctx.drawImage(logoImg, (S - w) / 2, (S - h) / 2, w, h);
+  }
+}
+
+function svgText() {
+  const data = payload(); if (!data) return "";
+  const m = matrix(data), q = 4, N = m.n + q * 2;
+  let d = "";
+  for (let r = 0; r < m.n; r++) for (let c = 0; c < m.n; c++) if (m.dark(r, c)) d += `M${c + q} ${r + q}h1v1h-1z`;
+  const bg = $("transparent").checked ? "" : `<rect width="${N}" height="${N}" fill="${$("bg").value}"/>`;
+  let logo = "";
+  if (logoImg) {
+    const box = N * 0.22, pad = box * 0.12, x = (N - box) / 2, c = document.createElement("canvas");
+    c.width = logoImg.width; c.height = logoImg.height; c.getContext("2d").drawImage(logoImg, 0, 0);
+    logo = `<rect x="${x - pad}" y="${x - pad}" width="${box + pad * 2}" height="${box + pad * 2}" rx="${box * 0.18}" fill="${$("transparent").checked ? "#FFFFFF" : $("bg").value}"/>` +
+      `<image href="${c.toDataURL("image/png")}" x="${x}" y="${x}" width="${box}" height="${box}" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges">${bg}<path fill="${$("fg").value}" d="${d}"/>${logo}</svg>`;
+}
+
+function download(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+$("dlPng").onclick = () => { if (payload()) $("out").toBlob((b) => download(b, "qrcode.png"), "image/png"); };
+$("dlSvg").onclick = () => { const s = svgText(); if (s) download(new Blob([s], { type: "image/svg+xml" }), "qrcode.svg"); };
+$("logo").onchange = async (e) => { const f = e.target.files[0]; logoImg = f ? await createImageBitmap(f) : null; draw(); };
+document.querySelectorAll("input,select").forEach((el) => el.addEventListener("input", draw));
+draw();
+</script>
+<footer><div class="foot"><span>© 2026 阿布拉．凱工作室｜<span class="latin">AbraKai Studio</span></span>
+<a href="/tools/">AI 小工具箱</a><a href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">LINE 聯絡</a></div></footer>
+</body>
+</html>
