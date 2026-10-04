@@ -1,0 +1,22 @@
+name: 官網上線檢查
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright pillow && python -m playwright install --with-deps chromium
+      - run: python tools/site_check.py
+      - name: 結果存到 check-results 分支
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp result.txt *.png /tmp/out/ 2>/dev/null || true
+          git config user.name "site-check"; git config user.email "site-check@users.noreply.github.com"
+          git checkout --orphan check-results && git rm -rfq --cached . && rm -rf ./* .github && cp /tmp/out/* . 2>/dev/null || true
+          git add -A && git commit -qm "site check" && git push -f origin check-results
