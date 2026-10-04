@@ -35,7 +35,8 @@ with sync_playwright() as p:
     pg.goto(BASE + "/"); pg.wait_for_timeout(1500)
     ok("懂技術" in pg.inner_text("h1"), "首頁標題正常")
     fonts = pg.evaluate("document.fonts.check('16px \"Noto Sans TC\"')"); ok(fonts, "Google 字型已載入")
-    link = pg.get_attribute("text=加入好友", "href"); ok("669snuew" in (link or ""), f"股市小幫手加入好友 → {link}")
+    link = pg.evaluate("[...document.querySelectorAll('#line a')].map(a=>a.href).find(h=>h.includes('line.me/R/ti'))")
+    ok("669snuew" in (link or ""), f"股市小幫手加入好友 → {link}")
     pg.screenshot(path="home.png")
     # 去背：真的下載模型並處理
     pg.goto(BASE + "/tools/remove-bg.html"); pg.wait_for_timeout(800)

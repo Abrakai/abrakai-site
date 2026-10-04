@@ -2,6 +2,12 @@
 name = "abrakai-site"
 compatibility_date = "2026-09-01"
 
+# 網址綁定（部署時自動設定，不用到後台手動新增）
+routes = [
+  { pattern = "abrakai-studio.com", custom_domain = true },
+  { pattern = "www.abrakai-studio.com", custom_domain = true },
+]
+
 [assets]
 directory = "./public"
 not_found_handling = "404-page"
