@@ -1,0 +1,17 @@
+✅ / → 200
+✅ /tools/ → 200
+✅ /tools/qr.html → 200
+✅ /tools/compress.html → 200
+✅ /tools/sticker.html → 200
+✅ /tools/remove-bg.html → 200
+✅ /assets/style.css → 200
+✅ /assets/hero.jpg → 200
+✅ 不存在的頁面顯示 404 頁 → 404
+✅ www.abrakai-studio.com → 200（https://www.abrakai-studio.com/）
+❌ http 自動轉 https → 200（http://abrakai-studio.com/）
+✅ 首頁標題正常
+✅ Google 字型已載入
+✅ 股市小幫手加入好友 → https://line.me/R/ti/p/%40669snuew
+✅ AI 去背：完成，用時 13.5 秒。（含首次下載模型，共 14 秒）
+✅ 去背結果：背景變透明（左上角透明度 0）
+✅ 沒有 JavaScript 錯誤
