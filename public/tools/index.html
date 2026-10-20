@@ -1,35 +1,212 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant-TW">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI 小工具箱｜阿布拉．凱工作室 AI 小工具箱</title>
-<meta name="description" content="免費線上小工具：圖片去背、LINE 貼圖裁切、QR Code 產生器、圖片壓縮。圖片不會上傳。">
-<link rel="icon" href="/assets/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>免費工具中心｜阿布拉.凱 工作室</title>
+  <meta name="description" content="阿布拉.凱 工作室 AI 與實用工具中心：AbraKai 文章朗讀、Co-Space 課堂互動百寶箱、BG Magic、GridCut、StickerCraft、QR Maker、房產安心查與操作教學。">
+  <link rel="icon" href="../assets/icons/icon-32.png" type="image/png">
+  <style>
+    :root{--bg:#07111f;--panel:#0e1d31;--panel2:#0a1627;--text:#f7fbff;--muted:#a8bed0;--line:rgba(255,255,255,.12);--cyan:#6ac8f5;--blue:#1e8ee9;--gold:#edbd59;--green:#49d17d}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,rgba(30,142,233,.15),transparent 28%),var(--bg);color:var(--text);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;line-height:1.7}
+    a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 30px));margin:auto;padding:28px 0 54px}
+    .hero{padding:30px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,rgba(30,142,233,.18),rgba(237,189,89,.08));box-shadow:0 24px 70px rgba(0,0,0,.22)}
+    .eyebrow{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:.14em}h1{font-size:clamp(30px,5vw,48px);line-height:1.12;margin:12px 0}.hero p{max-width:850px;margin:0;color:var(--muted)}
+    .quick{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}.quick a{padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:13px;font-weight:800}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:34px 0 16px}.section-head h2{margin:0;font-size:26px}.section-head p{margin:0;color:var(--muted);max-width:630px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .card{display:flex;flex-direction:column;min-height:100%;padding:0;border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));transition:.18s ease;box-shadow:0 14px 38px rgba(0,0,0,.16);overflow:hidden}
+    .card:hover{transform:translateY(-3px);border-color:rgba(106,200,245,.4)}
+    .card-media{position:relative;aspect-ratio:1/1;background:#081326;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.08);display:grid;place-items:center}
+    .card-media img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+    .reader-media{background:radial-gradient(circle at 50% 48%,rgba(106,200,245,.22),transparent 35%),linear-gradient(145deg,#eaf6fb,#dcebf4);color:#15384a}
+    .reader-mark{display:grid;justify-items:center;gap:12px;padding:22px;text-align:center}
+    .reader-wave{display:grid;place-items:center;width:108px;height:108px;border:1px solid rgba(18,110,174,.32);border-radius:50%;background:rgba(18,110,174,.09);color:#126eae;font-size:64px;line-height:1;box-shadow:0 0 0 14px rgba(18,110,174,.045),0 0 50px rgba(18,110,174,.12)}
+    .reader-mark strong{font-size:clamp(24px,4vw,38px);letter-spacing:.01em}.reader-mark small{color:#526b7d;font-size:11px;font-weight:900;letter-spacing:.22em}
+    .property-tool-media{background:radial-gradient(circle at 50% 30%,rgba(106,200,245,.25),transparent 44%),linear-gradient(145deg,#f8fbfd,#dceaf3)}
+    .property-tool-media img{object-fit:cover;object-position:center 34%}
+    .co-space-media{background:radial-gradient(circle at 25% 22%,rgba(255,255,255,.95),transparent 24%),linear-gradient(135deg,#fce7f3,#ccfbf1 55%,#fef3c7);color:#1f4255;text-align:center;padding:28px}
+    .co-space-mark{display:grid;gap:14px;place-items:center}.co-space-mark b{font-size:clamp(32px,5vw,56px);line-height:1}.co-space-mark span{font-size:clamp(20px,3vw,32px);font-weight:900;line-height:1.25}.co-space-mark small{font-weight:900;color:#a21caf;letter-spacing:.08em}
+    .card-body{display:flex;flex-direction:column;gap:10px;padding:20px 22px 22px}
+    .tag{display:inline-flex;align-self:flex-start;padding:5px 9px;border-radius:999px;background:rgba(73,209,125,.12);color:#9ff0b9;font-size:11px;font-weight:900}.tag.beta{background:rgba(237,189,89,.12);color:#ffe2a0}
+    .card h3{margin:0;font-size:26px;line-height:1.05;letter-spacing:-.02em}.card .subname{margin:-2px 0 0;color:#d8ecff;font-weight:900;font-size:15px}.card p{margin:0;color:var(--muted)}.go{margin-top:auto;padding-top:6px;color:#c8efff;font-weight:900}
+    .product-credit{margin-top:18px;text-align:center;color:#d9eaff;font-weight:900}.product-credit span{display:block;color:var(--muted);font-weight:600;font-size:13px;margin-top:4px}
+    .resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.resource{padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);display:flex;justify-content:space-between;gap:15px;align-items:center}.resource span{color:var(--muted);font-size:13px}.resource strong{display:block}
+    .notice{margin-top:24px;padding:16px 18px;border-radius:16px;border:1px solid rgba(237,189,89,.25);background:rgba(237,189,89,.07);color:#ffe8b5}
+    @media(max-width:850px){.grid{grid-template-columns:1fr}.resources{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}}
+  
+  /* AbraKai UI Comfort Patch V2.1.5
+     目的：維持深藍品牌基底，但強化層級、邊界、呼吸感與互動辨識。 */
+  :root{
+    --line:rgba(157,205,255,.24);
+    --ui-line-strong:rgba(142,211,255,.38);
+    --ui-surface:#10213a;
+    --ui-surface-2:#142943;
+    --ui-surface-3:#0d1b31;
+    --ui-text-soft:#c9d8eb;
+  }
+  body{
+    background:
+      radial-gradient(circle at 12% 0%,rgba(55,139,214,.16),transparent 32%),
+      radial-gradient(circle at 88% 8%,rgba(37,196,219,.10),transparent 30%),
+      linear-gradient(180deg,#0b1728 0%,#081321 55%,#07111e 100%) !important;
+  }
+  .panel,.card,.step-card,.check,.meta div,.logo-upload,.legal{
+    border-color:var(--ui-line-strong)!important;
+    box-shadow:0 10px 26px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  }
+  .panel,.step-card{
+    background:linear-gradient(180deg,rgba(25,48,78,.82),rgba(13,29,52,.88))!important;
+  }
+  .card{
+    background:linear-gradient(180deg,rgba(22,43,70,.92),rgba(13,29,51,.96))!important;
+  }
+  .field{padding:2px 0 6px}
+  .field label{color:#d9e8f7!important;letter-spacing:.01em}
+  .field input[type="file"],.field input[type="text"],.field input[type="number"],.field input[type="url"],.field select,.field textarea,
+  input[type="text"],input[type="number"],input[type="url"],select,textarea{
+    background:#10223c!important;
+    border-color:rgba(153,205,255,.34)!important;
+    color:#f5f9ff!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus,input:focus,select:focus,textarea:focus{
+    border-color:#67e8f9!important;
+    box-shadow:0 0 0 3px rgba(103,232,249,.14),inset 0 1px 0 rgba(255,255,255,.04)!important;
+  }
+  select option{background:#10223c!important;color:#f5f9ff!important}
+  .btn,.secondary,.ghost{
+    border-color:rgba(151,203,255,.36)!important;
+    background:linear-gradient(180deg,#1c3554,#142944)!important;
+    color:#f4f9ff!important;
+    box-shadow:0 5px 14px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .btn:hover:not(:disabled),.secondary:hover:not(:disabled),.ghost:hover:not(:disabled){
+    border-color:rgba(103,232,249,.72)!important;
+    background:linear-gradient(180deg,#24466b,#193653)!important;
+    box-shadow:0 7px 18px rgba(0,0,0,.16),0 0 0 2px rgba(103,232,249,.06)!important;
+  }
+  .btn.primary,.primary{
+    border-color:rgba(164,240,255,.78)!important;
+    background:linear-gradient(135deg,#73b9ff,#67e8f9)!important;
+    color:#061321!important;
+    box-shadow:0 8px 20px rgba(55,190,231,.20)!important;
+  }
+  .note,.status{
+    border-color:rgba(151,203,255,.28)!important;
+    background:rgba(63,111,159,.13)!important;
+    color:#e1edf9!important;
+  }
+  .hint,.sub,.muted{color:#bed0e5!important}
+  .toolbar{
+    border-color:rgba(151,203,255,.27)!important;
+    background:rgba(16,34,58,.78)!important;
+  }
+  @media(max-width:760px){
+    .panel,.step-card{box-shadow:0 6px 18px rgba(0,0,0,.14)!important}
+  }
+
+  .card{border-color:rgba(151,203,255,.30)!important}
+  .card:hover{border-color:rgba(103,232,249,.65)!important;box-shadow:0 14px 32px rgba(0,0,0,.15),0 0 0 1px rgba(103,232,249,.08)!important}
+  .card-body{background:linear-gradient(180deg,rgba(20,42,70,.96),rgba(13,29,51,.98))!important}
+
+  /* V2.5 Light Hub：工具內容維持不變，只提高閱讀對比與入口清晰度。 */
+  :root{--bg:#f3f8fb;--panel:#fff;--panel2:#fff;--text:#142c3d;--muted:#526b7d;--line:#d7e4ec;--cyan:#126eae;--blue:#126eae;--gold:#a56b00;--green:#147a43}
+  body{background:radial-gradient(circle at 90% 0,rgba(30,142,233,.11),transparent 30%),linear-gradient(180deg,#f8fbfd,#eef5f8)!important;color:var(--text)}
+  .hero{border-color:#cbdfe9;background:linear-gradient(135deg,#fff,#eaf6fb);box-shadow:0 24px 64px rgba(16,55,78,.11)}
+  .eyebrow{color:#126eae}.hero p,.section-head p,.card p,.resource span{color:var(--muted)}
+  .quick a{border-color:#cbdfe9;background:#fff;color:#1b4e6a}
+  .quick a:hover{border-color:#75b7d8;background:#eef8fd}
+  .card{border-color:#d2e1e9!important;background:#fff!important;box-shadow:0 14px 36px rgba(16,55,78,.08)!important}
+  .card:hover{border-color:#6cb4d8!important;box-shadow:0 18px 42px rgba(16,55,78,.13)!important}
+  .card-body{background:#fff!important}
+  .card .subname{color:#244b62}.go{color:#0c6da4}
+  .tag{background:#e5f6ec;color:#17673d}.tag.beta{background:#fff3d6;color:#815400}
+  .product-credit{color:#244b62}.product-credit span{color:var(--muted)}
+  .resource{border-color:#d5e3ea;background:#fff;box-shadow:0 8px 24px rgba(16,55,78,.06)}
+  .resource:hover{border-color:#79b8d7;background:#f7fcff}
+  .notice{border-color:#e7c878;background:#fff8e7;color:#644a0e}
+
+</style>
+<link rel="stylesheet" href="/assets/css/site-shell.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/site-bright.css?v=2.6.0">
+<script src="/assets/js/site-navigation.js?v=2.6.0" defer></script>
 </head>
-<body>
-<header class="nav"><div class="nav-in">
-  <a class="brand" href="/" aria-label="阿布拉．凱工作室 首頁"><img src="/assets/logo-128.png" alt="" width="40" height="40"><span>阿布拉．凱工作室<small>AbraKai Studio</small></span></a>
-  <nav class="nav-links" aria-label="主選單"><a href="/#services">服務</a><a href="/tools/">小工具</a><a href="/#line">LINE 服務</a><a href="/#works">作品</a><a href="/#events">課程講座</a></nav>
-  <a class="btn btn-line" href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">加 LINE 聊聊</a>
-</div></header>
-<main class="page">
-  <p class="crumb"><a href="/">首頁</a> ／ AI 小工具箱</p>
-  <h1>免費 AI 小工具箱</h1>
-  <p class="lead">打開就能用，不用註冊。圖片都在你自己的瀏覽器裡處理，不會上傳到任何伺服器。</p>
-  <div class="tools">
-    <a class="tool" href="/tools/remove-bg.html"><h3>圖片去背</h3><p>自動把人物或商品從背景中分離，下載透明背景圖。</p></a>
-    <a class="tool" href="/tools/sticker.html"><h3>LINE 貼圖裁切</h3><p>一次轉成 LINE 貼圖、主圖、標籤圖的正確尺寸，打包下載。</p></a>
-    <a class="tool" href="/tools/qr.html"><h3>QR Code 產生器</h3><p>網址、LINE 好友、Wi-Fi 都能做成 QR Code，可以放 Logo。</p></a>
-    <a class="tool" href="/tools/compress.html"><h3>圖片壓縮與尺寸調整</h3><p>批次縮小檔案、調整寬高，網站和社群上傳更順。</p></a>
-  </div>
-  <p class="note">有想要的小工具？<a href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">在 LINE 告訴我們</a>。</p>
+<body data-ak-page="hub">
+
+  <header class="ak-site-shell"><div class="ak-site-shell__inner"><a class="ak-site-brand" href="/" aria-label="阿布拉.凱工作室首頁"><img src="/assets/images/abrakai-studio-logo.webp" alt="阿布拉.凱工作室 Logo" width="46" height="46"><span class="ak-site-brand__text"><strong>阿布拉.凱 工作室</strong><small>ABRA-KAI STUDIO</small></span></a><button class="ak-menu-toggle" type="button" aria-controls="ak-site-navigation" aria-expanded="false" aria-label="開啟導覽選單">選單 <span aria-hidden="true">☰</span></button><nav id="ak-site-navigation" class="ak-site-nav" aria-label="全站導覽"><a href="/">首頁</a><a href="/#services">服務方案</a><a href="/classroom/">AI 小教室</a><a href="/tools/" class="ak-site-nav__accent" aria-current="location">免費工具</a><a href="/#products">產品介紹</a><a href="/#works">作品案例</a><a href="/#real-estate">房產專區</a><a href="/#collaboration">課程合作</a><a href="https://line.me/ti/p/~0975762513" class="ak-site-nav__cta" target="_blank" rel="noopener noreferrer">加 LINE 聊聊</a></nav></div></header>
+
+<nav class="ak-breadcrumb" aria-label="麵包屑導覽"><a href="../">首頁</a><span>›</span>工具中心</nav>
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">ABRA-KAI STUDIO · PUBLIC TOOLS</div>
+    <h1>AI 與實用工具中心</h1>
+    <p>從圖片去背、網格裁切到 QR Code 製作，這裡的基本工具不需自備 AI API Key，也不消耗雲端 AI 額度，開啟就能使用。想用聽的閱讀？AbraKai 文章朗讀提供免費裝置語音，也可搭配自己的 AI API Key 製作更自然的語音。工具內附 API Key 申請與設定教學，帶你認識可申請的免費額度；是否提供免費額度、用量限制與費用，依各廠商及帳號規則為準。</p>
+    <div class="quick"><a href="../">工作室官網</a><a href="../profile.html">個人介紹</a><a href="../real-estate/property-tools/">房產安心查</a><a href="./line-sticker-guide/">LINE 貼圖新手教學</a></div>
+  </section>
+
+  <div class="section-head"><div><h2>直接開始使用</h2><p>選擇下方工具，開始處理圖片、製作 QR Code 或聆聽文章。基本功能免雲端 AI 額度；使用進階 AI 功能前，工具會說明所需設定與可能費用。LINE 貼圖專案目前為 Beta／限時免費體驗。</p></div></div>
+  <section class="grid" aria-label="可操作免費工具">
+        <a class="card" href="./reader/" target="_blank" rel="noopener noreferrer">
+      <div class="card-media reader-media"><img src="./reader-cover-v1.webp" width="1254" height="1254" alt="AbraKai 文章朗讀：阿布拉凱公仔戴耳機、捧書聆聽，把文字交給耳朵" decoding="async"></div>
+      <div class="card-body"><span class="tag">目前免費使用</span><h3>AbraKai 文章朗讀</h3><div class="subname">把文件交給耳朵閱讀</div><p>可使用裝置語音免費朗讀，也可自備相容的 AI API Key 製作自然語音；使用第三方 AI 時，可能產生廠商費用。</p><div class="go">開啟文章朗讀 ↗</div></div>
+    </a>
+    <a class="card" href="./bg-magic/">
+      <div class="card-media"><img src="../assets/images/tools/bg-magic.png" alt="AbraKai BG Magic 產品圖"></div>
+      <div class="card-body"><span class="tag">免費使用</span><h3>AbraKai BG Magic</h3><div class="subname">AI 智慧去背工具</div><p>支援人物、商品與一般圖片去背，可輸出透明背景 PNG、白底 JPG 與自訂底色版本。</p><div class="go">開始使用 →</div></div>
+    </a>
+    <a class="card" href="./gridcut/">
+      <div class="card-media"><img src="../assets/images/tools/gridcut.png" alt="AbraKai GridCut 產品圖"></div>
+      <div class="card-body"><span class="tag">免費使用</span><h3>AbraKai GridCut</h3><div class="subname">智慧網格裁切工具</div><p>把 2×4、3×3、4×4 等多宮格母圖精準切成獨立圖片，也可搭配自動偵測有效內容區。</p><div class="go">前往裁切 →</div></div>
+    </a>
+    <a class="card" href="./stickercraft/">
+      <div class="card-media"><img src="../assets/images/tools/stickercraft.png" alt="AbraKai StickerCraft 產品圖"></div>
+      <div class="card-body"><span class="tag beta">BETA · 限時免費</span><h3>AbraKai StickerCraft</h3><div class="subname">LINE 貼圖智慧創作工具</div><p>整合 Prompt 助手、角色記憶、母圖裁切、LINE 規格整理與 ZIP 輸出，適合一站式貼圖製作。</p><div class="go">前往貼圖專案 →</div></div>
+    </a>
+    <a class="card" href="./qr-maker/">
+      <div class="card-media"><img src="../assets/images/tools/qr-maker.png" alt="AbraKai QR Maker 產品圖"></div>
+      <div class="card-body"><span class="tag">免費使用</span><h3>AbraKai QR Maker</h3><div class="subname">網址與資訊 QR Code 工具</div><p>貼上網址即可產生 QR Code，支援網站名稱、網址標註，並可加入使用者上傳的小圖示或 LOGO。</p><div class="go">建立 QR Code →</div></div>
+    </a>
+    <a class="card" href="./co-space/">
+      <div class="card-media"><img src="./co-space-cover-v1.webp" width="1254" height="1254" alt="AbraKai Co-Space：公仔講師分享提示卡與課堂互動百寶箱" loading="lazy" decoding="async"></div>
+      <div class="card-body"><span class="tag beta">教學工具</span><h3>Co-Space</h3><div class="subname">提示詞廣播與課堂 QR 互動</div><p>講師可整理提示詞卡片並投影 QR Code；學員可掃碼複製提示詞，或建立不含敏感資料的課堂留言。</p><div class="go">進入互動百寶箱 →</div></div>
+    </a>
+    <a class="card" href="../real-estate/property-tools/">
+      <div class="card-media"><img src="./property-tools-cover-v1.webp" width="1254" height="1254" alt="AbraKai 房產安心查：阿布拉凱公仔用放大鏡查看房屋模型與地圖" loading="lazy" decoding="async"></div>
+      <div class="card-body"><span class="tag">免費查詢</span><h3>房產安心查</h3><div class="subname">不動產實用查詢工具箱</div><p>整合地籍謄本、實價登錄、稅務試算、土地使用與環境風險等 14 個查詢入口。</p><div class="go">開始查詢 →</div></div>
+    </a>
+  </section>
+  <div class="notice" role="note"><strong>免費使用與會員規劃</strong><br>目前工具免費開放。未來工作室可能推出月訂閱會員，並將部分進階小工具納入會員權益；方案與權益尚未定案。使用第三方 AI 的用量與費用，依各廠商規則計算。</div>
+  <div class="product-credit">阿布拉.凱 工作室出品｜AbraKai Studio<span>Public tools by AbraKai Studio</span></div>
+
+  <div class="section-head"><div><h2>教學與操作說明</h2><p>第一次使用 LINE 貼圖工作流，可先閱讀教學，再回工具頁操作。</p></div></div>
+  <section class="resources">
+    <a class="resource" href="./line-sticker-guide/"><div><strong>LINE 貼圖 AI 新手教學</strong><span>Prompt → ChatGPT / Gemini → 母圖 → 裁切 → LINE 專案</span></div><b>→</b></a>
+    <a class="resource" href="./gridcut/"><div><strong>直接使用網格裁切</strong><span>已有九宮格／多宮格母圖，不需 Prompt 可直接開始</span></div><b>→</b></a>
+  </section>
+
+  <div class="section-head"><div><h2>找課程或作品？</h2><p>教學、工具和作品有各自的主要入口。</p></div></div>
+  <section class="resources"><a class="resource" href="/classroom/"><div><strong>AI 小教室</strong><span>跟著教學學會網站、影像與貼圖製作</span></div></a><a class="resource" href="/#works"><div><strong>作品案例</strong><span>查看互動示範、遊戲及學習網站</span></div></a></section>
+
+  <div class="notice"><strong>隱私與使用提醒：</strong>各工具的實際處理方式以工具頁說明為準。涉及 LINE 上架、商業印刷或重要用途時，請自行檢查最終檔案與官方最新規範。</div>
 </main>
-<footer><div class="foot"><span>© 2026 阿布拉．凱工作室｜<span class="latin">AbraKai Studio</span></span>
-<a href="/tools/">AI 小工具箱</a><a href="https://lin.ee/UrJd2gO" target="_blank" rel="noopener">LINE 聯絡</a></div></footer>
+
+  <footer class="ak-site-footer">
+    <div class="ak-site-footer__inner">
+      <div class="ak-site-footer__brand">
+        <img src="../assets/images/abrakai-studio-logo.webp" alt="" width="42" height="42">
+        <div><strong>阿布拉.凱 工作室</strong><small>AI 教學 × 智慧工具 × 房產實務</small></div>
+      </div>
+      <div class="ak-site-footer__links">
+        <a href="../">首頁</a>
+        <a href="../profile.html">個人介紹</a>
+        <a href="../tools/">工具中心</a>
+        <a href="../real-estate/property-tools/">房產安心查</a>
+        <a href="../tools/line-sticker-guide/">LINE 貼圖教學</a>
+        <a href="../privacy.html">隱私權政策</a>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>

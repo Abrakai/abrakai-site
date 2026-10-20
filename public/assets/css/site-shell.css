@@ -1,0 +1,129 @@
+:root{
+  --ak-shell-bg:#ffffff;
+  --ak-shell-bg-2:#f3f8fb;
+  --ak-shell-panel:#ffffff;
+  --ak-shell-line:#d8e4ec;
+  --ak-shell-text:#102638;
+  --ak-shell-muted:#526b7d;
+  --ak-shell-cyan:#6ac8f5;
+  --ak-shell-blue:#1e8ee9;
+  --ak-shell-gold:#edbd59;
+}
+.ak-site-shell,.ak-site-shell *,.ak-site-footer,.ak-site-footer *{box-sizing:border-box}
+.ak-site-shell{
+  width:100%;
+  position:sticky;top:0;z-index:1000;backdrop-filter:blur(18px);
+  background:
+    radial-gradient(circle at 16% -35%,rgba(30,142,233,.14),transparent 34%),
+    radial-gradient(circle at 88% -45%,rgba(237,189,89,.18),transparent 34%),
+    linear-gradient(90deg,rgba(255,255,255,.98),rgba(244,250,255,.98) 58%,rgba(255,250,237,.98));
+  border-bottom:1px solid var(--ak-shell-line);
+  color:var(--ak-shell-text);
+  box-shadow:0 8px 28px rgba(15,45,67,.08);
+  font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.ak-site-shell__inner{
+  width:min(1200px,calc(100% - 32px));
+  min-height:70px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:10px 0;
+}
+.ak-site-brand{display:flex;align-items:center;gap:11px;color:var(--ak-shell-text)!important;text-decoration:none!important;min-width:0}
+.ak-site-brand img{width:46px;height:46px;object-fit:contain;display:block;filter:drop-shadow(0 6px 14px rgba(28,91,128,.18))}
+.ak-site-brand__text{min-width:0;line-height:1.15}
+.ak-site-brand__text strong{display:block;font-size:15px;letter-spacing:.04em;white-space:nowrap}
+.ak-site-brand__text small{display:block;margin-top:5px;color:var(--ak-shell-muted);font-size:10px;letter-spacing:.14em;white-space:nowrap}
+.ak-site-nav{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
+.ak-site-nav a{
+  color:#29475b!important;text-decoration:none!important;font-weight:800;font-size:13px;
+  padding:8px 10px;border-radius:10px;border:1px solid transparent;transition:.18s ease;
+}
+.ak-site-nav a:hover,.ak-site-nav a:focus-visible{color:#0b5f96!important;background:#eaf5fb;border-color:#b9ddef;outline:none}
+.ak-site-nav a.ak-site-nav__accent{color:#0b5f96!important;background:#eaf5fb;border-color:#b9ddef}
+.ak-site-nav a.ak-site-nav__cta{color:#182838!important;background:linear-gradient(135deg,var(--ak-shell-gold),#ffd982);border-color:#e1b24d;box-shadow:0 7px 20px rgba(213,162,58,.16)}
+.ak-breadcrumb{
+  width:min(1200px,calc(100% - 32px));margin:0 auto;padding:10px 0 0;
+  font:700 12px/1.5 "Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;color:#647f91;
+}
+.ak-breadcrumb a{color:#126eae!important;text-decoration:none!important}
+.ak-breadcrumb span{padding:0 7px;color:#8aa0af}
+.ak-site-footer{
+  margin-top:44px;background:#040b12;border-top:1px solid var(--ak-shell-line);color:#c7d5e2;
+  font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+}
+.ak-site-footer__inner{
+  width:min(1200px,calc(100% - 32px));margin:auto;padding:25px 0;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+.ak-site-footer__brand{display:flex;align-items:center;gap:10px}
+.ak-site-footer__brand img{width:42px;height:42px;object-fit:contain}
+.ak-site-footer__brand strong{display:block;color:#fff}
+.ak-site-footer__brand small{display:block;color:#8299ad;font-size:11px;margin-top:2px}
+.ak-site-footer__links{display:flex;flex-wrap:wrap;gap:7px 16px}
+.ak-site-footer__links a{color:#c7d5e2!important;text-decoration:none!important;font-size:12px;font-weight:700}
+.ak-site-footer__links a:hover{color:#fff!important}
+@media(max-width:760px){
+  .ak-site-shell__inner{align-items:flex-start;flex-direction:column;padding:10px 0 12px}
+  .ak-site-nav{width:100%;justify-content:flex-start;gap:4px}
+  .ak-site-nav a{padding:7px 8px;font-size:12px}
+  .ak-breadcrumb{padding-top:8px}
+  .ak-site-footer__inner{align-items:flex-start;flex-direction:column}
+}
+/* V2.7.0: category routes stay available below the main navigation. */
+.ak-context-navigation{position:sticky;top:var(--ak-header-height,76px);z-index:45;display:flex;gap:8px;overflow-x:auto;padding:10px max(16px,calc((100vw - 1180px)/2));background:#e6f0f7;border-bottom:1px solid #adc3d3}
+.ak-context-navigation a{flex-shrink:0;color:#173b54;background:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:700}
+.ak-context-navigation a[aria-current=page]{background:#174d6a;color:#fff}
+.ak-context-current{align-self:center;flex-shrink:0;color:#16364e;font-weight:700;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ak-context-navigation label{display:flex;align-items:center;gap:8px;flex-shrink:0;color:#173b54;font-weight:700}.ak-context-navigation select{max-width:220px;padding:8px;border:1px solid #adc3d3;border-radius:8px;background:#fff;color:#173b54}main section[id]{scroll-margin-top:calc(var(--ak-header-height,76px) + 80px)}
+.ak-route-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px}
+.ak-route-card{padding:24px;border-radius:18px;background:#e7f0f7;border:1px solid #b8ccda;color:#16364e}
+.ak-route-card h2,.ak-route-card h3{color:#16364e}.ak-route-card p{color:#34556b}.ak-route-card a{display:inline-block;margin:8px 12px 0 0;color:#075778;font-weight:800}
+
+/* V2.7.6: shared navigation must work without a page-specific theme. */
+.ak-site-shell .ak-menu-toggle{display:none;min-height:44px;padding:8px 12px;background:#e3f3ff;color:#074c85;border:1px solid #9ecfee;border-radius:12px;font-family:inherit;font-size:15px;font-weight:800;line-height:1.4;cursor:pointer;white-space:nowrap}
+.ak-site-shell :focus-visible{outline:3px solid #075fa3;outline-offset:3px}
+@media(max-width:1120px){
+  .ak-site-shell .ak-site-shell__inner{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px;min-height:72px}
+  .ak-site-shell .ak-menu-toggle{display:inline-flex;align-items:center;gap:8px;justify-content:center}
+  .ak-site-shell .ak-site-nav{width:100%;display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px}
+  .ak-site-shell .ak-site-nav a{flex:1 1 145px;padding:12px;text-align:center;background:#f4f9fd;border:1px solid #d2e2ee}
+  .ak-site-shell.ak-nav-ready:not(.ak-nav-open) .ak-site-nav{display:none}
+}
+@media(max-width:400px){
+  .ak-site-shell .ak-site-brand{min-width:0;gap:8px}
+  .ak-site-shell .ak-site-brand img{width:38px;height:38px}
+  .ak-site-shell .ak-site-brand__text strong{font-size:14px}
+  .ak-site-shell .ak-site-brand__text small{font-size:9px}
+  .ak-site-shell .ak-menu-toggle{padding:8px 10px}
+}
+
+/* V2.7.7: one visual shell across themed and standalone course pages. */
+html body .ak-site-shell.ak-site-shell{background:linear-gradient(100deg,#e5f3fb,#fff0d0);border:0;border-bottom:3px solid #1280ac;color:#17324d;box-shadow:0 4px 22px #17324d12;font:400 16px/1.7 "Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:normal}
+html body .ak-site-shell .ak-site-shell__inner{width:min(1320px,calc(100% - 32px));min-height:76px;padding:10px 0;display:flex;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:20px}
+html body .ak-site-shell .ak-site-brand{min-width:206px;color:#17324d!important}
+html body .ak-site-shell .ak-site-brand__text strong{font-size:16px;color:#17324d}
+html body .ak-site-shell .ak-site-brand__text small{font-size:11px;color:#40566b}
+html body .ak-site-shell .ak-site-nav{display:flex;width:auto;flex-wrap:nowrap;gap:4px;align-items:center;justify-content:flex-end}
+html body .ak-site-shell .ak-site-nav a{font-size:13px;line-height:1.4;padding:10px 8px;white-space:nowrap;color:#25445f!important}
+html body .ak-site-shell .ak-site-nav a:hover,html body .ak-site-shell .ak-site-nav a:focus-visible,html body .ak-site-shell .ak-site-nav a.ak-site-nav__accent{background:#e3f3ff!important;color:#074c85!important;border-color:#9ecfee}
+html body .ak-site-shell .ak-site-nav a.ak-site-nav__cta{background:#ffd36a!important;color:#47310a!important;border-color:#dbad39}
+html body .ak-context-navigation.ak-context-navigation{font:700 16px/1.7 "Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;align-items:center;min-height:64px;letter-spacing:normal}
+html body .ak-context-navigation a{line-height:1.7;align-self:center;white-space:nowrap}
+html body .ak-context-navigation label{margin:0;padding:0;font-family:inherit;font-size:14px;font-weight:700;line-height:1.7;letter-spacing:normal;align-self:center}
+html body .ak-context-navigation select{font:400 14px/1.4 "Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;height:42px;margin:0}
+@media(max-width:1120px){
+ html body .ak-site-shell .ak-site-shell__inner{flex-wrap:wrap;gap:12px;min-height:72px}
+ html body .ak-site-shell .ak-site-nav{width:100%;flex-wrap:wrap;justify-content:flex-start;gap:6px}
+ html body .ak-site-shell .ak-site-nav a{flex:1 1 145px;padding:12px;text-align:center;background:#f4f9fd;border:1px solid #d2e2ee}
+ html body .ak-site-shell.ak-nav-ready:not(.ak-nav-open) .ak-site-nav{display:none}
+}
+@media(max-width:600px){html body .ak-site-shell .ak-site-shell__inner{width:calc(100% - 24px)}}
+@media(max-width:400px){
+ html body .ak-site-shell .ak-site-brand{min-width:0;gap:8px}
+ html body .ak-site-shell .ak-site-brand__text strong{font-size:14px}
+ html body .ak-site-shell .ak-site-brand__text small{font-size:9px}
+}

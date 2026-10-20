@@ -1,0 +1,12 @@
+/* V2.7.3: a visible handoff for the static contact form. */
+#contact .contact-draft[hidden]{display:none}
+#contact .contact-draft{margin-top:24px;padding:20px;border:1px solid #85b7c9;border-radius:16px;background:#e4f3ed;color:#173b50}
+#contact .contact-draft h3{margin:0 0 12px;color:#173b50}
+#contact .contact-draft textarea{margin-top:8px;width:100%;min-height:220px;font-size:16px;line-height:1.7;color:#173b50;background:#f8fcff}
+#contact .contact-draft-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+#contact .contact-draft-actions .btn{min-height:48px;white-space:normal;text-align:center;border:1px solid #6b9daf;background:#d3eafa;color:#173b50;text-decoration:none}
+#contact .contact-draft-actions .btn-primary{background:#ffd574;border-color:#bf9638}
+#contact .form-note{color:#304c62;line-height:1.7}
+#contact .official-line-contact,#contact .official-line-contact strong,#contact .official-line-contact small{color:#14513c!important}
+#contact .official-line-contact{background:#d9efdf;border-color:#90bf9a}
+@media(max-width:600px){#contact .contact-draft-actions{display:grid;grid-template-columns:1fr}#contact .contact-draft-actions .btn{width:100%}#contact .contact-draft{padding:14px}}

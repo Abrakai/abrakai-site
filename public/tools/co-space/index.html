@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Co-Space AI 課堂互動百寶箱｜阿布拉.凱 工作室</title>
+  <meta name="theme-color" content="#fff7ed">
+  <meta name="description" content="Co-Space AI 課堂互動百寶箱：講師提示詞廣播、QR Code 分享、課堂留言與本機提示詞卡片管理。">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="icon" href="../../assets/icons/icon-32.png" type="image/png">
+  
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/assets/css/co-space-utilities.css?v=2.7.0">
+  <!-- Font Awesome 圖示庫 -->
+  <link rel="stylesheet" href="/assets/vendor/fontawesome/css/all.min.css">
+  <!-- QRCode.js -->
+  <script src="/assets/vendor/qrcode.min.js"></script>
+  <!-- LZ-String 壓縮庫 -->
+  <script src="/assets/vendor/lz-string.min.js"></script>
+  <link rel="stylesheet" href="/assets/css/pigeon-cards.css?v=2.7.1">
+  <script src="/assets/js/pigeon-cards.js?v=2.7.1" defer></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', 'Fredoka', system-ui, -apple-system, sans-serif;
+    }
+    .font-cute {
+      font-family: 'Zen Maru Gothic', 'Fredoka', cursive, sans-serif;
+    }
+    
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-4deg); }
+      50% { transform: rotate(4deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(3deg); }
+    }
+    @keyframes float-reverse {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(8px) rotate(-3deg); }
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.85) translateY(15px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes jelly {
+      0%, 100% { transform: scale(1, 1); }
+      25% { transform: scale(0.9, 1.1); }
+      50% { transform: scale(1.1, 0.9); }
+      75% { transform: scale(0.95, 1.05); }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .animate-wiggle { animation: wiggle 2.5s ease-in-out infinite; }
+    .animate-float { animation: float 3.5s ease-in-out infinite; }
+    .animate-float-reverse { animation: float-reverse 4s ease-in-out infinite; }
+    .animate-pop { animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .hover-jelly:hover { animation: jelly 0.5s ease-in-out; }
+    .star-twinkle { animation: twinkle 3s infinite ease-in-out; }
+
+    .candy-shadow {
+      box-shadow: 0 14px 30px -8px rgba(244, 114, 182, 0.25), 0 8px 12px -6px rgba(251, 113, 133, 0.15);
+    }
+    .mint-shadow {
+      box-shadow: 0 14px 30px -8px rgba(52, 211, 153, 0.25), 0 8px 12px -6px rgba(16, 185, 129, 0.15);
+    }
+    .yellow-shadow {
+      box-shadow: 0 14px 30px -8px rgba(251, 191, 36, 0.3), 0 8px 12px -6px rgba(245, 158, 11, 0.2);
+    }
+
+    .envelope-wrapper {
+      transition: all 0.5s ease;
+    }
+    .envelope-wrapper:hover {
+      transform: translateY(-5px) scale(1.02);
+    }
+
+    .bg-polka {
+      background-image: radial-gradient(rgba(244, 114, 182, 0.15) 2px, transparent 2px);
+      background-size: 24px 24px;
+    }
+    .ak-co-shell{position:relative;z-index:90;width:100%;background:rgba(255,255,255,.94);border-bottom:1px solid #dce8ee;box-shadow:0 8px 26px rgba(32,67,86,.08);font-family:system-ui,-apple-system,"Microsoft JhengHei","PingFang TC",sans-serif}
+    .ak-co-shell__inner{width:min(1180px,calc(100% - 28px));min-height:64px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:8px 0}
+    .ak-co-brand{display:flex;align-items:center;gap:10px;color:#17384b;text-decoration:none;font-weight:900;white-space:nowrap}
+    .ak-co-brand img{width:42px;height:42px;object-fit:contain}.ak-co-brand small{display:block;color:#617888;font-size:10px;letter-spacing:.12em}
+    .ak-co-nav{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap}.ak-co-nav a{padding:7px 9px;border-radius:10px;color:#294d61;font-size:13px;font-weight:900;text-decoration:none}.ak-co-nav a:hover,.ak-co-nav a:focus-visible{background:#eaf6fb;color:#0c6d9f;outline:none}.ak-co-nav .active{background:#fce7f3;color:#be185d}
+    .co-space-safety{margin-top:12px;padding:10px 13px;border:1px solid #f2d28b;border-radius:14px;background:#fffbeb;color:#78520c;font-size:13px;font-weight:700;line-height:1.6}
+    @media(max-width:760px){.ak-co-shell__inner{align-items:flex-start;flex-direction:column}.ak-co-nav{width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.ak-co-nav a{white-space:nowrap}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+    /* V2.5.11：提示詞主導的教學投影；保留原卡片與 QR 資料流程。 */
+    #toast{z-index:1300}
+    #card-modal{z-index:1100}
+    #card-modal>div{max-width:1100px;width:100%}
+    #card-prompt-input{min-height:38vh;max-height:65vh;resize:vertical;overflow-y:auto;font-size:18px;line-height:1.7}
+    #project-qr-modal{padding:16px;align-items:center;z-index:1200}
+    #project-qr-modal>.co-project-dialog{max-width:none;width:100%;height:calc(100vh - 32px);height:calc(100dvh - 32px);margin:0;padding:24px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    #project-title{flex:none;padding-right:44px;margin-bottom:16px}
+    .co-project-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;flex:1;min-height:0;align-items:stretch}
+    .co-project-qr{order:2;align-self:center;min-width:0}
+    .co-project-reading{order:1;display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+    .co-project-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#334155;font-weight:700}
+    .co-project-toolbar button{border:1px solid #94a3b8;border-radius:10px;background:#f8fafc;color:#0f172a;padding:8px 14px;font-size:16px;cursor:pointer}
+    #project-prompt-preview{flex:1;min-height:0;max-height:none;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;font-size:clamp(20px,1.7vw,30px);line-height:1.8;padding:24px;color:#f1f5f9;background:#0f172a;text-align:left;scrollbar-gutter:stable}
+    #project-prompt-preview:focus-visible{outline:3px solid #0284c7;outline-offset:3px}
+    .co-project-footer{flex:none;margin-top:16px}
+    #project-qr-modal.co-prompt-only .co-project-grid{grid-template-columns:minmax(0,1fr)}
+    #project-qr-modal.co-prompt-only .co-project-qr{display:none}
+    @media(max-width:760px){#project-qr-modal{padding:8px}#project-qr-modal>.co-project-dialog{height:calc(100dvh - 16px);padding:16px}.co-project-grid{grid-template-columns:minmax(0,1fr);overflow-y:auto}.co-project-reading{min-height:55vh}.co-project-qr{order:2;justify-self:center;width:100%;max-width:340px}#project-prompt-preview{font-size:20px;padding:18px}#card-prompt-input{min-height:40vh;font-size:16px}}
+  </style>
+  <link rel="stylesheet" href="/assets/css/site-shell.css?v=2.7.0">
+<link rel="stylesheet" href="/assets/css/site-bright.css?v=2.7.0">
+<script src="/assets/js/site-navigation.js?v=2.7.4" defer></script>
+</head>
+
+<body data-ak-page="cospace" class="bg-gradient-to-br from-rose-100 via-teal-50 to-amber-100 flex flex-col min-h-screen text-slate-800 bg-polka selection:bg-pink-300 selection:text-pink-900 relative">
+
+  <header class="ak-site-shell"><div class="ak-site-shell__inner"><a class="ak-site-brand" href="/" aria-label="阿布拉.凱工作室首頁"><img src="/assets/images/abrakai-studio-logo.webp" alt="阿布拉.凱工作室 Logo" width="46" height="46"><span class="ak-site-brand__text"><strong>阿布拉.凱 工作室</strong><small>ABRA-KAI STUDIO</small></span></a><button class="ak-menu-toggle" type="button" aria-controls="ak-site-navigation" aria-expanded="false" aria-label="開啟導覽選單">選單 <span aria-hidden="true">☰</span></button><nav id="ak-site-navigation" class="ak-site-nav" aria-label="全站導覽"><a href="/">首頁</a><a href="/#services">服務方案</a><a href="/classroom/">AI 小教室</a><a href="/tools/" class="ak-site-nav__accent" aria-current="location">免費工具</a><a href="/products/">產品介紹</a><a href="/works/">作品案例</a><a href="/real-estate/">房產專區</a><a href="/#collaboration">課程合作</a><a href="https://line.me/R/ti/p/%40214plfov" class="ak-site-nav__cta" target="_blank" rel="noopener noreferrer">加官方 LINE</a></nav></div></header>
+
+  <!-- 背景閃爍小星星裝飾 -->
+  <div aria-hidden="true" class="fixed top-20 left-20 text-yellow-400 text-2xl star-twinkle pointer-events-none">✨</div>
+  <div aria-hidden="true" class="fixed top-40 right-32 text-pink-400 text-xl star-twinkle pointer-events-none" style="animation-delay: 1s;">✨</div>
+  <div aria-hidden="true" class="fixed bottom-40 left-1/4 text-teal-400 text-3xl star-twinkle pointer-events-none" style="animation-delay: 2s;">✨</div>
+
+  <!-- 全局提示 Toast 通知 -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md text-white font-bold text-sm sm:text-base px-6 py-3 rounded-2xl shadow-2xl z-[200] opacity-0 pointer-events-none transition-all duration-300 flex items-center space-x-2 border-2 border-white/20">
+    <span id="toast-icon">✨</span>
+    <span id="toast-msg">提示訊息</span>
+  </div>
+
+  <!-- 機器人移至左下角，避開標題干擾 -->
+  <div class="fixed bottom-20 left-8 text-5xl opacity-80 animate-float pointer-events-none hidden sm:block">🤖</div>
+  <div class="fixed bottom-12 right-10 text-5xl opacity-80 animate-float-reverse pointer-events-none hidden sm:block">🚀</div>
+
+  <!-- 1. 入口首頁（Portal） -->
+  <div id="portal-view" class="my-auto flex flex-col justify-center items-center p-4 pt-10 sm:pt-16 w-full">
+    <div class="max-w-3xl w-full text-center space-y-6 sm:space-y-8 animate-pop">
+      
+      <!-- 標題區域 -->
+      <div class="inline-block relative">
+        <span class="absolute -top-6 -left-6 bg-pink-400 text-white text-xs sm:text-sm font-black px-4 py-1.5 rounded-full shadow-md animate-bounce">
+          ✨ 阿布拉.凱 工作室 | AbraKai Studio
+        </span>
+        <h1 class="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 tracking-wide font-cute mb-2 mt-2">
+          AI 課堂互動百寶箱
+        </h1>
+        <p class="text-slate-600 font-bold text-base sm:text-lg">AI 好好玩，讓 AI 走進你我的生活 🚀</p>
+      </div>
+
+      <!-- Co-Space classroom tools V1.0.0: local public tools -->
+      <section aria-label="免費課堂工具" style="padding:24px;background:#fff;border:2px solid #9acbd3;border-radius:24px;text-align:left;color:#17384b">
+        <h2 style="font-size:24px;font-weight:900;margin:0 0 10px">免登入的課堂工具</h2>
+        <p style="line-height:1.7;margin:0 0 18px">倒數與休息音樂、動畫抽獎、分組、課堂公告、計分板與抽題。可課前匯入、保存整堂課，並另外開啟學生投影視窗。免登入、免 AI 額度。</p>
+        <a href="./classroom.html" style="display:inline-block;padding:14px 22px;background:#205a78;color:white;border-radius:14px;font-weight:800">開啟課堂工具 →</a>
+        <small style="display:block;margin-top:12px">課堂工具 V1.1.0 · 原有提示詞廣播與飛鴿傳書仍可在下方使用。</small>
+      </section>
+
+      <!-- 入口卡片雙選區 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 pt-2">
+        
+        <!-- 講師通道卡片 -->
+        <div onclick="showLoginModal()" class="bg-white/95 backdrop-blur-md border-4 border-pink-200 rounded-3xl p-6 sm:p-8 hover:border-pink-400 candy-shadow hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center relative">
+          <div class="absolute top-4 right-4 bg-pink-500 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-md flex items-center space-x-1">
+            <span>👑</span><span>講師模式</span>
+          </div>
+          <div class="w-24 h-24 bg-gradient-to-tr from-pink-100 to-rose-200 text-pink-600 rounded-3xl flex items-center justify-center text-5xl mt-2 mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-inner">
+            <i class="fa-solid fa-wand-magic-sparkles animate-wiggle"></i>
+          </div>
+          <h2 class="text-2xl font-black text-slate-800 mb-2 group-hover:text-pink-600 transition-colors font-cute">提示詞廣播站</h2>
+          <p class="text-sm text-slate-500 leading-relaxed font-medium">整理並投屏 AI 提示詞卡片，讓學員用手機輕鬆掃碼一鍵複製。（使用本機介面鎖）</p>
+          <span class="mt-6 inline-flex items-center space-x-2 text-sm font-bold bg-pink-100 text-pink-700 px-5 py-2.5 rounded-2xl group-hover:bg-pink-500 group-hover:text-white transition-colors hover-jelly shadow-sm">
+            <span>解鎖進入</span> <i class="fa-solid fa-arrow-right"></i>
+          </span>
+        </div>
+
+        <!-- 學生飛鴿傳書卡片 -->
+        <div class="bg-white/95 backdrop-blur-md border-4 border-emerald-200 rounded-3xl p-6 sm:p-8 hover:border-emerald-400 mint-shadow transition-all duration-300 group flex flex-col items-center text-center relative">
+          <div class="absolute top-4 right-4 bg-emerald-500 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-md flex items-center space-x-1">
+            <span>💌</span><span>所有人可用</span>
+          </div>
+          <div onclick="showPigeonCreator()" class="cursor-pointer w-24 h-24 bg-gradient-to-tr from-emerald-100 to-teal-200 text-emerald-600 rounded-3xl flex items-center justify-center text-5xl mt-2 mb-4 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300 shadow-inner">
+            <i class="fa-solid fa-dove animate-float"></i>
+          </div>
+          <h2 onclick="showPigeonCreator()" class="cursor-pointer text-2xl font-black text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors font-cute">飛鴿傳書 (悄悄話)</h2>
+          <p onclick="showPigeonCreator()" class="cursor-pointer text-sm text-slate-500 leading-relaxed font-medium">寫下課堂留言，封裝成專屬 QR Code，讓對方掃描開啟內容。</p>
+          
+          <div class="mt-6 flex flex-wrap justify-center gap-2.5 w-full">
+            <button onclick="showPigeonCreator()" class="hover-jelly inline-flex items-center space-x-1.5 text-sm font-bold bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">
+              <span>開始寫信</span> <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button onclick="showPigeonPortalQR()" class="hover-jelly inline-flex items-center space-x-1.5 text-sm font-bold bg-amber-100 text-amber-800 px-4 py-2.5 rounded-2xl hover:bg-amber-400 hover:text-slate-900 transition-colors shadow-sm" title="大螢幕投屏入口給全班掃描">
+              <i class="fa-solid fa-qrcode"></i><span>投屏入口 QR</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 飛鴿傳書：入口投屏 Modal -->
+  <div id="pigeon-portal-qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="bg-white border-4 border-emerald-300 rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl relative animate-pop my-auto">
+      <button onclick="closePigeonPortalQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
+        <i class="fa-solid fa-dove animate-bounce"></i>
+      </div>
+      <h2 class="text-2xl font-black text-slate-800 mb-1 font-cute">飛鴿傳書 (悄悄話) 入口</h2>
+      <p class="text-sm sm:text-base text-slate-500 mb-4 font-medium">請同學拿起手機掃描下方 QR Code，即可開始寫悄悄話！</p>
+      
+      <div class="p-4 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-200 inline-block mb-4 shadow-sm">
+        <div id="pigeon-entrance-qrcode-container" class="bg-white p-3 rounded-2xl border-2 border-emerald-300 flex items-center justify-center"></div>
+      </div>
+
+      <button onclick="closePigeonPortalQRModal()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl transition shadow-md hover-jelly">
+        完成／關閉視窗
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. 講師模式通行碼 Modal -->
+  <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="bg-white border-4 border-pink-300 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-pop my-auto">
+      <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-pink-100 text-pink-500 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
+          <i class="fa-solid fa-chalkboard-user"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 font-cute">進入講師模式</h2>
+        <p class="text-sm sm:text-base text-slate-500 mt-1 font-medium">講師模式可建立提示詞卡片並投影 QR Code 給學員掃描。</p>
+        <p class="co-space-safety">此為本機介面通行碼，不是會員登入或伺服器授權，也無法保護機密資料。內容只儲存在目前瀏覽器；分享連結可被轉傳，請勿輸入私人敏感資料。</p>
+      </div>
+
+      <form class="space-y-4" onsubmit="verifyTeacherAccess(event)">
+        <div>
+          <label for="teacher-access-code" class="block text-sm font-black text-slate-700 mb-2">教師通行碼</label>
+          <input id="teacher-access-code" type="password" autocomplete="current-password" spellcheck="false" inputmode="text"
+            class="w-full px-4 py-3 rounded-2xl border-2 border-pink-200 bg-pink-50/50 text-slate-800 font-bold outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition"
+            placeholder="請輸入工作室提供的通行碼" aria-describedby="teacher-access-help teacher-access-error" required>
+          <p id="teacher-access-help" class="mt-2 text-xs text-slate-500">尚未取得？請透過工作室官網的 LINE 或聯絡方式索取。</p>
+          <p id="teacher-access-error" class="hidden mt-2 text-sm font-bold text-rose-600" role="alert">通行碼不正確，請確認後再試一次。</p>
+        </div>
+        <div class="flex space-x-3 pt-2">
+          <button type="button" onclick="closeLoginModal()" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition hover-jelly">
+            取消
+          </button>
+          <button type="submit" class="w-1/2 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl transition shadow-md shadow-pink-200 hover-jelly">
+            驗證並進入
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. 主應用程式容器 -->
+  <div class="max-w-5xl mx-auto px-4 w-full" style="flex-grow: 0;">
+    
+    <!-- 頂部導覽列 -->
+    <header id="app-header" class="hidden flex items-center justify-between bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-sm border-2 border-slate-200/80 mb-6 mt-6">
+      <div class="flex items-center space-x-3">
+        <button onclick="showPortal()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl flex items-center justify-center transition shadow-xs hover-jelly" title="返回入口頁面">
+          <i class="fa-solid fa-house text-base"></i>
+        </button>
+        <div>
+          <h1 id="header-title" class="text-xl font-black text-slate-800 font-cute">AI 課堂互動百寶箱</h1>
+          <p id="header-subtitle" class="text-sm text-slate-500 font-bold">提示詞與悄悄話即時傳遞</p>
+        </div>
+      </div>
+      <div id="header-badge" class="px-3.5 py-1.5 bg-pink-100 text-pink-700 rounded-full text-sm font-black flex items-center space-x-1 shadow-xs">
+        <span>👑 講師模式</span>
+      </div>
+    </header>
+
+    <!-- 頁面區塊 A：講師控制台 -->
+    <main id="teacher-view" class="hidden space-y-6 animate-pop mb-10">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 opacity-20 text-8xl pointer-events-none">✨</div>
+        <div>
+          <h2 class="text-2xl font-black font-cute mb-1">提示詞卡片庫</h2>
+          <p class="text-sm sm:text-base text-pink-100 font-medium">新增、編輯或投屏提示詞，點擊「大螢幕投屏」生成 QR Code 給學員掃描！</p>
+        </div>
+        <div class="flex flex-wrap gap-2 relative z-10">
+          <button onclick="openCardModal()" class="bg-white text-pink-600 hover:bg-pink-50 font-black px-4 py-2.5 rounded-2xl text-sm transition shadow-md flex items-center space-x-1.5 hover-jelly">
+            <i class="fa-solid fa-plus"></i><span>新增提示詞</span>
+          </button>
+          <button onclick="exportJSON()" class="bg-pink-700/60 hover:bg-pink-800/80 text-white font-bold px-3 py-2 rounded-2xl text-sm transition border border-white/20 hover-jelly" title="匯出卡片備份 JSON">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <label class="bg-pink-700/60 hover:bg-pink-800/80 text-white font-bold px-3 py-2 rounded-2xl text-sm transition border border-white/20 cursor-pointer flex items-center hover-jelly" title="匯入卡片 JSON">
+            <i class="fa-solid fa-upload"></i>
+            <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+          </label>
+          <button onclick="confirmClearAll()" class="bg-rose-700/60 hover:bg-rose-800/80 text-white font-bold px-3 py-2 rounded-2xl text-sm transition border border-white/20 hover-jelly" title="清空白板">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      </div>
+    </main>
+
+    <!-- 頁面區塊 B：飛鴿傳書 (建立端) -->
+    <main id="pigeon-create-view" class="hidden max-w-xl mx-auto animate-pop my-auto mt-6 mb-10">
+      <div class="bg-white border-4 border-emerald-300 rounded-3xl p-6 sm:p-8 mint-shadow relative">
+        
+        <div class="absolute top-3 right-3 bg-amber-400 text-slate-900 text-sm font-black px-3.5 py-1 rounded-full shadow-md animate-bounce flex items-center space-x-1 border-2 border-white">
+          <span>💌</span><span>特快專遞</span>
+        </div>
+        <div class="absolute top-3 left-3 text-3xl opacity-80 pointer-events-none transform -rotate-12">🕊️</div>
+
+        <div class="text-center mb-5 pt-2">
+          <div class="w-16 h-16 bg-gradient-to-tr from-emerald-100 to-teal-200 text-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-3xl mb-2 shadow-inner">
+            <i class="fa-solid fa-envelope-open-text animate-pulse"></i>
+          </div>
+          <h2 class="text-2xl font-black text-slate-800 font-cute">飛鴿傳書 (悄悄話)</h2>
+          <p class="text-slate-500 text-sm font-medium mt-1">寫下課堂留言，包裝成 QR Code，讓對方掃描開啟內容。</p>
+        </div>
+
+        <div class="mb-4 bg-emerald-50/90 p-3 rounded-2xl border-2 border-emerald-200/80">
+          <div class="text-[13px] font-black text-emerald-800 mb-1.5 flex items-center space-x-1">
+            <span>✨ 點擊快速插入可愛 Emoji 貼圖：</span>
+          </div>
+          <div class="grid grid-cols-8 gap-1 max-h-28 overflow-y-auto pr-1">
+            <button onclick="insertEmoji('😀')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">😀</button>
+            <button onclick="insertEmoji('😂')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">😂</button>
+            <button onclick="insertEmoji('🥳')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🥳</button>
+            <button onclick="insertEmoji('😎')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">😎</button>
+            <button onclick="insertEmoji('😍')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">😍</button>
+            <button onclick="insertEmoji('🤫')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🤫</button>
+            <button onclick="insertEmoji('🤩')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🤩</button>
+            <button onclick="insertEmoji('🥹')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🥹</button>
+            <button onclick="insertEmoji('💖')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">💖</button>
+            <button onclick="insertEmoji('🔥')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🔥</button>
+            <button onclick="insertEmoji('🎉')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🎉</button>
+            <button onclick="insertEmoji('🌟')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🌟</button>
+            <button onclick="insertEmoji('💌')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">💌</button>
+            <button onclick="insertEmoji('👀')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">👀</button>
+            <button onclick="insertEmoji('🎈')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🎈</button>
+            <button onclick="insertEmoji('🎁')" class="hover:bg-emerald-200/80 p-1.5 rounded-xl text-lg transition">🎁</button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <textarea id="pigeon-input" rows="7" maxlength="2000" aria-label="想說的話" placeholder="寫一句祝福，或一段想讓對方知道的話… 💕" class="w-full p-4 rounded-2xl border-2 border-slate-200 focus:border-emerald-400 focus:outline-none text-base sm:text-lg font-cute text-slate-800 leading-relaxed transition"></textarea>
+          <p id="pigeon-count" aria-live="polite">0／1000 字</p>
+          <p class="co-space-safety">留言在您的裝置產生，不建立伺服器留言檔案。分享連結不是加密；取得 QR 或連結的人都能閱讀，請勿放入密碼或私人敏感資料。最多 1000 字；實際 QR 容量仍依壓縮結果判斷，太密時可改分享連結。</p>
+          
+          <button onclick="generatePigeonQR()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black rounded-2xl transition shadow-md shadow-emerald-200 flex items-center justify-center space-x-2 text-base hover-jelly">
+            <i class="fa-solid fa-qrcode"></i><span>封裝成悄悄話 QR Code</span>
+          </button>
+        </div>
+
+        <div id="pigeon-result-box" class="hidden mt-6 text-center pt-5 border-t-2 border-dashed border-slate-200 animate-pop">
+          <div class="inline-block p-4 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-200 mb-3 relative">
+            <div id="pigeon-qrcode-container" class="bg-white p-3 rounded-2xl border-2 border-emerald-300 flex items-center justify-center"></div>
+            
+            <div class="mt-3 flex items-center justify-between px-2">
+              <span id="pigeon-privacy-status" class="text-sm font-bold text-emerald-800">🙈 內容預覽已收合</span>
+              <button onclick="togglePigeonTextVisibility()" class="text-sm font-bold text-emerald-600 hover:text-emerald-800 underline">
+                <span id="pigeon-privacy-btn-text">顯示原文</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="pigeon-preview-text" class="hidden p-3 bg-amber-50 border-2 border-amber-200 text-amber-900 font-cute text-base rounded-2xl mb-3 text-left"></div>
+
+          <p class="text-sm font-bold text-emerald-700">💌 心意已準備好，選擇連結或 QR 分享給對方。</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- 頁面區塊 C：飛鴿傳書 (拆信接收端) -->
+    <main id="pigeon-read-view" class="hidden max-w-lg mx-auto animate-pop my-auto pt-6 mb-10">
+      <div class="bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 text-white font-black text-sm px-5 py-2 rounded-full shadow-lg border-2 border-white -mb-4 mx-auto w-max flex items-center space-x-2 relative z-20 animate-bounce">
+        <span>💌</span><span>悄悄話快遞專車送達！</span><span>✨</span>
+      </div>
+
+      <div class="bg-white/95 backdrop-blur-md border-4 border-amber-300 rounded-3xl p-6 sm:p-8 yellow-shadow text-center relative">
+        <div class="absolute top-3 right-3 text-3xl opacity-80 pointer-events-none transform rotate-12">🎁</div>
+        <div class="absolute bottom-3 left-3 text-3xl opacity-80 pointer-events-none transform -rotate-12">💖</div>
+
+        <div id="pigeon-sealed-box" class="space-y-4 py-4">
+          <button type="button" onclick="unsealPigeon()" class="envelope-wrapper cursor-pointer inline-block p-6 bg-amber-50 hover:bg-amber-100 rounded-3xl border-3 border-dashed border-amber-300 transition shadow-inner">
+            <div class="text-6xl sm:text-7xl mb-2 animate-bounce">💌</div>
+            <span class="inline-block text-sm font-black bg-amber-400 text-slate-900 px-4 py-1.5 rounded-full shadow-xs">
+              點擊開啟留言
+            </span>
+          </button>
+          <h2 class="text-2xl font-black text-slate-800 font-cute">你收到一封悄悄話！</h2>
+          <p class="text-sm text-slate-500 font-medium">這是對方透過課堂工具分享的內容，點擊上方信封即可開啟。</p>
+        </div>
+
+        <div id="pigeon-opened-box" class="hidden space-y-5 animate-pop">
+          <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-inner">
+            <i class="fa-solid fa-face-smile-beam animate-wiggle"></i>
+          </div>
+          
+          <div>
+            <span class="text-sm font-black text-emerald-800 bg-emerald-100 px-3.5 py-1 rounded-full">
+              ✨ 留言已開啟 ✨
+            </span>
+          </div>
+
+          <div class="bg-gradient-to-br from-amber-50/90 via-pink-50/70 to-emerald-50/90 border-4 border-dashed border-emerald-300 rounded-3xl p-6 sm:p-8 text-center shadow-inner relative my-2">
+            <p id="pigeon-secret-content" class="text-xl sm:text-2xl font-black text-slate-800 leading-relaxed font-cute tracking-wide whitespace-pre-wrap break-words"></p>
+          </div>
+
+          <div class="pt-2 space-y-2">
+            <button onclick="copyPigeonSecret()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl transition shadow-md shadow-emerald-200 flex items-center justify-center space-x-2 text-base hover-jelly">
+              <i class="fa-solid fa-copy"></i><span>一鍵複製悄悄話</span>
+            </button>
+            <button onclick="showPigeonCreator()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition text-sm hover-jelly">
+              ✍️ 我也要回傳悄悄話
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 頁面區塊 D：學生檢視提示詞單一頁面 -->
+    <main id="student-view" class="hidden max-w-xl mx-auto animate-pop my-auto mt-6 mb-10">
+      <div class="bg-white border-4 border-pink-300 rounded-3xl p-6 sm:p-8 candy-shadow relative overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <span id="student-card-tag" class="text-sm font-black px-3.5 py-1 rounded-full bg-pink-100 text-pink-700">
+            提示詞卡片
+          </span>
+          <span class="text-sm font-bold text-slate-400">一鍵複製即可貼上</span>
+        </div>
+
+        <h2 id="student-card-title" class="text-2xl font-black text-slate-800 mb-4 font-cute">
+          載入中...
+        </h2>
+
+        <div class="relative mb-6">
+          <pre id="student-card-prompt" class="p-4 bg-slate-900 text-emerald-400 font-mono text-sm rounded-2xl whitespace-pre-wrap break-words max-h-80 overflow-y-auto leading-relaxed border-2 border-slate-800 shadow-inner"></pre>
+        </div>
+
+        <button onclick="copyStudentPrompt()" class="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black rounded-2xl transition shadow-lg shadow-pink-200 text-base sm:text-lg flex items-center justify-center space-x-2 hover-jelly">
+          <i class="fa-solid fa-copy"></i><span>📋 一鍵複製提示詞</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- 4. 新增 / 編輯提示詞卡片 Modal -->
+  <div id="card-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="bg-white border-4 border-pink-300 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-pop my-auto">
+      <button onclick="closeCardModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h2 id="modal-title" class="text-2xl font-black text-slate-800 mb-4 font-cute">新增提示詞卡片</h2>
+      <form onsubmit="saveCard(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-1">標籤分類</label>
+          <input type="text" id="card-tag-input" required maxlength="40" placeholder="例如：角色定調、文案寫作" class="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-pink-400 focus:outline-none text-sm font-bold">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-1">卡片標題</label>
+          <input type="text" id="card-title-input" required maxlength="80" placeholder="例如：專業小編 AI 助理" class="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-pink-400 focus:outline-none text-sm font-bold">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-1">提示詞內容 (Prompt)</label>
+          <textarea id="card-prompt-input" rows="5" required maxlength="1800" placeholder="請在此輸入完整提示詞..." class="w-full p-3.5 rounded-2xl border-2 border-slate-200 focus:border-pink-400 focus:outline-none text-sm font-mono text-slate-800 leading-relaxed"></textarea>
+        </div>
+        <div class="flex space-x-3 pt-2">
+          <button type="button" onclick="closeCardModal()" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition text-sm hover-jelly">取消</button>
+          <button type="submit" class="w-1/2 py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl transition shadow-md shadow-pink-200 text-sm hover-jelly">儲存卡片</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. 提示詞投屏 QR Code Modal -->
+  <div id="project-qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="co-project-dialog bg-white border-4 border-pink-300 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative animate-pop my-auto">
+      <button onclick="closeProjectQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-2 mb-2">
+        <span id="project-tag" class="text-sm font-black px-3.5 py-1 rounded-full bg-pink-100 text-pink-700">分類</span>
+        <span class="text-sm font-bold text-slate-400">大螢幕講桌投屏模式</span>
+      </div>
+
+      <h2 id="project-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-4 font-cute">標題</h2>
+
+      <div class="co-project-grid">
+        <div class="co-project-qr flex flex-col items-center justify-center p-4 bg-gradient-to-b from-pink-50 to-rose-50 rounded-3xl border-2 border-pink-200 shadow-sm">
+          <div id="project-qrcode-container" class="bg-white p-3 rounded-2xl border-2 border-pink-300 mb-2"></div>
+          <p class="text-sm font-bold text-pink-600 mt-2">📱 請同學拿起手機掃描複製</p>
+        </div>
+
+        <div class="co-project-reading">
+          <div class="co-project-toolbar"><span>完整提示詞｜可上下捲動閱讀</span><button type="button" id="project-reading-toggle" onclick="toggleProjectReading()" aria-pressed="false">提示詞滿版</button></div>
+          <div class="p-3 bg-slate-900 text-emerald-400 font-mono text-sm rounded-2xl max-h-56 overflow-y-auto border-2 border-slate-800 leading-relaxed shadow-inner" id="project-prompt-preview" tabindex="0" role="region" aria-label="完整提示詞，可上下捲動閱讀"></div>
+        </div>
+      </div>
+
+      <div class="co-project-footer flex items-center justify-between mt-6 pt-4 border-t-2 border-slate-100">
+        <button onclick="navigateProject(-1)" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition flex items-center space-x-1">
+          <i class="fa-solid fa-arrow-left"></i><span>上一頁</span>
+        </button>
+        <span id="project-counter" class="text-sm font-black text-slate-400">1 / 1</span>
+        <button onclick="navigateProject(1)" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition flex items-center space-x-1">
+          <span>下一頁</span><i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 清空確認自訂 Modal -->
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="bg-white border-4 border-rose-300 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative animate-pop my-auto">
+      <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3 shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="text-xl font-black text-slate-800 mb-2 font-cute">確定要清空白板？</h3>
+      <p class="text-sm text-slate-500 mb-5 font-medium">這將刪除所有提示詞卡片，建議清空前先進行「匯出備份」！</p>
+
+      <div class="flex space-x-3">
+        <button onclick="closeConfirmModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition text-sm hover-jelly">取消</button>
+        <button onclick="executeClearAll()" class="w-1/2 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition shadow-md shadow-rose-200 text-sm hover-jelly">確定清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 工作室版權與免責聲明 Modal -->
+  <div id="copyright-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[130] flex items-start sm:items-center justify-center p-4 pt-8 sm:pt-10 overflow-y-auto">
+    <div class="bg-white border-4 border-pink-300 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-pop my-auto">
+      <button onclick="closeCopyrightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 bg-pink-100 text-pink-500 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-2 shadow-inner">
+          <i class="fa-solid fa-circle-info"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 font-cute">版權聲明與免責聲明</h2>
+        <p class="text-sm text-slate-500 font-bold mt-0.5">Studio Terms & Legal Disclaimer</p>
+      </div>
+
+      <div class="space-y-4 max-h-80 overflow-y-auto text-sm text-slate-600 leading-relaxed pr-2 font-medium">
+        <div class="bg-pink-50/80 p-4 rounded-2xl border border-pink-200">
+          <h3 class="font-black text-pink-700 text-sm mb-1.5 flex items-center space-x-1.5 font-cute">
+            <i class="fa-solid fa-copyright"></i><span>版權聲明 (Copyright Notice)</span>
+          </h3>
+          <p class="leading-normal">
+            本應用程式（包含但不限於 UI 介面設計、前端程式碼、標誌與互動機制）之智慧財產權與版權均屬 <strong>阿布拉.凱 工作室 | AbraKai Studio</strong> 所有。未經授權，請勿複製、重製或用於商業販售用途。
+          </p>
+        </div>
+        <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-200">
+          <h3 class="font-black text-amber-800 text-sm mb-1.5 flex items-center space-x-1.5 font-cute">
+            <i class="fa-solid fa-triangle-exclamation"></i><span>免責聲明 (Disclaimer)</span>
+          </h3>
+          <ul class="list-disc list-inside space-y-1 text-slate-600 leading-normal">
+            <li>本工具僅提供課堂教學互動與提示詞分享，不會主動把提示詞卡片上傳到工作室資料庫。</li>
+            <li>提示詞卡片儲存在使用者瀏覽器 LocalStorage；清除瀏覽器資料或更換裝置後可能遺失，請自行匯出 JSON 備份。</li>
+            <li>「飛鴿傳書」內容會壓縮後放進分享網址。壓縮不是加密，網址可能被瀏覽器、分享平台或網站主機記錄，請勿傳送私人或敏感資料。</li>
+            <li>工作室對於使用者透過 AI 提示詞產出之第三方內容不承擔任何法律與法律擔保責任。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-3 border-t border-slate-100 text-center">
+        <button onclick="closeCopyrightModal()" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-2xl transition shadow-md text-sm sm:text-base hover-jelly">
+          我已閱讀並同意
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 全頁通用加大可愛頁尾 (Footer) -->
+  <!-- Co-Space layout V2.5.11 -->
+  <footer class="mt-8 mb-6 text-center text-sm font-bold text-slate-500 space-y-2 px-4 z-50 relative w-full">
+    <p class="flex items-center justify-center space-x-1.5 flex-wrap sm:text-base">
+      <span>© <span id="copyright-year">2026</span> <strong>阿布拉.凱 工作室 | AbraKai Studio</strong>. All Rights Reserved.</span>
+    </p>
+    <div class="flex items-center justify-center space-x-3 text-xs sm:text-sm text-slate-500 pt-1">
+      <button onclick="showCopyrightModal()" class="hover:text-pink-600 underline transition flex items-center space-x-1">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>版權與免責聲明</span>
+      </button>
+      <span>•</span>
+      <span class="text-pink-500 font-black">AI好好玩，讓AI走進你我的生活！</span>
+      <span>•</span>
+      <span>co-space 互動課堂專用版</span>
+    </div>
+  </footer>
+
+  <script>
+    let promptCards = [];
+    let currentProjIndex = 0;
+    let editingCardId = null;
+
+    function isValidString(str) {
+      return typeof str === 'string' && str.trim().length > 0;
+    }
+
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const view = urlParams.get('view');
+      const compressedData = urlParams.get('data');
+      const packedPrompt = urlParams.get('p');
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+
+      if (fragment.get('pigeon')) {
+        showPigeonReader(fragment.get('pigeon'));
+      } else if (mode === 'pigeon' && compressedData) {
+        showPigeonReader(compressedData);
+      } else if (view === 'teacher') {
+        showPortal();
+        showLoginModal();
+      } else if (view === 'pigeon' || mode === 'pigeon_create') {
+        showPigeonCreator();
+      } else if (packedPrompt) {
+        showPackedStudentView(packedPrompt);
+      } else if (compressedData) {
+        // 相容舊版 QR：title / tag / data 分開傳遞。
+        showStudentView(urlParams.get('title'), urlParams.get('tag'), compressedData);
+      } else {
+        showPortal();
+      }
+      loadCardsFromStorage();
+    };
+
+    function showToast(msg, icon = "✨") {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      document.getElementById('toast-icon').innerText = icon;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    function hideAllViews() {
+      document.getElementById('portal-view').classList.add('hidden');
+      document.getElementById('teacher-view').classList.add('hidden');
+      document.getElementById('pigeon-create-view').classList.add('hidden');
+      document.getElementById('pigeon-read-view').classList.add('hidden');
+      document.getElementById('student-view').classList.add('hidden');
+      document.getElementById('app-header').classList.add('hidden');
+    }
+
+    function showPortal() {
+      hideAllViews();
+      document.getElementById('portal-view').classList.remove('hidden');
+    }
+
+    function showLoginModal() {
+      if (sessionStorage.getItem('abrakaiTeacherAccess') === 'granted') {
+        showTeacherView();
+        return;
+      }
+      document.getElementById('teacher-access-code').value = '';
+      document.getElementById('teacher-access-error').classList.add('hidden');
+      document.getElementById('login-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('teacher-access-code').focus(), 50);
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    async function sha256(value) {
+      const bytes = new TextEncoder().encode(value);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function verifyTeacherAccess(event) {
+      event.preventDefault();
+      const input = document.getElementById('teacher-access-code');
+      const error = document.getElementById('teacher-access-error');
+      const accessHash = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+      const submittedHash = await sha256(input.value.trim());
+
+      if (submittedHash !== accessHash) {
+        error.classList.remove('hidden');
+        input.select();
+        return;
+      }
+
+      sessionStorage.setItem('abrakaiTeacherAccess', 'granted');
+      error.classList.add('hidden');
+      closeLoginModal();
+      showTeacherView();
+      showToast("講師模式已開啟！", "👑");
+    }
+
+    function showTeacherView() {
+      hideAllViews();
+      document.getElementById('app-header').classList.remove('hidden');
+      document.getElementById('header-title').innerText = "提示詞廣播站";
+      document.getElementById('header-subtitle').innerText = "講師管理與投屏控制台";
+      document.getElementById('header-badge').innerHTML = "<span>👑 講師模式</span>";
+      document.getElementById('header-badge').className = "px-3.5 py-1.5 bg-pink-100 text-pink-700 rounded-full text-sm font-black flex items-center space-x-1 shadow-xs";
+      document.getElementById('teacher-view').classList.remove('hidden');
+      renderCards();
+    }
+
+    function showPigeonPortalQR() {
+      const modal = document.getElementById('pigeon-portal-qr-modal');
+      const container = document.getElementById('pigeon-entrance-qrcode-container');
+      container.innerHTML = '';
+      const entranceUrl = `${window.location.origin}${window.location.pathname}?view=pigeon`;
+      new QRCode(container, { text: entranceUrl, width: 200, height: 200, colorDark: "#059669", colorLight: "#ffffff" });
+      modal.classList.remove('hidden');
+    }
+
+    function closePigeonPortalQRModal() {
+      document.getElementById('pigeon-portal-qr-modal').classList.add('hidden');
+    }
+
+    function showPigeonCreator() {
+      hideAllViews();
+      document.getElementById('app-header').classList.remove('hidden');
+      document.getElementById('header-title').innerText = "飛鴿傳書";
+      document.getElementById('header-subtitle').innerText = "寫下課堂留言，讓對方掃碼開啟";
+      document.getElementById('header-badge').innerHTML = "<span>💌 悄悄話專區</span>";
+      document.getElementById('header-badge').className = "px-3.5 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-black flex items-center space-x-1 shadow-xs";
+      document.getElementById('pigeon-create-view').classList.remove('hidden');
+    }
+
+    function insertEmoji(emoji) {
+      const textarea = document.getElementById('pigeon-input');
+      textarea.value += emoji;
+      textarea.focus();
+    }
+
+    function generatePigeonQR() {
+      const text = document.getElementById('pigeon-input').value.trim();
+      if (!isValidString(text)) {
+        showToast("請先輸入想說的悄悄話喔！", "⚠️");
+        return;
+      }
+
+      const compressed = LZString.compressToEncodedURIComponent(text);
+      const url = `${window.location.origin}${window.location.pathname}?mode=pigeon&data=${compressed}`;
+      if (url.length > 2400) {
+        showToast("留言太長，請精簡後再產生 QR Code。", "⚠️");
+        return;
+      }
+      const container = document.getElementById('pigeon-qrcode-container');
+      container.innerHTML = '';
+      new QRCode(container, { text: url, width: 180, height: 180, colorDark: "#059669", colorLight: "#ffffff" });
+
+      document.getElementById('pigeon-preview-text').innerText = text;
+      document.getElementById('pigeon-input').value = '';
+      document.getElementById('pigeon-privacy-status').innerText = '🙈 內容預覽已收合';
+      document.getElementById('pigeon-privacy-btn-text').innerText = '顯示原文';
+      document.getElementById('pigeon-preview-text').classList.add('hidden');
+      document.getElementById('pigeon-result-box').classList.remove('hidden');
+      showToast("悄悄話封裝成功！", "💌");
+    }
+
+    function togglePigeonTextVisibility() {
+      const preview = document.getElementById('pigeon-preview-text');
+      const statusText = document.getElementById('pigeon-privacy-status');
+      const btnText = document.getElementById('pigeon-privacy-btn-text');
+      if (preview.classList.contains('hidden')) {
+        preview.classList.remove('hidden');
+        statusText.innerText = '👀 原文已顯示';
+        btnText.innerText = '隱藏原文';
+      } else {
+        preview.classList.add('hidden');
+        statusText.innerText = '🙈 內容預覽已收合';
+        btnText.innerText = '顯示原文';
+      }
+    }
+
+    function showPigeonReader(compressedData) {
+      hideAllViews();
+      document.getElementById('pigeon-read-view').classList.remove('hidden');
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
+        if (isValidString(decompressed)) {
+          document.getElementById('pigeon-secret-content').innerText = decompressed;
+        } else {
+          document.getElementById('pigeon-secret-content').innerText = "（內容無法讀取，可能連結有遺漏或格式錯誤）";
+        }
+      } catch (err) {
+        document.getElementById('pigeon-secret-content').innerText = "（內容讀取失敗，請重新掃描）";
+      }
+    }
+
+    function unsealPigeon() {
+      document.getElementById('pigeon-sealed-box').classList.add('hidden');
+      document.getElementById('pigeon-opened-box').classList.remove('hidden');
+      showToast("悄悄話已順利拆封！", "🎁");
+    }
+
+    function copyPigeonSecret() {
+      const content = document.getElementById('pigeon-secret-content').innerText;
+      navigator.clipboard.writeText(content).then(() => {
+        showToast("悄悄話已複製到剪貼簿！", "📋");
+      });
+    }
+
+    function renderStudentPrompt(title, tag, promptText) {
+      hideAllViews();
+      document.getElementById('student-view').classList.remove('hidden');
+      document.getElementById('student-card-title').innerText = title || "提示詞";
+      document.getElementById('student-card-tag').innerText = tag || "AI 卡片";
+      document.getElementById('student-card-prompt').innerText = isValidString(promptText)
+        ? promptText
+        : "（資料內容為空或格式錯誤）";
+    }
+
+    function showPackedStudentView(packedData) {
+      try {
+        const json = LZString.decompressFromEncodedURIComponent(packedData);
+        const payload = JSON.parse(json || '{}');
+        renderStudentPrompt(payload.t, payload.g, payload.p);
+      } catch (e) {
+        renderStudentPrompt('提示詞', 'AI 卡片', '（資料解碼失敗，請重新掃描 QR Code）');
+      }
+    }
+
+    function showStudentView(title, tag, compressedData) {
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
+        renderStudentPrompt(title, tag, decompressed);
+      } catch (e) {
+        renderStudentPrompt(title, tag, '（資料解碼失敗）');
+      }
+    }
+
+    function copyStudentPrompt() {
+      const text = document.getElementById('student-card-prompt').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("提示詞已成功複製！", "📋");
+      });
+    }
+
+    function loadCardsFromStorage() {
+      const saved = localStorage.getItem('co_space_prompts');
+      if (saved) {
+        try {
+          promptCards = normalizeCards(JSON.parse(saved));
+        } catch(e) {
+          promptCards = getInitialCards();
+        }
+      } else {
+        promptCards = getInitialCards();
+        saveCardsToStorage();
+      }
+    }
+
+    function saveCardsToStorage() {
+      try {
+        localStorage.setItem('co_space_prompts', JSON.stringify(promptCards));
+      } catch (error) {
+        showToast("瀏覽器儲存空間不足，請先匯出備份。", "⚠️");
+      }
+    }
+
+    function normalizeCards(data) {
+      if (!Array.isArray(data)) return [];
+      return data.slice(0, 200).map((card, index) => {
+        const rawId = String(card && card.id ? card.id : '');
+        return {
+          id: /^[A-Za-z0-9_-]{1,80}$/.test(rawId) ? rawId : `card_${Date.now()}_${index}`,
+          tag: String(card && card.tag ? card.tag : '未分類').slice(0, 40),
+          title: String(card && card.title ? card.title : '未命名卡片').slice(0, 80),
+          prompt: String(card && card.prompt ? card.prompt : '').slice(0, 1800)
+        };
+      }).filter(card => card.prompt.trim().length > 0);
+    }
+
+    function getInitialCards() {
+      return [
+        {
+          id: '1',
+          tag: '角色定調',
+          title: '專業 AI 簡報教練',
+          prompt: '你現在是一位簡報教練。請幫我審視這份簡報大綱，並針對邏輯、視覺呈現與學員吸引力提出三個具體的優化建議。'
+        },
+        {
+          id: '2',
+          tag: '文案發想',
+          title: '爆款社群貼文生成',
+          prompt: '請以幽默活潑的語氣，為「AI 課堂互動工具」寫一篇 200 字的 Facebook 宣傳貼文，附帶 3 個吸引人的 Emoji 與 hashtag。'
+        }
+      ];
+    }
+
+    function renderCards() {
+      const grid = document.getElementById('card-grid');
+      grid.innerHTML = '';
+      if (promptCards.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-white/80 rounded-3xl border-2 border-dashed border-pink-200">
+            <p class="text-slate-400 font-bold mb-3">目前還沒有提示詞卡片喔！</p>
+            <button onclick="openCardModal()" class="bg-pink-500 text-white font-bold px-4 py-2 rounded-xl text-sm hover-jelly">
+              + 新增第一張卡片
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      promptCards.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = "bg-white border-3 border-pink-100 rounded-3xl p-5 hover:border-pink-300 candy-shadow transition-all duration-300 flex flex-col justify-between group";
+        cardEl.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-black px-3 py-1 rounded-full bg-pink-100 text-pink-700">
+                ${escapeHtml(card.tag)}
+              </span>
+              <div class="flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition">
+                <button onclick="editCard('${card.id}')" class="p-1.5 text-slate-400 hover:text-pink-500 rounded-lg hover:bg-pink-50 transition" title="編輯">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteCard('${card.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition" title="刪除">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+            <h3 class="text-lg font-black text-slate-800 mb-2 font-cute">${escapeHtml(card.title)}</h3>
+            <p class="text-sm text-slate-500 font-mono line-clamp-3 mb-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              ${escapeHtml(card.prompt)}
+            </p>
+          </div>
+          <button onclick="projectCard(${index})" class="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold rounded-2xl transition shadow-sm text-sm flex items-center justify-center space-x-1.5 hover-jelly">
+            <i class="fa-solid fa-qrcode"></i><span>大螢幕投屏 QR Code</span>
+          </button>
+        `;
+        grid.appendChild(cardEl);
+      });
+    }
+
+    function openCardModal() {
+      editingCardId = null;
+      document.getElementById('modal-title').innerText = "新增提示詞卡片";
+      document.getElementById('card-tag-input').value = '';
+      document.getElementById('card-title-input').value = '';
+      document.getElementById('card-prompt-input').value = '';
+      document.getElementById('card-modal').classList.remove('hidden');
+    }
+
+    function closeCardModal() {
+      document.getElementById('card-modal').classList.add('hidden');
+    }
+
+    function saveCard(e) {
+      e.preventDefault();
+      const tag = document.getElementById('card-tag-input').value.trim();
+      const title = document.getElementById('card-title-input').value.trim();
+      const prompt = document.getElementById('card-prompt-input').value.trim();
+
+      if (editingCardId) {
+        const card = promptCards.find(c => c.id === editingCardId);
+        if (card) {
+          card.tag = tag;
+          card.title = title;
+          card.prompt = prompt;
+        }
+      } else {
+        promptCards.push({
+          id: Date.now().toString(),
+          tag,
+          title,
+          prompt
+        });
+      }
+      saveCardsToStorage();
+      renderCards();
+      closeCardModal();
+      showToast("卡片儲存成功！", "✨");
+    }
+
+    function editCard(id) {
+      const card = promptCards.find(c => c.id === id);
+      if (!card) return;
+      editingCardId = id;
+      document.getElementById('modal-title').innerText = "編輯提示詞卡片";
+      document.getElementById('card-tag-input').value = card.tag;
+      document.getElementById('card-title-input').value = card.title;
+      document.getElementById('card-prompt-input').value = card.prompt;
+      document.getElementById('card-modal').classList.remove('hidden');
+    }
+
+    function deleteCard(id) {
+      promptCards = promptCards.filter(c => c.id !== id);
+      saveCardsToStorage();
+      renderCards();
+      showToast("卡片已刪除", "🗑️");
+    }
+
+    function projectCard(index) {
+      if (index < 0 || index >= promptCards.length) return;
+      currentProjIndex = index;
+      const card = promptCards[index];
+      document.getElementById('project-tag').innerText = card.tag;
+      document.getElementById('project-title').innerText = card.title;
+      document.getElementById('project-prompt-preview').innerText = card.prompt;
+      document.getElementById('project-prompt-preview').scrollTop = 0;
+      document.getElementById('project-counter').innerText = `${index + 1} / ${promptCards.length}`;
+
+      // V2.5.6：把標題、分類、Prompt 一起壓縮，避免中文 title/tag 經 URL encoding 後膨脹。
+      const packed = LZString.compressToEncodedURIComponent(JSON.stringify({
+        t: card.title,
+        g: card.tag,
+        p: card.prompt
+      }));
+      const url = `${window.location.origin}${window.location.pathname}?p=${packed}`;
+
+      const container = document.getElementById('project-qrcode-container');
+      container.innerHTML = '';
+
+      // QRCode.js 預設高糾錯會犧牲容量；長 Prompt 改採較低糾錯並放大 QR。
+      // 這些門檻保留安全餘裕，避免接近 QR Version 40 的理論極限。
+      let correctLevel = QRCode.CorrectLevel.H;
+      let qrSize = 210;
+      if (url.length > 1000 && url.length <= 1800) {
+        correctLevel = QRCode.CorrectLevel.M;
+        qrSize = 235;
+      } else if (url.length > 1800) {
+        correctLevel = QRCode.CorrectLevel.L;
+        qrSize = 260;
+      }
+
+      if (url.length > 2700) {
+        container.innerHTML = '<div class="w-56 h-56 flex items-center justify-center text-center p-5 text-sm font-bold text-amber-700 bg-amber-50 rounded-2xl border-2 border-amber-300">提示詞內容過長，超過單一 QR Code 安全容量。<br><br>請精簡提示詞後再投屏。</div>';
+        showToast("提示詞超過單一 QR Code 安全容量，請精簡後再投屏。", "⚠️");
+        document.getElementById('project-qr-modal').classList.remove('hidden');
+        return;
+      }
+
+      try {
+        new QRCode(container, {
+          text: url,
+          width: qrSize,
+          height: qrSize,
+          colorDark: "#db2777",
+          colorLight: "#ffffff",
+          correctLevel
+        });
+      } catch (error) {
+        container.innerHTML = '<div class="w-56 h-56 flex items-center justify-center text-center p-5 text-sm font-bold text-rose-700 bg-rose-50 rounded-2xl border-2 border-rose-300">QR Code 產生失敗。<br><br>請縮短提示詞後再試一次。</div>';
+        showToast("QR Code 容量不足，請縮短提示詞後再試。", "⚠️");
+      }
+
+      document.getElementById('project-qr-modal').classList.remove('hidden');
+    }
+
+    function toggleProjectReading() {
+      const expanded = document.getElementById('project-qr-modal').classList.toggle('co-prompt-only');
+      const button = document.getElementById('project-reading-toggle');
+      button.setAttribute('aria-pressed', String(expanded));
+      button.innerText = expanded ? '顯示 QR Code' : '提示詞滿版';
+    }
+
+    function navigateProject(step) {
+      projectCard(currentProjIndex + step);
+    }
+
+    function closeProjectQRModal() {
+      document.getElementById('project-qr-modal').classList.add('hidden');
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(promptCards, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `prompts_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("卡片庫 JSON 備份已下載", "💾");
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            promptCards = normalizeCards(imported);
+            saveCardsToStorage();
+            renderCards();
+            showToast("備份匯入成功！", "🎉");
+          }
+        } catch (err) {
+          showToast("JSON 檔案格式不正確！", "⚠");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function confirmClearAll() {
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    function executeClearAll() {
+      promptCards = [];
+      saveCardsToStorage();
+      renderCards();
+      closeConfirmModal();
+      showToast("白板卡片已全部清空", "🧹");
+    }
+
+    function escapeHtml(str) {
+      if (!isValidString(str)) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function showCopyrightModal() {
+      document.getElementById('copyright-modal').classList.remove('hidden');
+    }
+
+    function closeCopyrightModal() {
+      document.getElementById('copyright-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

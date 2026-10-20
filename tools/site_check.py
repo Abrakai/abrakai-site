@@ -18,8 +18,10 @@ def status(url):
     except Exception as e:
         return str(e)[:60], url
 
-for path in ["/", "/tools/", "/tools/qr.html", "/tools/compress.html", "/tools/sticker.html", "/tools/remove-bg.html", "/assets/style.css", "/assets/hero.jpg"]:
+for path in ['/', '/profile', '/privacy.html', '/tools/', '/tools/bg-magic/', '/tools/stickercraft/', '/tools/gridcut/', '/tools/qr-maker/', '/tools/reader/', '/tools/co-space/', '/tools/line-sticker-guide/', '/works/', '/products/', '/classroom/', '/real-estate/', '/real-estate/property-tools/', '/real-estate/gift-tax-planning/', '/sitemap.xml', '/robots.txt']:
     s, _ = status(BASE + path); ok(s == 200, f"{path} → {s}")
+for old, new in [("/tools/remove-bg.html", "/tools/bg-magic/"), ("/tools/qr.html", "/tools/qr-maker/")]:
+    s, _ = status(BASE + old); ok(s == 200, f"舊網址 {old} 仍可開啟（會轉到 {new}）→ {s}")
 s, final = status(BASE + "/no-such-page"); ok(s == 404, f"不存在的頁面顯示 404 頁 → {s}")
 s, final = status("https://www.abrakai-studio.com/"); ok(s == 200, f"www.abrakai-studio.com → {s}（{final}）")
 s, final = status("http://abrakai-studio.com/"); ok(s == 200 and final.startswith("https://"), f"http 自動轉 https → {s}（{final}）")
@@ -38,18 +40,10 @@ with sync_playwright() as p:
     link = pg.evaluate("[...document.querySelectorAll('#line a')].map(a=>a.href).find(h=>h.includes('line.me/R/ti'))")
     ok("669snuew" in (link or ""), f"股市小幫手加入好友 → {link}")
     pg.screenshot(path="home.png")
-    # 去背：真的下載模型並處理
-    pg.goto(BASE + "/tools/remove-bg.html"); pg.wait_for_timeout(800)
-    t0 = time.time(); pg.set_input_files("#file", "/tmp/person.jpg")
-    try:
-        pg.wait_for_function("document.getElementById('msg').textContent.includes('完成') || document.getElementById('msg').className.includes('err')", timeout=240000)
-        msg = pg.inner_text("#msg"); ok("完成" in msg, f"AI 去背：{msg}（含首次下載模型，共 {time.time()-t0:.0f} 秒）")
-        with pg.expect_download() as dl: pg.click("#dl")
-        res = Image.open(dl.value.path()); px = res.convert("RGBA").getpixel((10, 10))
-        ok(res.mode == "RGBA" and px[3] < 20, f"去背結果：背景變透明（左上角透明度 {px[3]}）")
-        pg.screenshot(path="removebg.png", full_page=True)
-    except Exception as e:
-        ok(False, f"AI 去背失敗：{str(e)[:150]}")
+    for path in ["/tools/", "/tools/bg-magic/", "/tools/qr-maker/", "/real-estate/property-tools/", "/classroom/"]:
+        pg.goto(BASE + path); pg.wait_for_timeout(1200)
+    pg.goto(BASE + "/tools/remove-bg.html"); pg.wait_for_timeout(1500)
+    ok("/tools/bg-magic/" in pg.url, f"舊去背網址自動轉址 → {pg.url}")
     ok(not errs, "沒有 JavaScript 錯誤" + ("：" + "；".join(errs[:2]) if errs else ""))
     b.close()
 

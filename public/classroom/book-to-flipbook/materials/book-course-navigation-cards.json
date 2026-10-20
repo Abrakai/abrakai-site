@@ -1,0 +1,38 @@
+[
+  {
+    "id": "book_step_1",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "01｜素材與公開範圍",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-1\n\n請開啟以上教材頁，展開 Step 1，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  },
+  {
+    "id": "book_step_2",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "02｜內容辨識與重點萃取",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-2\n\n請開啟以上教材頁，展開 Step 2，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  },
+  {
+    "id": "book_step_3",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "03｜網站架構與分級導讀",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-3\n\n請開啟以上教材頁，展開 Step 3，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  },
+  {
+    "id": "book_step_4",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "04｜生成 HTML 網站",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-4\n\n請開啟以上教材頁，展開 Step 4，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  },
+  {
+    "id": "book_step_5",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "05｜圖片、動畫與聲音升級",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-5\n\n請開啟以上教材頁，展開 Step 5，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  },
+  {
+    "id": "book_step_6",
+    "tag": "書籍轉網站｜課堂導覽",
+    "title": "06｜發布前除錯與修正",
+    "prompt": "https://abrakai-studio.com/classroom/book-to-flipbook/#step-6\n\n請開啟以上教材頁，展開 Step 6，按「複製 Prompt」，再貼到同一個 AI 對話。這張卡是步驟導覽，完整提示詞請從教材頁取得。"
+  }
+]

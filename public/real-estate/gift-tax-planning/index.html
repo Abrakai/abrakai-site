@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071b2e">
+  <meta name="description" content="房子先贈與給孩子真的比較省嗎？透過真實案例，理解房地合一、舊制房屋交易所得、自住優惠、現金贈與與繼承的6大路徑。">
+  <meta name="author" content="阿布拉.凱－不動產">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://abrakai-studio.com/real-estate/gift-tax-planning/">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:site_name" content="阿布拉.凱 工作室">
+  <meta property="og:title" content="房子先贈與給孩子，真的比較省嗎？｜6大房產稅務路徑">
+  <meta property="og:description" content="同一間房，只因移轉方式、持有期間、自住條件與最後資金歸屬不同，結果可能差很多。">
+  <title>房子先贈與給孩子，真的比較省嗎？｜阿布拉.凱－不動產</title>
+
+  <style>
+    :root{
+      --navy-1000:#03101b;
+      --navy-950:#051522;
+      --navy-900:#071b2e;
+      --navy-850:#0a243a;
+      --navy-800:#0d2e49;
+      --navy-700:#164564;
+      --gold:#d5aa54;
+      --gold-2:#f0cf84;
+      --gold-soft:#fff7e7;
+      --cream:#fbf8f1;
+      --paper:#ffffff;
+      --bg:#f3f6f8;
+      --ink:#142b3d;
+      --muted:#5d6f7d;
+      --line:#d9e3ea;
+      --red:#cf473e;
+      --red-soft:#fff0ee;
+      --green:#247557;
+      --green-soft:#ebf7f1;
+      --blue-soft:#eef6fa;
+      --shadow:0 20px 60px rgba(3,25,43,.12);
+      --max:1240px;
+      --radius:24px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+      font-size:18px;
+      line-height:1.76;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    a{color:inherit}
+    button,input{font:inherit}
+    img{max-width:100%}
+    .container{width:min(calc(100% - 40px),var(--max));margin:auto}
+    .skip{position:absolute;left:-9999px}
+    .skip:focus{left:18px;top:18px;z-index:999;background:#fff;padding:10px 14px;border-radius:10px}
+
+    /* Shared studio header + local topic navigation */
+    .topic-subnav{background:#f8fbfd;border-bottom:1px solid #d8e4ec;color:#29475b}
+    .topic-subnav .inner{min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;overflow-x:auto;padding:7px 0}
+    .topic-subnav a{white-space:nowrap;text-decoration:none;padding:7px 10px;border-radius:10px;font-size:14px;font-weight:900;color:#35556a}
+    .topic-subnav a:hover,.topic-subnav a:focus-visible{background:#eaf5fb;color:#0b5f96;outline:none}
+
+    /* Legacy header styles retained for backward compatibility */
+    .topbar{
+      position:sticky;top:0;z-index:80;
+      background:rgba(3,16,27,.92);
+      border-bottom:1px solid rgba(255,255,255,.09);
+      backdrop-filter:blur(18px);
+    }
+    .topbar .inner{height:82px;display:flex;align-items:center;justify-content:space-between;gap:26px}
+    .brand{display:flex;align-items:center;gap:14px;color:#fff;text-decoration:none;min-width:0}
+    .brand-logo{
+      width:58px;height:58px;object-fit:contain;flex:0 0 auto;
+      filter:drop-shadow(0 7px 16px rgba(0,0,0,.28));
+    }
+    .brand-copy{min-width:0}
+    .brand-copy strong{display:block;font-size:18px;line-height:1.15}
+    .brand-copy small{display:block;color:#b8c7d4;font-size:13px;letter-spacing:.06em;margin-top:4px}
+    .nav{display:flex;gap:22px;align-items:center}
+    .nav a{color:#dce7ef;text-decoration:none;font-size:16px;font-weight:800}
+    .nav .cta{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:#071b2e;padding:10px 16px;border-radius:999px}
+
+    /* Generic */
+    section{padding:88px 0}
+    .section-head{max-width:880px;margin:0 auto 42px;text-align:center}
+    .kicker{font-size:14px;font-weight:950;letter-spacing:.14em;color:#946f2a;text-transform:uppercase}
+    h1,h2,h3{letter-spacing:-.025em}
+    h1{font-size:clamp(48px,5.8vw,78px);line-height:1.08;margin:18px 0 22px}
+    h2{font-size:clamp(34px,4.1vw,52px);line-height:1.18;margin:10px 0 16px}
+    h3{font-size:24px;line-height:1.35}
+    .section-head p{font-size:20px;color:var(--muted);margin:0}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      min-height:50px;padding:12px 20px;border-radius:14px;
+      text-decoration:none;font-weight:950;border:0;cursor:pointer;
+      transition:.2s transform,.2s box-shadow;
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn-gold{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:#071b2e;box-shadow:0 12px 30px rgba(213,170,84,.22)}
+    .btn-outline{color:#fff;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.06)}
+    .fine{font-size:14px;color:#748694;line-height:1.65}
+
+    /* Hero */
+    .hero{
+      position:relative;overflow:hidden;color:#fff;
+      background:
+        radial-gradient(circle at 77% 21%,rgba(240,207,132,.16),transparent 31%),
+        radial-gradient(circle at 12% 82%,rgba(54,135,186,.18),transparent 40%),
+        linear-gradient(145deg,var(--navy-1000),#08243b 58%,#0d3a58);
+    }
+    .hero:before{
+      content:"";position:absolute;inset:0;pointer-events:none;opacity:.13;
+      background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);
+      background-size:48px 48px;
+      mask-image:linear-gradient(to bottom,#000,transparent 86%);
+    }
+    .hero-grid{
+      min-height:690px;
+      display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);
+      align-items:center;
+      gap:76px;
+      padding:74px 0 68px;
+      position:relative;
+    }
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid rgba(240,207,132,.34);
+      background:rgba(213,170,84,.10);
+      padding:8px 13px;border-radius:999px;
+      color:var(--gold-2);font-size:14px;font-weight:900;letter-spacing:.06em;
+    }
+    h1 em{font-style:normal;color:var(--gold-2)}
+    .lead{font-size:23px;color:#dbe7ef;max-width:760px;margin:0 0 30px}
+    .hero-pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+    .hero-pills span{
+      font-size:15px;padding:8px 12px;border-radius:12px;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)
+    }
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+    .hero-visual{
+      min-height:590px;
+      position:relative;
+      display:grid;
+      grid-template-rows:1fr auto;
+      align-items:end;
+      gap:16px;
+    }
+    .hero-person-card{
+      min-height:560px;
+      background:linear-gradient(180deg,#ffffff,#fafafa);
+      border:1px solid rgba(255,255,255,.30);
+      border-radius:30px;
+      padding:26px 30px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:visible;
+      box-shadow:0 30px 70px rgba(0,0,0,.28);
+    }
+    .hero-character{
+      display:block;
+      width:100%;
+      height:auto;
+      max-height:520px;
+      object-fit:contain;
+      object-position:center center;
+    }
+    .hero-caption{
+      display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+      color:#d9e5ed;
+      font-size:15px;
+    }
+    .hero-caption strong{display:block;color:#fff;font-size:18px}
+    .hero-caption span{color:var(--gold-2);font-weight:900;white-space:nowrap}
+
+    /* Orientation / Reading map */
+    .reading-map{background:#fff;padding:48px 0}
+    .reading-map-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .reading-step{
+      display:grid;grid-template-columns:46px 1fr;gap:12px;align-items:start;
+      padding:18px;border:1px solid var(--line);border-radius:18px;background:#fbfcfd;
+    }
+    .reading-step .n{width:42px;height:42px;border-radius:14px;background:var(--navy-900);color:var(--gold-2);display:grid;place-items:center;font-weight:1000}
+    .reading-step strong{display:block;font-size:18px}
+    .reading-step span{display:block;color:var(--muted);font-size:15px;line-height:1.55;margin-top:3px}
+
+    /* Case */
+    .case{background:#f7f9fb}
+    .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .time-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 10px 34px rgba(8,39,60,.05)}
+    .time-no{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--navy-850);color:#fff;font-weight:1000;margin-bottom:18px}
+    .time-card strong{display:block;font-size:21px}
+    .time-card b{display:block;color:#a33b34;font-size:28px;margin-top:4px}
+    .time-card p{color:var(--muted);font-size:17px;margin:7px 0 0}
+    .shock{
+      margin-top:24px;border-radius:24px;padding:28px 30px;
+      background:linear-gradient(135deg,#fff1ee,#fff8ee);
+      border:1px solid #f0c3bc;
+      display:flex;align-items:center;justify-content:space-between;gap:30px;
+    }
+    .shock h3{margin:0 0 4px;font-size:27px}
+    .shock p{margin:0;color:#705f5b;font-size:18px}
+    .shock-amount{text-align:right;white-space:nowrap}
+    .shock-amount small{display:block;color:#936057;font-weight:850}
+    .shock-amount strong{display:block;color:var(--red);font-size:54px;line-height:1.05}
+
+    /* Education: 4 factors */
+    .learn{background:#fff}
+    .factor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .factor{
+      border:1px solid var(--line);border-radius:22px;padding:24px;background:#fff;
+      box-shadow:0 10px 30px rgba(7,35,54,.05);
+    }
+    .factor .icon{font-size:29px;margin-bottom:12px}
+    .factor h3{margin:0 0 8px;font-size:22px}
+    .factor p{margin:0;color:var(--muted);font-size:17px}
+    .principle{
+      margin-top:24px;padding:22px 24px;border-radius:20px;
+      background:var(--navy-900);color:#fff;
+      display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;
+    }
+    .principle strong{font-size:30px;color:var(--gold-2)}
+    .principle p{margin:0;color:#d1dee7}
+
+    /* Current vs retrospective */
+    .fork{background:linear-gradient(#eef4f7,#f7f9fb)}
+    .fork-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .fork-card{
+      background:#fff;border:1px solid var(--line);border-radius:24px;padding:28px;
+      box-shadow:0 12px 34px rgba(8,39,60,.06);
+    }
+    .fork-card.actual{border-top:5px solid var(--gold)}
+    .fork-card.review{border-top:5px solid #6f8da2}
+    .fork-label{font-size:14px;font-weight:950;letter-spacing:.08em;color:#8a6929}
+    .fork-card h3{font-size:28px;margin:8px 0 10px}
+    .fork-card p{color:var(--muted);margin:0 0 12px}
+    .fork-card ul{margin:0;padding-left:21px}
+    .fork-card li{margin:8px 0}
+    .path-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+    .chip{padding:8px 11px;border-radius:11px;background:#eff4f7;font-weight:900;font-size:15px}
+    .actual .chip{background:#fff5dd;border:1px solid #eed49b}
+
+    /* Routes */
+    .routes{background:#fff}
+    .route-group{margin-top:34px}
+    .group-head{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:14px}
+    .group-head h3{margin:0;font-size:27px}
+    .group-head p{margin:0;color:var(--muted);font-size:16px;text-align:right}
+    .route-list{display:grid;gap:13px}
+    details.route{
+      border:1px solid var(--line);border-radius:19px;background:#fff;overflow:hidden;
+      box-shadow:0 8px 24px rgba(7,36,57,.04);
+    }
+    details.route[open]{border-color:#caa34d;box-shadow:0 14px 38px rgba(7,36,57,.08)}
+    .route summary{
+      list-style:none;cursor:pointer;padding:20px 22px;
+      display:grid;grid-template-columns:58px minmax(0,1fr) auto 26px;gap:16px;align-items:center;
+    }
+    .route summary::-webkit-details-marker{display:none}
+    .route-letter{
+      width:50px;height:50px;border-radius:15px;display:grid;place-items:center;
+      background:var(--navy-900);color:var(--gold-2);font-weight:1000;font-size:23px;
+    }
+    .route-title strong{display:block;font-size:22px}
+    .route-title span{display:block;color:var(--muted);font-size:16px;margin-top:2px}
+    .rate{font-weight:1000;color:var(--red);font-size:19px;text-align:right}
+    .rate.green{color:var(--green)}
+    .chev{font-size:22px;color:#8495a2;transition:.18s}
+    details[open] .chev{transform:rotate(180deg)}
+    .route-body{
+      border-top:1px solid var(--line);padding:21px;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:#fafcfd;
+    }
+    .mini{background:#fff;border:1px solid #e2e9ee;border-radius:15px;padding:16px}
+    .mini b{display:block;font-size:14px;color:#896825;letter-spacing:.03em}
+    .mini p{margin:5px 0 0;color:#4d6170;font-size:16px;line-height:1.65}
+
+    /* Compare */
+    .compare{background:var(--navy-950);color:#fff}
+    .compare .section-head p{color:#b9c8d3}
+    .compare-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:28px}
+    .bars,.insight{background:#0a2942;border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:28px}
+    .bar-row{margin-bottom:24px}
+    .bar-top{display:flex;justify-content:space-between;gap:16px;margin-bottom:9px;font-weight:950;font-size:18px}
+    .bar-top span:last-child{color:var(--gold-2)}
+    .track{height:17px;border-radius:999px;background:#173e5b;overflow:hidden}
+    .fill{height:100%;border-radius:999px}
+    .fill.a{width:100%;background:linear-gradient(90deg,#d85247,#f09b70)}
+    .fill.b{width:57%;background:linear-gradient(90deg,#c59b48,#f0cf84)}
+    .fill.c{width:9%;background:linear-gradient(90deg,#2f8966,#72c49d)}
+    .insight h3{font-size:27px;margin:0 0 14px}
+    .insight ul{margin:0;padding-left:22px;color:#d1dde6}
+    .insight li{margin:10px 0}
+
+    /* Quick guide */
+    .guide{background:#f5f8fa}
+    .quiz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .q-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:23px}
+    .q-card legend{font-size:20px;font-weight:1000;padding:0;margin-bottom:14px}
+    .choices{display:grid;gap:10px}
+    .choice{position:relative}
+    .choice input{position:absolute;opacity:0}
+    .choice label{display:block;padding:12px 14px;border:1px solid #dfe7ec;border-radius:13px;background:#fbfcfd;font-weight:850;cursor:pointer}
+    .choice input:checked+label{background:#fff6e5;border-color:var(--gold);box-shadow:0 0 0 3px rgba(213,170,84,.13)}
+    .quiz-result{display:none;margin-top:20px;background:var(--navy-900);color:#fff;border-radius:22px;padding:23px}
+    .quiz-result.show{display:block}
+    .result-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .result-tag{padding:8px 11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.08);border-radius:10px;font-weight:900}
+
+    /* Net cash */
+    .cash{background:#fff}
+    .flow{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}
+    .flow div{
+      position:relative;min-height:105px;display:grid;place-items:center;text-align:center;
+      background:var(--blue-soft);border:1px solid #d8e8f0;border-radius:17px;padding:14px;font-weight:950;
+    }
+    .flow div:not(:last-child):after{
+      content:"→";position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:#9aaab7;font-size:21px;z-index:2;
+    }
+    .flow .last{background:#fff4d9;border-color:#ecd093;color:#6e5019}
+    .system-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px}
+    .system-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px}
+    .system-card h3{margin:0 0 12px;font-size:26px}
+    .system-card p{margin:0 0 12px;color:var(--muted)}
+    .system-card li{margin:8px 0}
+
+    /* Adviser */
+    .adviser{background:linear-gradient(145deg,#fffaf0,#f4f8fa)}
+    .adviser-box{
+      display:grid;grid-template-columns:160px 1fr;gap:28px;align-items:center;
+      background:#fff;border:1px solid #ead8ad;border-radius:28px;padding:26px 30px;box-shadow:var(--shadow);
+    }
+    .adviser-character{width:100%;height:auto;max-height:290px;display:block;margin:auto;object-fit:contain;object-position:center}
+    .adviser h2{margin:0 0 8px;font-size:34px}
+    .adviser p{margin:0;color:var(--muted);font-size:19px}
+
+    /* CTA */
+    .cta-section{background:linear-gradient(145deg,var(--navy-1000),#0b3452);color:#fff}
+    .cta-box{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:48px;align-items:center}
+    .cta-section h2{margin-top:14px}
+    .cta-section p{font-size:19px;color:#ccdae4}
+    .steps{display:grid;gap:11px;margin:20px 0}
+    .steps div{display:flex;gap:12px;align-items:flex-start}
+    .num{flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:var(--gold);color:#071b2e;display:grid;place-items:center;font-weight:1000}
+    .keyword{display:inline-flex;align-items:center;gap:12px;background:#fff;color:var(--navy-900);padding:11px 15px;border-radius:13px;font-weight:1000;font-size:20px}
+    .keyword button{border:0;background:#edf3f7;border-radius:9px;padding:7px 10px;cursor:pointer;font-weight:900;color:#365268}
+    .cta-logo{width:230px;height:230px;object-fit:contain;filter:drop-shadow(0 20px 36px rgba(0,0,0,.32))}
+
+    .cta-visual{display:grid;gap:16px;align-items:center;justify-items:center}
+    .cta-person-frame{
+      width:100%;
+      max-width:320px;
+      min-height:380px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#fff;
+      border-radius:26px;
+      padding:20px;
+      overflow:visible;
+      box-shadow:0 24px 54px rgba(0,0,0,.25);
+    }
+    .cta-person{
+      display:block;
+      width:100%;
+      height:auto;
+      max-height:440px;
+      object-fit:contain;
+      object-position:center;
+    }
+    .cta-brand-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      width:100%;
+      max-width:320px;
+      padding:12px 14px;
+      border:1px solid rgba(255,255,255,.13);
+      border-radius:16px;
+      background:rgba(255,255,255,.07);
+      text-align:left;
+    }
+    .cta-mini-logo{width:62px;height:62px;object-fit:contain;flex:0 0 auto}
+    .cta-brand-row strong{display:block;color:#fff;font-size:17px}
+    .cta-brand-row small{display:block;color:var(--gold-2);font-size:13px;margin-top:2px}
+
+    .sources{background:#071b2e;color:#9eb0be;padding:28px 0;font-size:14px}
+    .sources a{color:#d1dee8}
+    footer{background:#03101b;color:#9fb0bd;padding:24px 0;font-size:15px}
+    .foot{display:flex;justify-content:space-between;gap:20px;align-items:center}
+    .foot a{color:#dce7ef;text-decoration:none}
+
+    /* Desktop readability */
+    @media(min-width:1100px){
+      body{font-size:19px}
+      .container{width:min(calc(100% - 64px),var(--max))}
+      .nav a{font-size:17px}
+      .time-card p,.factor p{font-size:18px}
+      .mini p{font-size:17px}
+      .route-title strong{font-size:23px}
+      .route-title span{font-size:17px}
+      .choice label{font-size:18px}
+    }
+
+    /* Tablet */
+    @media(max-width:980px){
+      .nav a:not(.cta){display:none}
+      .hero-grid{grid-template-columns:1fr;min-height:auto;gap:30px;padding:62px 0 54px}
+      .hero-visual{min-height:480px;max-width:520px;width:100%;margin:auto}
+      .hero-character{height:460px}
+      .reading-map-grid,.factor-grid{grid-template-columns:1fr 1fr}
+      .timeline{grid-template-columns:1fr 1fr}
+      .fork-grid,.compare-grid,.system-grid,.cta-box{grid-template-columns:1fr}
+      .route-body{grid-template-columns:1fr 1fr}
+      .quiz-grid{grid-template-columns:1fr}
+      .cta-visual{max-width:360px;margin:auto}
+    }
+
+    /* Mobile */
+    @media(max-width:620px){
+      body{font-size:16px;line-height:1.72}
+      .container{width:min(calc(100% - 24px),var(--max))}
+      .topbar .inner{height:68px}
+      .brand-logo{width:48px;height:48px}
+      .brand-copy strong{font-size:16px}.brand-copy small{display:none}
+      .nav .cta{font-size:14px;padding:8px 12px}
+      section{padding:62px 0}
+      h1{font-size:42px}
+      h2{font-size:32px}
+      .section-head p{font-size:17px}
+      .lead{font-size:18px}
+      .hero-actions .btn{width:100%}
+      .hero-visual{min-height:390px;padding:0}
+      .hero-character{height:380px}
+      .reading-map-grid,.factor-grid,.timeline{grid-template-columns:1fr}
+      .shock{flex-direction:column;align-items:flex-start}
+      .shock-amount{text-align:left}
+      .shock-amount strong{font-size:45px}
+      .principle{grid-template-columns:1fr}.principle strong{font-size:28px}
+      .fork-grid{grid-template-columns:1fr}
+      .group-head{display:block}.group-head p{text-align:left;margin-top:5px}
+      .route summary{grid-template-columns:48px 1fr 22px;gap:11px;padding:17px}
+      .rate{grid-column:2;text-align:left;font-size:17px}
+      .chev{grid-column:3;grid-row:1 / span 2}
+      .route-title strong{font-size:18px}
+      .route-title span{font-size:14px}
+      .route-body{grid-template-columns:1fr}
+      .bar-top{display:block;font-size:16px}.bar-top span{display:block}
+      .flow{grid-template-columns:1fr}
+      .flow div:not(:last-child):after{content:"↓";right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%)}
+      .system-grid{grid-template-columns:1fr}
+      .adviser-box{grid-template-columns:118px 1fr;padding:18px;gap:18px}
+      .adviser-character{width:100%;height:auto;max-height:190px;object-fit:contain}
+      .adviser h2{font-size:25px}.adviser p{font-size:16px}
+
+      .cta-person-frame{min-height:310px;max-width:290px;padding:16px}
+      .cta-person{max-height:330px}
+      .cta-brand-row{max-width:290px}
+
+      .foot{display:block}.foot span{display:block;margin-bottom:6px}
+    }
+  </style>
+<link rel="stylesheet" href="/assets/css/site-shell.css?v=2.7.0">
+<link rel="stylesheet" href="/assets/css/site-bright.css?v=2.7.0">
+<script src="/assets/js/site-navigation.js?v=2.7.4" defer></script>
+</head>
+
+<body data-ak-page="tax">
+<a class="skip" href="#main">跳至主要內容</a>
+
+<header class="ak-site-shell"><div class="ak-site-shell__inner"><a class="ak-site-brand" href="/" aria-label="阿布拉.凱工作室首頁"><img src="/assets/images/abrakai-studio-logo.webp" alt="阿布拉.凱工作室 Logo" width="46" height="46"><span class="ak-site-brand__text"><strong>阿布拉.凱 工作室</strong><small>ABRA-KAI STUDIO</small></span></a><button class="ak-menu-toggle" type="button" aria-controls="ak-site-navigation" aria-expanded="false" aria-label="開啟導覽選單">選單 <span aria-hidden="true">☰</span></button><nav id="ak-site-navigation" class="ak-site-nav" aria-label="全站導覽"><a href="/">首頁</a><a href="/#services">服務方案</a><a href="/classroom/">AI 小教室</a><a href="/tools/">免費工具</a><a href="/products/">產品介紹</a><a href="/works/">作品案例</a><a href="/real-estate/" class="ak-site-nav__accent" aria-current="location">房產專區</a><a href="/#collaboration">課程合作</a><a href="https://line.me/R/ti/p/%40214plfov" class="ak-site-nav__cta" target="_blank" rel="noopener noreferrer">加官方 LINE</a></nav></div></header>
+<nav class="topic-subnav" aria-label="房產稅務專題導覽"><div class="container inner"><a href="#case">案例</a><a href="#learn">先懂4件事</a><a href="#routes">6大路徑</a><a href="#compare">比較</a><a href="#get-report">索取完整報告</a></div></nav>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">真實案例整理・房產稅務決策專題</span>
+        <h1>房子先贈與給孩子，<br><em>真的比較省嗎？</em></h1>
+        <p class="lead">這一頁不是要告訴您「贈與一定好」或「一定不好」，而是教您怎麼判斷：同一間房，因為取得時間、出售時間、自住條件與最後資金歸屬不同，結果可能差很多。</p>
+        <div class="hero-pills">
+          <span>贈與</span><span>房地合一</span><span>舊制房屋交易所得</span><span>自住優惠</span><span>現金贈與</span><span>繼承</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-gold" href="#reading-map">先看這頁怎麼讀 ↓</a>
+          <a class="btn btn-outline" href="#get-report">直接看索取完整報告方式</a>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="阿布拉.凱 3D人物形象">
+        <div class="hero-person-card">
+          <img class="hero-character" src="assets/abrakai-hero-full.png" alt="阿布拉.凱 3D公仔完整正面站姿，雙手抱胸">
+        </div>
+        <div class="hero-caption">
+          <div><strong>阿布拉.凱</strong>房產規劃・稅務先行</div>
+          <span>先把路徑算清楚，再做決定</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading-map" id="reading-map">
+    <div class="container">
+      <div class="reading-map-grid">
+        <div class="reading-step"><span class="n">1</span><div><strong>先看案例發生什麼</strong><span>104買進、111贈與、115想賣。</span></div></div>
+        <div class="reading-step"><span class="n">2</span><div><strong>先懂4個判斷關鍵</strong><span>取得、移轉、時間、自住與資金目的。</span></div></div>
+        <div class="reading-step"><span class="n">3</span><div><strong>再看6條可能路徑</strong><span>哪些是現在還能選，哪些只是事前比較。</span></div></div>
+        <div class="reading-step"><span class="n">4</span><div><strong>最後才比較淨得</strong><span>不是只看哪個稅率最低，而是女兒最後拿多少。</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="case" id="case">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 1｜CASE STORY</span>
+        <h2>先把案例時間線看懂</h2>
+        <p>如果時間線沒看懂，後面的稅率比較很容易混在一起。</p>
+      </div>
+
+      <div class="timeline">
+        <article class="time-card">
+          <span class="time-no">1</span>
+          <strong>104年06月｜父親買房</strong>
+          <b>1,000萬</b>
+          <p>原貸款600萬、仲介20萬、契稅5萬。</p>
+        </article>
+        <article class="time-card">
+          <span class="time-no">2</span>
+          <strong>111年06月｜贈與女兒</strong>
+          <b>房地現值500萬</b>
+          <p>房屋評定400萬＋土地公告100萬；貸款餘額約450萬。</p>
+        </article>
+        <article class="time-card">
+          <span class="time-no">3</span>
+          <strong>持有期間｜女兒修繕</strong>
+          <b>約100萬</b>
+          <p>能否列入成本仍要看修繕性質、發票、收據及付款證明。</p>
+        </article>
+        <article class="time-card">
+          <span class="time-no">4</span>
+          <strong>115年09月｜若出售</strong>
+          <b>1,400萬</b>
+          <p>出售仲介費56萬；房屋評定380萬、土地公告220萬。</p>
+        </article>
+      </div>
+
+      <div class="shock">
+        <div>
+          <h3>真正的衝擊：受贈後的取得成本，不是直接拿爸爸1,000萬買價來算</h3>
+          <p>女兒111年受贈後，到115年出售約4年多；依現行房地合一規則，可能落在「超過2年、未逾5年」35%的區間。</p>
+        </div>
+        <div class="shock-amount">
+          <small>依本案例目前條件粗估</small>
+          <strong>185～199萬</strong>
+          <small>房地合一稅｜非正式核定稅額</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="learn" id="learn">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 2｜LEARN THE LOGIC</span>
+        <h2>先懂這4件事，就不容易被「贈與好不好」帶著走</h2>
+        <p>稅務規劃真正要看的，是一連串條件，而不是單一名詞。</p>
+      </div>
+
+      <div class="factor-grid">
+        <article class="factor">
+          <div class="icon">📅</div>
+          <h3>① 原始取得時間</h3>
+          <p>父親是104年取得，和111年才受贈取得的女兒，所得稅制度可能完全不同。</p>
+        </article>
+        <article class="factor">
+          <div class="icon">🎁</div>
+          <h3>② 怎麼移轉</h3>
+          <p>贈與、父母自己出售、分年給現金或未來繼承，會碰到不同稅目與成本認定。</p>
+        </article>
+        <article class="factor">
+          <div class="icon">⏳</div>
+          <h3>③ 什麼時候賣</h3>
+          <p>女兒短期賣、持有超過5年、符合自住滿6年，房地合一稅率可能差非常多。</p>
+        </article>
+        <article class="factor">
+          <div class="icon">🎯</div>
+          <h3>④ 最終目標是什麼</h3>
+          <p>要把「房子」給女兒，還是把「售屋現金」給女兒？這會直接改變最佳路徑。</p>
+        </article>
+      </div>
+
+      <div class="principle">
+        <strong>核心觀念</strong>
+        <p>真正專業的比較，不是「哪個稅率最低」，而是把所有稅費、房貸與資金移轉都算完，最後看女兒真正淨得多少。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="fork">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 3｜FIND YOUR STARTING POINT</span>
+        <h2>這個案例最容易混亂的地方：哪些路現在還能選？</h2>
+        <p>把「已經贈與完成」與「如果當初還沒贈與」分開看，思路就會清楚很多。</p>
+      </div>
+
+      <div class="fork-grid">
+        <article class="fork-card actual">
+          <div class="fork-label">本案例現在的真實狀況</div>
+          <h3>111年贈與已經完成</h3>
+          <p>因此現在真正能做決策的，主要是女兒「何時出售」與「是否符合自住優惠」。</p>
+          <ul>
+            <li>現在就賣：可能35%</li>
+            <li>持有超過5年再賣：可能20%</li>
+            <li>真正自住滿6年且符合條件：400萬免稅＋超過部分10%</li>
+          </ul>
+          <div class="path-chips"><span class="chip">A｜現在賣</span><span class="chip">B｜滿5年</span><span class="chip">C｜6年自住</span></div>
+        </article>
+
+        <article class="fork-card review">
+          <div class="fork-label">事前規劃／其他家庭可比較</div>
+          <h3>如果111年當初還沒有贈與</h3>
+          <p>這時才有資格比較「父親保留104年舊制資格自己賣」或「未來繼承」等路徑。</p>
+          <ul>
+            <li>父親出售後一次把現金給女兒</li>
+            <li>父親出售後分年度贈與</li>
+            <li>保留房地，未來由女兒繼承</li>
+          </ul>
+          <div class="path-chips"><span class="chip">D｜父親賣＋一次給</span><span class="chip">E｜分年給</span><span class="chip">F｜繼承</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="routes" id="routes">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 4｜6 PATHS</span>
+        <h2>再來才看6條路，各自會發生什麼</h2>
+        <p>先看自己屬於哪一組，再展開細節，避免一次塞進6種稅制。</p>
+      </div>
+
+      <div class="route-group">
+        <div class="group-head">
+          <h3>第一組｜房子已經贈與給女兒</h3>
+          <p>本案例目前真正可以決策的3條路</p>
+        </div>
+        <div class="route-list">
+
+          <details class="route" id="route-a">
+            <summary>
+              <span class="route-letter">A</span>
+              <span class="route-title"><strong>115年近期出售</strong><span>女兒持有約4年多</span></span>
+              <span class="rate">可能35%</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>主要稅負</b><p>房地合一稅＋出售時土地增值稅；111年贈與時已發生契稅與土地增值稅。</p></div>
+              <div class="mini"><b>優勢</b><p>可以立即出售，售屋款直接屬女兒，不需要第二次現金贈與。</p></div>
+              <div class="mini"><b>風險</b><p>持有期間短、受贈成本認定較低，房地合一稅可能相對重。</p></div>
+              <div class="mini"><b>案例示意</b><p>依目前條件粗估房地合一約185～199萬元。</p></div>
+            </div>
+          </details>
+
+          <details class="route" id="route-b">
+            <summary>
+              <span class="route-letter">B</span>
+              <span class="route-title"><strong>持有超過5年後再出售</strong><span>不改所有權，只改變交易時間</span></span>
+              <span class="rate">可能20%</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>主要稅負</b><p>超過5年未逾10年，依現行規定房地合一稅率為20%；另有土地增值稅。</p></div>
+              <div class="mini"><b>優勢</b><p>從35%降到20%，不需要另外再做一次產權移轉。</p></div>
+              <div class="mini"><b>風險</b><p>等待期間要承擔房價、利息、持有成本及市場變化。</p></div>
+              <div class="mini"><b>案例示意</b><p>若其他條件近似，粗估房地合一約105～113萬元。</p></div>
+            </div>
+          </details>
+
+          <details class="route" id="route-c">
+            <summary>
+              <span class="route-letter">C</span>
+              <span class="route-title"><strong>真正自住滿6年且符合優惠再出售</strong><span>不是只「持有6年」，而是要符合完整自住條件</span></span>
+              <span class="rate green">400萬免稅＋10%</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>主要稅負</b><p>符合自住房地優惠者，課稅所得400萬元以下免稅，超過部分10%。</p></div>
+              <div class="mini"><b>優勢</b><p>若家庭本來就有長期自住需求，可能形成非常顯著的合法節稅效果。</p></div>
+              <div class="mini"><b>條件重點</b><p>需檢查設籍、本人/配偶/未成年子女實際居住、交易前6年無出租及營業使用等條件。</p></div>
+              <div class="mini"><b>案例示意</b><p>沿用相近課稅所得條件，房地合一可能約13～17萬元。</p></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="route-group">
+        <div class="group-head">
+          <h3>第二組｜如果當初還沒有贈與</h3>
+          <p>用來理解「事前規劃」為什麼重要</p>
+        </div>
+        <div class="route-list">
+
+          <details class="route" id="route-d">
+            <summary>
+              <span class="route-letter">D</span>
+              <span class="route-title"><strong>父親保留房屋，自己出售後一次給女兒現金</strong><span>父親104年取得，原則上保留舊制判斷</span></span>
+              <span class="rate">舊制＋現金贈與</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>父親出售</b><p>土地交易所得不納綜所稅；房屋財產交易所得併入父親綜合所得；另有土地增值稅。</p></div>
+              <div class="mini"><b>優勢</b><p>父親104年取得的舊制資格可能具有價值，不會直接套女兒35%房地合一。</p></div>
+              <div class="mini"><b>第二層問題</b><p>售屋款先屬父親，若要立即全部交給女兒，還要考慮現金贈與稅。</p></div>
+              <div class="mini"><b>判斷方式</b><p>一定要把父親出售稅負＋現金再贈與一起算，不能只看第一層。</p></div>
+            </div>
+          </details>
+
+          <details class="route" id="route-e">
+            <summary>
+              <span class="route-letter">E</span>
+              <span class="route-title"><strong>父親出售後，分年度贈與現金</strong><span>不要求女兒一次拿到全部資金</span></span>
+              <span class="rate green">115年每人每年244萬免稅額</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>主要邏輯</b><p>父親出售稅負同D；現金可依法利用每位贈與人每年244萬元免稅額分年規劃。</p></div>
+              <div class="mini"><b>優勢</b><p>若不急著一次移轉全部現金，贈與稅可能大幅降低。</p></div>
+              <div class="mini"><b>注意</b><p>金流必須真實清楚；年度免稅額屬贈與人，不是每位受贈人各有244萬元。</p></div>
+              <div class="mini"><b>適合情況</b><p>目標是讓女兒最終取得資金，但不要求出售當天一次全部到位。</p></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="route-group">
+        <div class="group-head">
+          <h3>第三組｜如果目標是長期傳承</h3>
+          <p>不要把「現在賣房」與「未來繼承」混成同一題</p>
+        </div>
+        <div class="route-list">
+          <details class="route" id="route-f">
+            <summary>
+              <span class="route-letter">F</span>
+              <span class="route-title"><strong>不生前移轉，未來由女兒繼承</strong><span>適合長期傳承議題，不是現在急著拿售屋現金</span></span>
+              <span class="rate green">傳承型路徑</span><span class="chev">⌄</span>
+            </summary>
+            <div class="route-body">
+              <div class="mini"><b>繼承當下</b><p>繼承房屋不課契稅，繼承土地不課土地增值稅；遺產稅則看父親全部遺產淨額。</p></div>
+              <div class="mini"><b>重要優勢</b><p>被繼承人在104年12月31日前取得的房地，繼承人日後出售原則仍可依舊制判斷。</p></div>
+              <div class="mini"><b>限制</b><p>如果家庭真正目標是「現在就把房子賣掉、把現金給女兒」，這條路就不符合時間需求。</p></div>
+              <div class="mini"><b>教育重點</b><p>贈與與繼承看似都是「把房子給孩子」，但日後所得稅制度可能完全不同。</p></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="compare" id="compare">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker" style="color:#f0cf84">STEP 5｜COMPARE</span>
+        <h2>先只看「女兒已受贈後」的3個出售時點</h2>
+        <p>這張圖只比較房地合一稅情境，目的是看懂時間與自住條件的影響，不是完整總稅負。</p>
+      </div>
+
+      <div class="compare-grid">
+        <div class="bars">
+          <div class="bar-row">
+            <div class="bar-top"><span>115年近期出售｜可能35%</span><span>約185～199萬</span></div>
+            <div class="track"><div class="fill a"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-top"><span>持有超過5年｜可能20%</span><span>約105～113萬</span></div>
+            <div class="track"><div class="fill b"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-top"><span>符合自住滿6年優惠</span><span>約13～17萬</span></div>
+            <div class="track"><div class="fill c"></div></div>
+          </div>
+          <p class="fine">以上沿用相近售價與成本條件做教育性比較。未來CPI、土地現值、實際費用與法規均可能改變。</p>
+        </div>
+
+        <aside class="insight">
+          <h3>這裡真正要學到的是：</h3>
+          <ul>
+            <li>同樣「已經贈與」，出售時間不同，稅率可能不同。</li>
+            <li>「持有滿6年」不等於一定有自住優惠，還要符合完整條件。</li>
+            <li>如果111年贈與早已完成，父親自己賣只能作為事前比較，不能回頭重選。</li>
+            <li>所以規劃要在做產權決定以前就先算。</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide" id="guide">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 6｜MY SITUATION</span>
+        <h2>看懂邏輯後，再用3題找到自己該先比較哪幾條路</h2>
+        <p>這只是「閱讀導航」，不會替您自動判定正式稅額。</p>
+      </div>
+
+      <form id="guideForm">
+        <div class="quiz-grid">
+          <fieldset class="q-card">
+            <legend>① 最後真正想給孩子的是？</legend>
+            <div class="choices">
+              <div class="choice"><input id="goal-house" name="goal" value="house" type="radio"><label for="goal-house">房子本身</label></div>
+              <div class="choice"><input id="goal-cash" name="goal" value="cash" type="radio"><label for="goal-cash">售屋後的現金</label></div>
+              <div class="choice"><input id="goal-legacy" name="goal" value="legacy" type="radio"><label for="goal-legacy">長期資產傳承</label></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="q-card">
+            <legend>② 預計什麼時候出售？</legend>
+            <div class="choices">
+              <div class="choice"><input id="time-now" name="time" value="now" type="radio"><label for="time-now">近期就可能出售</label></div>
+              <div class="choice"><input id="time-five" name="time" value="five" type="radio"><label for="time-five">可以持有超過5年</label></div>
+              <div class="choice"><input id="time-six" name="time" value="six" type="radio"><label for="time-six">可以持有6年以上</label></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="q-card">
+            <legend>③ 孩子是否可能真正自住？</legend>
+            <div class="choices">
+              <div class="choice"><input id="live-yes" name="live" value="yes" type="radio"><label for="live-yes">是，可能長期實際自住</label></div>
+              <div class="choice"><input id="live-no" name="live" value="no" type="radio"><label for="live-no">否，可能出租或非自住</label></div>
+              <div class="choice"><input id="live-unsure" name="live" value="unsure" type="radio"><label for="live-unsure">目前還不確定</label></div>
+            </div>
+          </fieldset>
+        </div>
+
+        <div id="quizResult" class="quiz-result" aria-live="polite">
+          <b>依目前選擇，建議您先回頭展開這幾條：</b>
+          <div class="result-tags" id="resultTags"></div>
+          <div class="fine" style="color:#a8bbc9;margin-top:10px">這只是路徑篩選；正式規劃仍要確認取得日期、前次移轉現值、自住紀錄、交易成本與最新法規。</div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="cash">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">STEP 7｜NET CASH</span>
+        <h2>最後，不要只問「繳多少稅」；要問女兒最後拿多少</h2>
+        <p>房貸會影響售屋後剩下的現金，但房貸本金本身不是房地合一稅的成本扣除項目。</p>
+      </div>
+
+      <div class="flow" aria-label="售屋現金流">
+        <div>成交售價</div>
+        <div>清償房貸</div>
+        <div>仲介與合格費用</div>
+        <div>土地增值稅</div>
+        <div>所得稅／房地合一／現金贈與</div>
+        <div class="last">女兒最後淨得</div>
+      </div>
+
+      <div class="system-grid">
+        <article class="system-card">
+          <h3>父親104年取得｜若一直留在父親名下</h3>
+          <p>這是「事前規劃」才能比較的路。</p>
+          <ul>
+            <li>土地交易所得原則不納入綜合所得稅。</li>
+            <li>房屋財產交易所得併入父親綜合所得。</li>
+            <li>另有土地增值稅。</li>
+            <li>售屋款若要交給女兒，再看現金贈與。</li>
+          </ul>
+        </article>
+
+        <article class="system-card">
+          <h3>女兒111年受贈｜目前真正面對的路</h3>
+          <p>女兒出售進入房地合一新制判斷。</p>
+          <ul>
+            <li>超過2年未逾5年：35%。</li>
+            <li>超過5年未逾10年：20%。</li>
+            <li>符合自住6年優惠：400萬元免稅＋超過部分10%。</li>
+            <li>售屋款本來就是女兒自己的。</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="adviser">
+    <div class="container">
+      <div class="adviser-box">
+        <img class="adviser-character" src="assets/abrakai-adviser-full.png" alt="阿布拉.凱 3D公仔完整站姿">
+        <div>
+          <span class="kicker">阿布拉.凱提醒您</span>
+          <h2>房產規劃，不要只算「今天」</h2>
+          <p>做贈與、買賣或傳承前，最好先把「未來何時賣、誰來賣、錢最後給誰」一起算進去。很多稅務差距，真正能改變的時間點，是產權移轉以前。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section" id="get-report">
+    <div class="container cta-box">
+      <div>
+        <span class="eyebrow">索取完整案例比較</span>
+        <h2>想看這個案例6大路徑的完整稅負分析？</h2>
+        <p>我已把贈與稅、契稅、土地增值稅、房地合一、舊制房屋財產交易所得、現金再贈與與最終實拿的思路整理成完整資料。</p>
+
+        <div class="steps">
+          <div><span class="num">1</span><span>前往 Facebook，搜尋並追蹤 <strong>「阿布拉.凱－不動產」</strong></span></div>
+          <div><span class="num">2</span><span>找到這個「房子先贈與給孩子」案例貼文。</span></div>
+          <div><span class="num">3</span><span>在貼文下方留言關鍵字：</span></div>
+        </div>
+
+        <div class="keyword">贈與試算 <button id="copyKeyword" type="button">複製</button></div>
+
+        <div style="margin-top:16px">
+          <a class="btn btn-gold" href="https://www.facebook.com/profile.php?id=61592181614483" target="_blank" rel="noopener noreferrer">前往「阿布拉.凱－不動產」粉絲頁 ↗</a>
+        </div>
+
+        <p class="fine" style="color:#93a9b8;margin-top:18px">本頁為案例型教育與情境分析，不是正式報稅或個別稅務意見。實際交易前應依正式謄本、稅單、前次移轉現值、CPI、費用憑證、自住事實與最新法規重新核算。</p>
+      </div>
+
+      <div class="cta-visual" aria-label="阿布拉.凱人物與品牌">
+        <div class="cta-person-frame">
+          <img class="cta-person" src="assets/abrakai-cta-thumbs-up.png" alt="阿布拉.凱 3D公仔完整比讚站姿">
+        </div>
+        <div class="cta-brand-row">
+          <img class="cta-mini-logo" src="assets/ak-studio-logo.png" alt="AK Studio 阿布拉.凱工作室 Logo">
+          <span><strong>阿布拉.凱－不動產</strong><small>房產規劃・稅務先行</small></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sources" aria-label="官方資料來源">
+    <div class="container">
+      <strong style="color:#dce8f1">官方資料參考：</strong>
+      <a href="https://www.etax.nat.gov.tw/etwmain/alien-tax-service/individual-house-land-transaction-tax/m75JLQo" target="_blank" rel="noopener">財政部｜房地合一稅率與自住優惠</a> ・
+      <a href="https://www.mof.gov.tw/singlehtml/384fb3077bb349ea973e7fc6f13b6974?cntId=e4170c62974c4c7c9fa78c24c9fcb130" target="_blank" rel="noopener">財政部｜115年贈與稅免稅額244萬元</a>
+      <div class="fine" style="margin-top:8px;color:#7e93a2">稅率與免稅額會隨法規變動；正式交易時請重新確認。</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container foot">
+    <span>© 阿布拉.凱 工作室｜房產規劃・稅務先行・資產更安心</span>
+    <span><a href="../../">回工作室首頁</a>　·　<a href="https://www.facebook.com/profile.php?id=61592181614483" target="_blank" rel="noopener">不動產粉絲頁</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const form = document.getElementById('guideForm');
+  const box = document.getElementById('quizResult');
+  const tags = document.getElementById('resultTags');
+
+  const names = {
+    A:'A｜近期出售',
+    B:'B｜持有超過5年',
+    C:'C｜自住滿6年優惠',
+    D:'D｜父親出售＋一次現金贈與',
+    E:'E｜父親出售＋分年贈與',
+    F:'F｜未來繼承'
+  };
+
+  function updateGuide(){
+    const goal = form.querySelector('input[name="goal"]:checked')?.value;
+    const time = form.querySelector('input[name="time"]:checked')?.value;
+    const live = form.querySelector('input[name="live"]:checked')?.value;
+
+    if(!goal || !time || !live){
+      box.classList.remove('show');
+      return;
+    }
+
+    const set = new Set();
+
+    if(time === 'now') set.add('A');
+    if(time === 'five') set.add('B');
+    if(time === 'six' && live === 'yes') set.add('C');
+    if(time === 'six' && live !== 'yes') set.add('B');
+
+    if(goal === 'cash'){
+      set.add('D');
+      set.add('E');
+    }
+
+    if(goal === 'legacy'){
+      set.add('F');
+      set.add('E');
+    }
+
+    if(goal === 'house' && live === 'yes') set.add('C');
+
+    tags.innerHTML = [...set].map(k => `<span class="result-tag">${names[k]}</span>`).join('');
+    box.classList.add('show');
+  }
+
+  form.addEventListener('change', updateGuide);
+
+  document.getElementById('copyKeyword').addEventListener('click', async function(){
+    try{
+      await navigator.clipboard.writeText('贈與試算');
+      const old = this.textContent;
+      this.textContent = '已複製 ✓';
+      setTimeout(()=>this.textContent = old, 1600);
+    }catch(e){
+      this.textContent = '請手動複製';
+    }
+  });
+})();
+</script>
+</body>
+</html>

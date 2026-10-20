@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f3f8fb">
+  <meta name="description" content="免費 AI 自學教材：先試玩範例，準備自己的書籍內容，再用六段完整提示詞依裝置做出入門或進階導讀網站。附學員講義、講師教案與授課投影片。">
+  <title>一本書，變成會翻頁的網站｜AI 小教室｜阿布拉.凱 工作室</title>
+  <link rel="icon" href="/assets/icons/icon-32.png">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/assets/css/ts/classroom.css">
+  <link rel="stylesheet" href="/assets/css/ts/book-to-flipbook.css?v=2.7.0">
+  <script type="module" src="/assets/ts/pages/bookToFlipbook.js"></script>
+<link rel="stylesheet" href="/assets/css/site-shell.css?v=2.7.0">
+<link rel="stylesheet" href="/assets/css/site-bright.css?v=2.7.0">
+<script src="/assets/js/site-navigation.js?v=2.7.4" defer></script>
+</head>
+<body data-ak-page="book" class="classroom-page book-course-page">
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="ak-site-shell"><div class="ak-site-shell__inner"><a class="ak-site-brand" href="/" aria-label="阿布拉.凱工作室首頁"><img src="/assets/images/abrakai-studio-logo.webp" alt="阿布拉.凱工作室 Logo" width="46" height="46"><span class="ak-site-brand__text"><strong>阿布拉.凱 工作室</strong><small>ABRA-KAI STUDIO</small></span></a><button class="ak-menu-toggle" type="button" aria-controls="ak-site-navigation" aria-expanded="false" aria-label="開啟導覽選單">選單 <span aria-hidden="true">☰</span></button><nav id="ak-site-navigation" class="ak-site-nav" aria-label="全站導覽"><a href="/">首頁</a><a href="/#services">服務方案</a><a href="/classroom/" class="ak-site-nav__accent" aria-current="location">AI 小教室</a><a href="/tools/">免費工具</a><a href="/products/">產品介紹</a><a href="/works/">作品案例</a><a href="/real-estate/">房產專區</a><a href="/#collaboration">課程合作</a><a href="https://line.me/R/ti/p/%40214plfov" class="ak-site-nav__cta" target="_blank" rel="noopener noreferrer">加官方 LINE</a></nav></div></header>
+  <nav class="ak-breadcrumb" aria-label="麵包屑導覽"><a href="/">首頁</a><span>›</span><a href="/classroom/">AI 小教室</a><span>›</span>書籍轉翻頁網站</nav>
+
+  <main id="main"><section class="course-section"><div class="lesson-container"><h2>先決定用途與頁數</h2><p>先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。</p><p>基本教學可要求 AI 加入翻頁動畫、可開關音效、圖片點擊放大，以及減少動態效果設定。音效需由使用者主動開啟。更細緻的聲光編排、配樂與客製互動屬工作室進階製作服務，可聯絡官方 LINE 洽詢。</p><nav aria-label="課程步驟"><a href="#workflow">準備素材</a> · <a href="#timeline">學習路線</a> · <a href="#step-1">開始操作</a> · <a href="/classroom/book-to-flipbook/demo/">體驗成果</a></nav></div></section><section class="course-section route-guide" aria-labelledby="route-title"><div class="lesson-container"><h2 id="route-title">先選操作路線，再開始六個步驟</h2><div class="route-grid"><article><strong>手機／平板／初學者</strong><p>先做一個 index.html：樣式、互動、照片與名片放在同一檔。依用途與素材規劃頁數，展示建議 8～10 頁（非上限），不用管理資料夾。</p></article><article><strong>電腦＋具備架站基礎</strong><p>由 AI 確認後再選單檔或進階版：index.html 搭配 images/、css/、js/，交付完整 ZIP 與資料結構。</p></article></div><p>六段提示詞都會先確認裝置與經驗。AI 能處理檔案時須真的嵌入圖片並提供 HTML；能力不足時會明確說明。手機本機預覽未必執行互動，請使用可執行 HTML 的預覽或網站網址檢查。</p></div></section>
+<section class="book-course-hero">
+      <div class="course-grid" aria-hidden="true"></div>
+      <div class="lesson-container course-hero-layout">
+        <div class="course-hero-copy">
+          <div class="course-status"><span></span> AI 小教室・免費自學教材</div>
+          <p class="course-code">讓你的知識，變成可以分享的作品</p>
+          <h1>一本書，<br><em>變成會翻頁的網站</em></h1>
+          <p class="course-lead">歡迎一起學 AI！準備你自己寫的書籍、講義或已取得授權的內容，跟著六個步驟完成自己的導讀網站；展示建議 8～10 頁，也可依需求製作完整書刊。你可以先玩範例，再一段一段複製提示詞，做出自己的作品。</p>
+          <div class="course-actions">
+            <a class="lesson-btn course-primary" href="#live-demo">立即體驗範例 <span aria-hidden="true">↘</span></a>
+            <a class="lesson-btn course-secondary" href="#prompts">開始動手做</a>
+            <a class="lesson-btn course-secondary" href="#classroom-share">帶走與分享教材</a>
+            <a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/ai-book-to-website-six-step-prompts-v3.md" download>下載六段 Prompt 原版</a>
+          </div>
+          <p class="course-edition">網站 V2.7.0｜六段 Prompt 已更新用途與頁數規則｜依自己的速度學習</p>
+          <div class="course-chips" aria-label="課程特色"><span>約 60～70 分鐘，可分段完成</span><span>零程式基礎</span><span>手機＋電腦雙路線</span><span>每一步都能複製提示詞</span><span>基礎＋進階示範</span></div>
+        <p class="teacher-resource-link"><a href="#teacher-resources">講師專區：下載教案與授課投影片</a></p>
+        </div>
+        <div class="course-hud" aria-label="書刊轉網站流程視覺">
+          <div class="hud-head"><span>你的第一個翻頁作品</span><b>一起開始</b></div>
+          <div class="hud-book">
+            <div class="hud-book-spine"></div>
+            <div class="hud-book-content"><small>準備你的內容</small><strong>書刊內容</strong><span>封面・目錄・作者・重點內頁</span></div>
+          </div>
+          <div class="hud-flow"><i></i><i></i><i></i></div>
+          <div class="hud-output">
+            <div><small>整理與確認</small><strong>重點萃取</strong></div>
+            <span>→</span>
+            <div><small>你的成果</small><strong>互動翻頁</strong></div>
+          </div>
+          <div class="hud-footer"><span>自己動手做</span><span>零程式基礎</span><span>MOBILE 一起開始</span></div>
+        </div>
+      </div>
+    </section><section class="course-metrics" aria-label="課程數據">
+      <div class="lesson-container course-metrics-grid">
+        <div><b>06</b><span>完整步驟</span></div>
+        <div><b>08</b><span>精華翻頁</span></div>
+        <div><b>01</b><span>完整 HTML</span></div>
+        <div><b>∞</b><span>可重複套用</span></div>
+      </div>
+    </section><section class="course-section live-lab" id="live-demo">
+      <div class="lesson-container">
+        <div class="course-section-head light">
+          <div><span class="course-index">先試玩完成品</span><h2>先玩玩看：<br>一個可以翻頁的網站</h2></div>
+          <p>用這個《孫子兵法》範例試試翻頁、方向鍵、手機滑動和可開關音效。這是進階八頁範例；接下來依你的裝置與經驗選擇單檔或資料夾路線，頁數依需求規劃。</p>
+        </div>
+        <div class="demo-window">
+          <div class="demo-window-bar"><div><i></i><i></i><i></i></div><span>ABRA-KAI AI CLASSROOM / INTERACTIVE DEMO</span><a href="/classroom/book-to-flipbook/demo/" target="_blank" rel="noopener">全螢幕開啟 ↗</a></div>
+          <iframe src="/classroom/book-to-flipbook/demo/" title="《孫子兵法》互動策略劇場示範" loading="lazy"></iframe>
+        </div>
+      </div>
+    </section><section class="course-section learner-preparation" id="workflow"><div class="lesson-container"><div class="course-section-head"><div><span class="course-index">開始之前</span><h2>準備好這些，<br>就能開始做你的作品</h2></div><p>第一次使用 AI 也可以跟著做。先準備少量內容，完成依需求規劃頁數的單檔導讀，再逐步加入更多素材。</p></div><div class="lesson-guide-grid"><article><b>01</b><h3>你可以使用的內容</h3><p>準備自己寫的書籍、講義，或已取得授權的素材。先整理封面、作者介紹和少量重點內容；手機入門先用 1～3 張圖片，進階才增加內頁。</p></article><article><b>02</b><h3>一個 AI 對話</h3><p>開啟你平常使用的 AI 工具。六個步驟盡量在同一個對話中完成，讓 AI 接續你確認過的內容。</p></article><article><b>03</b><h3>手機或電腦</h3><p>手機可在 AI 提供的 HTML 預覽測試並保存單一檔案。電腦且有基礎者可選完整網站與資料夾版。</p></article><article><b>04</b><h3>保存你的 HTML 成果</h3><p>手機入門保存一個包含圖片的 index.html，並保留 AI 對話。只有選擇進階版時，才整理 images、css、js 資料夾與 ZIP。</p></article></div><div class="lesson-guide-note"><strong>這次要完成的作品</strong><p>一個介紹重點、可以翻頁的書籍導讀網站。若你想公開完整電子書，請先確認完整內容的授權與發布方式。</p></div><div class="course-actions"><a class="lesson-btn course-primary" href="#step-1">從 Step 1 開始</a><a class="lesson-btn course-secondary" href="#timeline">看看我的學習路線</a></div></div></section><section class="course-section learner-route" id="timeline">
+      <div class="lesson-container">
+        <div class="course-section-head"><div><span class="course-index">你的學習路線</span><h2>照這條路線，<br>一步步完成你的作品</h2></div><p>約 60～70 分鐘可以走完一次，你也可以分幾天完成。每一步先確認結果，再接著做下一步。</p></div>
+        <div class="course-timeline"><article><time>00–05</time><div><h3>先玩完成品</h3><p>打開八頁範例，試試翻頁、按鈕和音效，看看你接下來會做出什麼。</p><small>完成判準：知道完成品長什麼樣子</small></div></article>
+<article><time>05–10</time><div><h3>準備素材與 AI 對話</h3><p>整理你可以使用的書籍內容，開啟 AI 對話，試著複製第一段提示詞。</p><small>完成判準：你能打開 AI 對話並複製提示詞</small></div></article>
+<article><time>10–16</time><div><h3>Step 1／Prompt 0｜權利盤點</h3><p>提供自有或已授權的封面、目錄、作者與重點內頁；確認公開範圍。</p><small>完成判準：可用、待確認與不公開清單</small></div></article>
+<article><time>16–25</time><div><h3>Step 2／Prompt 1｜辨識重點</h3><p>AI 辨識與摘要，人工核對作者、年份、數字及看不清楚的地方。</p><small>完成判準：確認過的書籍資料與核心觀點</small></div></article>
+<article><time>25–33</time><div><h3>Step 3／Prompt 2｜規劃導讀頁數</h3><p>確認每頁標題、一個重點、導讀與行動按鈕；先確認內容再做網頁。</p><small>完成判準：符合所選路線的內容企劃</small></div></article>
+<article><time>33–45</time><div><h3>Step 4／Prompt 3｜生成 HTML</h3><p>貼入完整 Prompt，取得可下載的 index.html；開啟後實測上一頁、下一頁。</p><small>完成判準：可開啟的基礎翻頁網站</small></div></article>
+<article><time>45–52</time><div><h3>Step 5／Prompt 4｜互動升級</h3><p>加入合法圖片與必要動態；音效預設關閉，由使用者主動開啟。</p><small>完成判準：至少一項有助閱讀的互動</small></div></article>
+<article><time>52–60</time><div><h3>Step 6／Prompt 5｜除錯驗收</h3><p>測試手機、文字、翻頁、圖片備援與連結；只修發現的問題。</p><small>完成判準：完成發布檢查與修正清單</small></div></article>
+<article><time>60–65</time><div><h3>保存與分享你的成果</h3><p>先保存 HTML、企劃與素材；如果你有發布帳號，再把作品上線並用手機開啟。</p><small>完成判準：分享網址或可開啟的 HTML 備份</small></div></article></div>
+        <p class="lesson-time-note">時間是參考，不用趕進度。AI 還在生成時，可以回去試玩範例。完成一個步驟就先保存；沒有發布帳號，也可以先保留能開啟的 HTML 作品。</p>
+      </div>
+    </section><section class="course-section prompt-lab" id="prompts">
+  <div class="lesson-container">
+    <div class="course-section-head">
+      <div><span class="course-index">六步實作</span><h2>跟著做，<br>把提示詞貼進你的 AI 對話</h2></div>
+      <p>依序展開 Step 1～6。先讀「這一步要做什麼」，按「複製 Prompt」貼進你的 AI 對話，再補上自己的素材。看完 AI 的結果並確認正確後，才進下一步。</p>
+    </div>
+    <nav class="step-jump-nav" aria-label="六大步驟快速導覽"><a href="#step-1"><b>01</b><span>素材與公開範圍</span></a><a href="#step-2"><b>02</b><span>內容辨識與重點萃取</span></a><a href="#step-3"><b>03</b><span>網站架構與導讀頁數</span></a><a href="#step-4"><b>04</b><span>產生 HTML 網站</span></a><a href="#step-5"><b>05</b><span>圖片・動畫・聲音升級</span></a><a href="#step-6"><b>06</b><span>發布前除錯與修正</span></a></nav>
+    <div class="teaching-steps"><details class="teaching-step" id="step-1" open>
+      <summary>
+        <span class="teaching-step-no">01</span>
+        <span class="teaching-step-title"><small>RIGHTS / SCOPE</small><strong>先確認素材與公開範圍</strong><em>素材與公開範圍</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>在把書籍內容交給 AI 之前，先確認：</p>
+<ul>
+<li>哪些內容可以公開</li>
+<li>哪些內容需要授權</li>
+<li>哪些圖片或內頁不適合直接放上網站</li>
+<li>哪些地方必須補充來源或署名</li>
+</ul>
+<p>這一步的目的不是讓 AI 做法律判定，而是先建立一份「素材使用清單」，避免後面做到一半才發現內容不能公開。</p>
+<h2>建議準備的素材</h2>
+<p>可以先整理：</p>
+<ul>
+<li>書名</li>
+<li>副標題</li>
+<li>作者姓名</li>
+<li>出版社或出版資訊</li>
+<li>書籍封面</li>
+<li>目錄</li>
+<li>作者介紹</li>
+<li>前言／自序</li>
+<li>入門少量重點內容／1～3 張圖片；進階再增加內頁</li>
+<li>作者自己拍攝或製作的圖片</li>
+<li>購書連結</li>
+<li>作者網站</li>
+<li>聯絡方式</li>
+</ul>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 0｜完整正式版</span><button type="button" data-copy-target="prompt-0">複製 Prompt 0</button></div>
+          <pre id="prompt-0">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「出版內容授權檢查助理」。
+
+我會提供一本書、刊物、講義或作者自有內容的素材清單。
+請協助我判斷，哪些內容適合放入公開的「書籍精華導讀網站」。
+
+請注意：
+
+1. 你不是律師，請不要直接判定某內容一定合法或一定違法。
+2. 請將我提供的素材分成以下三類：
+   A. 可直接使用
+   B. 需要授權、來源確認或署名
+   C. 不建議直接公開
+3. 公開網站原則上以：
+   - 摘要
+   - 導讀
+   - 改寫後的重點整理
+   - 作者自己提供或自製的圖片
+   - 少量必要短引文
+   為主。
+4. 不建議公開：
+   - 整本書
+   - 大量連續內頁
+   - 付費內容的大量截圖
+   - 未取得授權的完整圖片
+   - 來源不明的插圖、照片、音樂或影片
+5. 若資料不足，請明確標示「需要人工確認」。
+6. 若素材是作者本人創作，也請提醒確認出版社合約、圖片授權或其他既有權利限制。
+7. 請使用繁體中文。
+8. 不要自行補寫我沒有提供的出版資訊。
+
+請依照以下格式輸出：
+
+A. 素材盤點表
+- 素材名稱
+- 建議分類
+- 是否適合公開
+- 需要補充的來源／授權／署名
+
+B. 建議公開範圍
+- 哪些內容適合放首頁
+- 哪些內容適合放精華導讀
+- 哪些內容只適合摘要，不建議放原文
+
+C. 必須補充的資料
+- 出版資訊
+- 圖片來源
+- 作者署名
+- 購書網址
+- 其他必要資訊
+
+D. 需要人工再次確認的權利問題
+
+E. 最後請給我一份「可以進入下一步 AI 整理流程」的素材清單。
+
+以下是我的素材：
+【請貼上素材清單或上傳檔案／圖片】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<ul>
+<li>素材清單</li>
+<li>可以公開的內容</li>
+<li>需要確認的內容</li>
+<li>不建議公開的內容</li>
+<li>後續可以安全整理的資料範圍</li>
+</ul>
+<p><strong>手機操作：</strong>請 AI 提供可下載 HTML 與支援的預覽。若手機本機檔案預覽不執行按鈕互動，改用可執行 HTML 的預覽或靜態網址；進階版請下載完整 ZIP。</p><h2>人工確認重點</h2>
+<p>進入下一步之前，請先確認：</p>
+<ul>
+<li>書名與作者正確</li>
+<li>出版資訊正確</li>
+<li>封面與內頁是否有使用權</li>
+<li>圖片是否為自己所有</li>
+<li>是否有出版社或其他權利人限制</li>
+</ul>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#step-2">繼續 Step 2</a></div>
+</details><details class="teaching-step" id="step-2">
+      <summary>
+        <span class="teaching-step-no">02</span>
+        <span class="teaching-step-title"><small>CONTENT / VERIFY</small><strong>辨識書籍內容並擷取重點</strong><em>內容辨識與重點萃取</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>這一步讓 AI 扮演「出版編輯」。</p>
+<p>目的不是直接做網站，而是先把書籍資料整理乾淨，包括：</p>
+<ul>
+<li>書籍基本資料</li>
+<li>主要讀者</li>
+<li>作者寫作目的</li>
+<li>重要觀點</li>
+<li>可以放網站的短句</li>
+<li>圖片建議</li>
+<li>尚未確認的內容</li>
+</ul>
+<p>這一步非常重要。若資料整理錯誤，後面的網站就會跟著錯。</p>
+<h2>建議提供給 AI 的內容</h2>
+<ul>
+<li>書封</li>
+<li>目錄</li>
+<li>作者介紹</li>
+<li>前言／自序</li>
+<li>入門少量重點內容；進階再準備 5～8 頁重要內容</li>
+<li>作者希望特別強調的章節</li>
+<li>Step 1 已確認可以使用的資料</li>
+</ul>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 1｜完整正式版</span><button type="button" data-copy-target="prompt-1">複製 Prompt 1</button></div>
+          <pre id="prompt-1">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「嚴謹的出版編輯、內容整理師與書籍導讀企劃」。
+
+我將提供一本書、刊物、講義或作者自有內容的：
+- 封面
+- 目錄
+- 作者介紹
+- 出版資訊
+- 前言／自序
+- 部分重點內頁
+- 其他補充資料
+
+請你先辨識資料，再整理成適合製作「書籍精華導讀網站」的內容。
+
+請嚴格遵守以下規則：
+
+1. 只能使用我提供的資料。
+2. 不得自行補寫書中不存在的內容。
+3. 不得虛構作者經歷、推薦人、銷售數字、獎項、媒體報導或讀者評價。
+4. 看不清楚、無法確認或缺少的資料，請標示：「需要確認」。
+5. 原文引用與你的摘要必須分開。
+6. 原文引用必須保持簡短。
+7. 若可以判斷來源頁碼或圖片編號，請一併標示。
+8. 不要大量抄錄原書，以摘要、改寫與導讀為主。
+9. 專有名詞、姓名、數字、年份請特別小心。
+10. 使用繁體中文。
+11. 不要急著製作網站，這一步只做「內容整理」。
+
+請依照以下格式輸出：
+
+A. 書籍基本資料
+- 書名
+- 副標題
+- 作者
+- 出版社
+- 出版日期／年份
+- ISBN（若有）
+- 其他出版資訊
+- 無法確認的項目
+
+B. 這本書的主要讀者
+請列出 3～5 類適合讀者。
+
+C. 作者寫作目的
+請根據我提供的內容整理，不得自行推測成事實。
+
+D. 全書主題摘要
+請控制在 100～150 字。
+
+E. 5～8 個最重要的核心觀點
+每一個觀點請包含：
+1. 觀點標題
+2. 重點摘要
+3. 對讀者的意義
+4. 資料來源／頁面／圖片編號
+5. 是否需要人工再次確認
+
+F. 可安全使用的短句或短引文
+- 保持簡短
+- 標示來源
+- 不要大量摘錄
+
+G. 可以放入網站的作者介紹資料
+
+H. 建議放入網站的圖片
+請依序列出：
+- 封面
+- 作者照片
+- 書中插圖
+- 自製示意圖
+- 其他可搭配圖片
+
+I. 尚未確認的資料
+所有可能有疑問的姓名、數字、來源、年代、引用，請集中列出。
+
+J. 最後整理一份「已確認書籍資料」
+這一份資料要可以直接交給下一步「網站內容企劃」使用。
+
+以下是我的書籍資料：
+【請貼上資料，或上傳封面、目錄、作者介紹與重要內頁】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<p>一份：<strong>「書籍內容資料表＋5～8 個核心觀點」</strong></p>
+<p><strong>手機操作：</strong>請 AI 提供可下載 HTML 與支援的預覽。若手機本機檔案預覽不執行按鈕互動，改用可執行 HTML 的預覽或靜態網址；進階版請下載完整 ZIP。</p><h2>人工確認重點</h2>
+<p>一定要人工確認：</p>
+<ul>
+<li>人名</li>
+<li>書名</li>
+<li>出版社</li>
+<li>出版年份</li>
+<li>數字</li>
+<li>專有名詞</li>
+<li>引用句</li>
+<li>AI 是否把推測寫成事實</li>
+<li>AI 是否加入原書沒有的內容</li>
+</ul>
+<p>確認完成後，再進入 Step 3。</p>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#step-3">繼續 Step 3</a></div>
+</details><details class="teaching-step" id="step-3">
+      <summary>
+        <span class="teaching-step-no">03</span>
+        <span class="teaching-step-title"><small>STORY / STRUCTURE</small><strong>規劃網站架構與導讀頁數</strong><em>網站架構與導讀頁數</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>這一步讓 AI 從「出版編輯」切換成：</p>
+<p><strong>書籍行銷編輯＋網站內容企劃。</strong></p>
+<p>目標是把前面整理好的書籍資料，轉成一個第一次看到這本書的人，也能快速理解的網站。</p>
+<p>網站不是完整電子書，它的功能是：</p>
+<p><strong>介紹、導讀、建立興趣、引導下一步。</strong></p>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 2｜完整正式版</span><button type="button" data-copy-target="prompt-2">複製 Prompt 2</button></div>
+          <pre id="prompt-2">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「書籍行銷編輯、內容企劃與網站資訊架構設計師」。
+
+請根據我剛才已經人工確認的書籍資料，規劃一個：
+
+「書籍精華導讀＋已確認頁數翻頁內容＋作者介紹＋行動按鈕」
+
+的一頁式書籍網站。
+
+這不是完整電子書。
+請不要公開整本內容，也不要大量重製原書。
+
+網站對象：
+第一次認識這本書的讀者。
+
+網站目標：
+讓讀者在約 3 分鐘內理解：
+
+1. 這本書在談什麼
+2. 為什麼值得看
+3. 適合哪些人
+4. 最重要的觀點是什麼
+5. 作者想傳達什麼
+6. 下一步可以去哪裡閱讀、購買或聯絡作者
+
+請規劃以下內容：
+
+A. 網站主標題
+請提供一個清楚、有吸引力，但不浮誇的主標題。
+
+B. 一句副標題
+用一句話讓讀者快速理解這本書的價值。
+
+C. 書籍簡介
+控制在 120 字以內。
+
+D. 三個閱讀收穫
+請用清楚、具體的方式呈現。
+
+E. 已確認頁數翻頁導讀腳本
+先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+
+每一頁必須包含：
+1. 頁碼
+2. 頁面標題
+3. 本頁核心觀點
+4. 60～100 字導讀內容
+5. 一句可使用的短引文、關鍵句或重點句
+6. 建議圖片或視覺元素
+7. 本頁希望讀者理解的重點
+
+已確認頁數內容請避免重複。
+
+入門節奏：第 1 頁書籍與作者、第 2 頁核心觀點、第 3 頁應用或案例、第 4 頁總結與下一步（材料不足可合為 3 頁）。
+
+以下八頁為精華展示節奏範例，可依用途調整，並非固定頁數：
+第 1 頁：這本書要解決什麼問題
+第 2 頁：為什麼這個問題值得關心
+第 3 頁：第一個核心觀點
+第 4 頁：第二個核心觀點
+第 5 頁：第三個核心觀點
+第 6 頁：方法、案例或應用
+第 7 頁：讀者可以怎麼實踐
+第 8 頁：總結與下一步
+
+這只是結構建議。
+若原書內容更適合其他順序，可以重新安排，但必須保持清楚的閱讀節奏。
+
+F. 作者介紹
+120 字以內。
+只能使用我已確認的作者資料。
+
+G. 適合哪些讀者
+列出 3～6 類。
+
+H. 行動按鈕 CTA
+請依實際資料規劃，例如：
+- 購買本書
+- 閱讀更多
+- 作者官網
+- 聯絡作者
+- 加入 LINE
+- 預約講座
+- 查看其他作品
+
+所有按鈕都必須對應真實目的地。
+如果我沒有提供網址，請標示：「待提供網址」。
+不要自行編造。
+
+I. 資料來源與著作權提醒
+請整理成網站可以使用的簡短說明。
+
+J. 最後請輸出一份「網站完整內容企劃表」
+讓下一步可以直接依照這份企劃製作 HTML 網站。
+
+寫作原則：
+
+1. 使用繁體中文。
+2. 語氣清楚、有質感、有閱讀感。
+3. 不要浮誇。
+4. 每一頁只傳達一個主要觀點。
+5. 避免已確認頁數內容互相重複。
+6. 先建立讀者問題，再提出理解、方法或觀點。
+7. 不得捏造：
+   - 推薦人
+   - 銷售數字
+   - 獎項
+   - 媒體報導
+   - 讀者評價
+8. 資料不足請標示「待提供」或「需要確認」。
+
+以下是我已經人工確認的書籍資料：
+【貼上 Step 2 最後確認的完整書籍資料】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<p>一份：<strong>「完整網站內容企劃＋已確認頁數的導讀腳本」</strong></p>
+<p>這份資料確認沒問題之後，再進入真正的網站製作。</p>
+<p><strong>手機操作：</strong>請 AI 提供可下載 HTML 與支援的預覽。若手機本機檔案預覽不執行按鈕互動，改用可執行 HTML 的預覽或靜態網址；進階版請下載完整 ZIP。</p><h2>人工確認重點</h2>
+<p>請確認：</p>
+<ul>
+<li>已確認頁數的內容是否重複</li>
+<li>有沒有偏離原書</li>
+<li>是否有 AI 自己新增的故事</li>
+<li>CTA 是否都有真實目的地</li>
+<li>作者介紹是否正確</li>
+<li>主標題是否符合書籍定位</li>
+</ul>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#step-4">繼續 Step 4</a></div>
+</details><details class="teaching-step" id="step-4">
+      <summary>
+        <span class="teaching-step-no">04</span>
+        <span class="teaching-step-title"><small>BUILD / HTML</small><strong>依路線生成 HTML 翻頁書籍網站</strong><em>產生 HTML 網站</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>這一步才正式開始製作網站。</p>
+<p>目標是讓 AI 產出一個：</p>
+<p><strong>可以直接存在電腦、雙擊開啟，也能上傳到網站空間的 <code>index.html</code>。</strong></p>
+<h2>這一步的網站規格</h2>
+<p>網站至少要包含：</p>
+<ul>
+<li>書籍主視覺</li>
+<li>書名</li>
+<li>副標題</li>
+<li>書籍介紹</li>
+<li>三個閱讀收穫</li>
+<li>依已確認頁數的翻頁精華</li>
+<li>作者介紹</li>
+<li>適合讀者</li>
+<li>CTA</li>
+<li>資料來源</li>
+<li>著作權提醒</li>
+</ul>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 3｜完整正式版</span><button type="button" data-copy-target="prompt-3">複製 Prompt 3</button></div>
+          <pre id="prompt-3">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「專業前端網站設計師、UI/UX 設計師與無障礙網頁工程師」。
+
+請根據以下已經確認完成的書籍網站企劃，製作一個：
+
+「精美、手機優先、可以真正操作的一頁式書籍介紹網站」。
+
+請嚴格遵守以下技術規格：
+
+【一、檔案規格】
+
+1. 依已確認路線交付：單檔版是一個完整 index.html；進階版是完整資料夾 ZIP。
+2. 單檔版 CSS 全部寫在同一個 HTML 內；進階版可放 css/。
+3. 單檔版 JavaScript 全部寫在同一個 HTML 內；進階版可放 js/。
+4. 不使用資料庫。
+5. 不使用登入。
+6. 不使用後端。
+7. 不使用 API。
+8. 不得放入：
+   - API Key
+   - Token
+   - 密碼
+   - 資料庫憑證
+   - 會員資料
+   - 私人紀錄
+   - 其他敏感資訊
+9. 不依賴外部 JavaScript 函式庫。
+10. 在可執行 HTML／JavaScript 的環境離線開啟時，主要功能須可操作；手機本機預覽若不執行 JavaScript，另提供支援的預覽或上線方式，不承諾所有檔案 App 可執行。
+
+【二、圖片規格】
+
+如果我有提供圖片：
+1. 優先使用我提供的圖片。
+2. 單檔路線必須將實際圖片完整轉成 Base64 後嵌入；進階路線依確認的 images/ 路徑交付圖片。
+3. 每張圖片必須有 alt 替代文字。
+4. 圖片載入失敗時，不可以讓整個版面崩壞。
+
+如果沒有圖片：
+請使用：
+- CSS 排版
+- 色彩
+- 幾何圖形
+- 漸層
+- 書頁元素
+- 簡單圖示
+完成視覺設計。
+
+不要自行抓取來源不明的網路圖片。
+
+【三、網站內容】
+
+網站必須完整包含：
+1. Hero 主視覺
+2. 書名
+3. 副標題
+4. 書籍簡介
+5. 三個閱讀收穫
+6. 依確認範圍製作精華翻頁區（展示建議 8～10 頁（非上限），完整書刊依提供素材評估）
+7. 作者介紹
+8. 適合讀者
+9. 資料來源
+10. 著作權聲明
+11. CTA 行動按鈕
+
+【四、已確認頁數翻頁功能】
+
+必須支援：
+1. 電腦點擊「上一頁」
+2. 電腦點擊「下一頁」
+3. 鍵盤 ← → 左右方向鍵
+4. 手機左右滑動
+5. 顯示目前頁碼
+6. 顯示總頁數
+7. 第一頁不能再往前
+8. 最後一頁不能再往後
+9. 按鈕在不可使用時要呈現 disabled 狀態
+10. 翻頁動畫自然，不影響閱讀
+11. 不可因快速連點造成頁面錯亂
+
+【五、響應式設計】
+
+請以 mobile-first 為原則。
+
+必須至少檢查：
+- 390px 手機寬度
+- 平板
+- 一般筆電
+- 桌上型螢幕
+
+要求：
+1. 手機不得出現水平捲動。
+2. 文字不能重疊。
+3. 按鈕不可超出畫面。
+4. 圖片不可壓住文字。
+5. 正文字級至少 16px。
+6. 手機點擊區域要足夠大。
+
+【六、視覺設計】
+
+請依照書籍：
+- 封面
+- 題材
+- 作者風格
+- 內容氣質
+決定網站風格。
+
+不要套用制式模板。
+
+視覺原則：
+1. 暗底使用亮字。
+2. 亮底使用暗字。
+3. 保持良好對比。
+4. 主標題必須清楚。
+5. CTA 必須容易辨識。
+6. 不要過度使用動畫。
+7. 不要讓裝飾搶走內容。
+
+【七、無障礙與操作】
+
+請加入：
+1. 語意化 HTML。
+2. 圖片 alt。
+3. 鍵盤 focus 樣式。
+4. 可操作按鈕。
+5. aria-label（必要時）。
+6. prefers-reduced-motion 支援。
+
+如果使用者偏好減少動態：
+請關閉非必要動畫。
+
+【八、連結】
+
+所有按鈕都必須：
+- 有真實功能
+或
+- 有真實網址
+
+如果資料中沒有網址：
+不要使用假的 # 連結。
+
+請顯示：「網址待提供」。
+
+【九、輸出前自我檢查】
+
+輸出前請自行檢查：
+1. HTML 標籤是否完整。
+2. CSS 是否有錯。
+3. JavaScript 是否有語法錯誤。
+4. 上一頁／下一頁是否正常。
+5. 頁碼是否正確。
+6. 第一頁與最後一頁邊界是否正確。
+7. 手機左右滑動是否正常。
+8. 鍵盤左右鍵是否正常。
+9. 手機文字是否重疊。
+10. 是否存在無效 # 連結。
+11. 是否存在「待補文字」。
+12. 是否包含不該公開的敏感資訊。
+
+【十、輸出格式】
+
+依前述操作環境輸出完整成果檔與可用的預覽／開啟說明：
+單檔版 index.html；進階版完整 ZIP。
+
+不要只提供局部程式碼。
+不要省略 CSS。
+不要省略 JavaScript。
+不要用「其餘相同」。
+不要只告訴我修改方式。
+
+以下是已確認的網站內容企劃：
+【貼上 Step 3 最後確認的網站完整內容企劃】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<p>一個：<strong><code>index.html</code></strong></p>
+<p>可以：</p>
+<ul>
+<li>存到電腦</li>
+<li>雙擊開啟</li>
+<li>在 Chrome／Edge／Safari 預覽</li>
+<li>上傳 Neocities</li>
+<li>上傳 Cloudflare Pages</li>
+<li>上傳其他靜態網站空間</li>
+</ul>
+<p><strong>手機操作：</strong>請 AI 提供可下載 HTML 與支援的預覽。若手機本機檔案預覽不執行按鈕互動，改用可執行 HTML 的預覽或靜態網址；進階版請下載完整 ZIP。</p><h2>人工確認重點</h2>
+<p>先不要急著公開。</p>
+<p>至少測試：</p>
+<ul>
+<li>上一頁</li>
+<li>下一頁</li>
+<li>頁碼</li>
+<li>左右方向鍵</li>
+<li>手機滑動</li>
+<li>書名</li>
+<li>作者姓名</li>
+<li>CTA</li>
+<li>手機畫面</li>
+<li>圖片</li>
+</ul>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#step-5">繼續 Step 5</a></div>
+</details><details class="teaching-step" id="step-5">
+      <summary>
+        <span class="teaching-step-no">05</span>
+        <span class="teaching-step-title"><small>INTERACTION / MEDIA</small><strong>增加圖片、動畫與聲音</strong><em>圖片・動畫・聲音升級</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>Step 4 的網站已經可以正常使用。</p>
+<p>這一步的目的不是重做網站，而是：</p>
+<p><strong>在不破壞原本功能的前提下，增加質感與互動。</strong></p>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 4｜完整正式版</span><button type="button" data-copy-target="prompt-4">複製 Prompt 4</button></div>
+          <pre id="prompt-4">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「互動網頁設計師、動態設計師與前端效能優化工程師」。
+
+我已經有一個依確認路線交付、可以正常使用的書籍網站。
+
+請在：
+「不改變既有書籍內容」
+以及
+「不破壞既有翻頁功能」
+的前提下，提升網站的視覺與互動表現。
+
+請先沿用已確認路線。入門只加入少量圖片與必要互動，動畫與音效為選用，先確保手機可操作；進階經確認後才加入更多效果。
+
+以下功能依路線與需要選擇：
+
+【一、首頁主視覺】
+1. 加入輕量的進場動畫。
+2. 動畫時間不要過長。
+3. 不要影響文字閱讀。
+4. 不要使用大量粒子效果。
+
+【二、翻頁效果】
+可以加入：
+- 紙張感
+- 陰影
+- 光影層次
+- 輕微位移
+- 淡入淡出
+
+但請注意：
+1. 不造成暈眩。
+2. 不延遲使用者翻頁。
+3. 不影響文字清楚度。
+
+【三、圖片】
+入門整個網站限 1～3 張關鍵圖片，不要求每頁有圖；進階才依素材與確認範圍增加與觀點相關的圖片。
+
+圖片來源必須符合以下其中之一：
+- 我提供的圖片
+- 作者自有圖片
+- 已確認授權的圖片
+- 自製圖片
+
+請不要自行使用來源不明的網路圖片。
+每一張圖片必須加入 alt 替代文字。
+
+【四、音效】
+可以加入：
+- 翻頁音效
+- 輕量環境音效
+
+但必須遵守：
+1. 預設靜音。
+2. 必須由使用者主動開啟。
+3. 必須有開／關按鈕。
+4. 按鈕必須顯示目前狀態。
+5. 必須可以隨時停止。
+6. 不可以一進網站就自動播放。
+
+【五、減少動態】
+必須支援 prefers-reduced-motion。
+如果使用者要求減少動態，請停用所有非必要動畫。
+
+【六、手機效能】
+請以手機效能優先。
+不要加入：
+- 大量粒子
+- 重型 Canvas 動畫
+- 大型影片背景
+- 持續高速運算動畫
+- 會造成手機發熱的效果
+
+【七、保留功能】
+請確認以下功能全部保留：
+1. 上一頁
+2. 下一頁
+3. 頁碼
+4. 鍵盤左右方向鍵
+5. 手機左右滑動
+6. CTA
+7. 手機響應式
+8. 無障礙 focus
+9. 圖片 alt
+
+【八、視覺原則】
+1. 效果必須服務內容。
+2. 不遮住文字。
+3. 暗底亮字。
+4. 亮底暗字。
+5. 不降低閱讀性。
+6. 不讓動畫搶走書籍本身。
+
+【九、輸出方式】
+請依原先確認的路線，輸出更新後的完整 index.html 或資料夾 ZIP。
+
+不要只輸出局部程式碼。
+不要省略沒有修改的區域。
+不要使用「其餘相同」。
+
+以下是目前可以正常使用的完整 index.html：
+【貼上 Step 4 產生並已測試正常的完整 HTML】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<p>一個比原本更有：</p>
+<ul>
+<li>品牌感</li>
+<li>書籍感</li>
+<li>動態感</li>
+<li>專業感</li>
+</ul>
+<p>但仍然穩定、好閱讀的網站。</p>
+<p><strong>手機操作：</strong>請 AI 提供可下載 HTML 與支援的預覽。若手機本機檔案預覽不執行按鈕互動，改用可執行 HTML 的預覽或靜態網址；進階版請下載完整 ZIP。</p><h2>人工確認重點</h2>
+<p>請測試：</p>
+<ul>
+<li>動畫是否太多</li>
+<li>手機是否變慢</li>
+<li>音效是否預設關閉</li>
+<li>動畫是否干擾閱讀</li>
+<li>圖片是否有版權</li>
+<li>圖片是否破圖</li>
+<li>原本翻頁是否仍然正常</li>
+</ul>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#step-6">繼續 Step 6</a></div>
+</details><details class="teaching-step" id="step-6">
+      <summary>
+        <span class="teaching-step-no">06</span>
+        <span class="teaching-step-title"><small>QA / RELEASE</small><strong>發布前除錯與最終修正</strong><em>發布前除錯與修正</em></span>
+        <span class="teaching-step-toggle" aria-hidden="true">＋</span>
+      </summary>
+      <div class="teaching-step-body">
+        <div class="teaching-notes"><h2>這一步要做什麼？</h2>
+<p>這一步不要再做新的設計。</p>
+<p>AI 的角色要改成：</p>
+<p><strong>前端網站測試工程師＋QA。</strong></p>
+<p>目標只有一個：</p>
+<p><strong>把正式公開前會出問題的地方找出來並修好。</strong></p>
+</div>
+        <div class="prompt-copy-panel">
+          <div class="prompt-toolbar"><span>Prompt 5｜完整正式版</span><button type="button" data-copy-target="prompt-5">複製 Prompt 5</button></div>
+          <pre id="prompt-5">【先確認操作環境，再開始製作】
+請先詢問並等待我回答：
+1. 現在用手機、平板，還是電腦？
+2. 是否能建立資料夾、管理圖片路徑，並有基本架站經驗？
+3. 要做書籍導讀、個人名片、品牌介紹，還是其他主題？預計使用幾張照片／幾頁內容？
+同一對話已確認的答案請沿用，不重複詢問。
+手機／平板、初學者或不熟資料夾者：採單檔入門路線，CSS、JavaScript、照片／名片均嵌入同一個 index.html，不要求另建 images 資料夾。先詢問用途（精華展示或完整書刊）、操作裝置、架站經驗與提供素材的頁數。展示用途建議約 8～10 頁，提煉重點與賣點；這只是建議，不是上限。需要整本書刊時依使用者提供且有權使用的內容規劃，評估圖片大小、手機效能與載入時間，必要時建議分冊或電腦資料夾版並取得使用者同意。手機或初學者使用內嵌圖片的單一 HTML；電腦且有基礎者可選資料夾版。不得自行截掉使用者要求的頁數。
+使用電腦且懂資料夾與基本架站者：先詢問要單檔版或進階資料夾版。進階版才使用 index.html、images/、css/、js/，提供檔案樹、各檔內容與完整 ZIP；內容可依材料擴充至八頁以上。
+
+【圖片與實際開啟成果】
+使用上傳的真實圖片；能處理檔案時，先縮圖／壓縮，再從實際圖片位元組產生完整 data:image/...;base64,...，不可編造 Base64、放省略號或把 AI 附件的暫時網址當正式圖片網址。每張圖片均須有 alt；以新開啟的 HTML 驗證圖片確實可見。
+若目前 AI 沒有圖片位元組或檔案處理能力，明確告知限制，先做可讀的文字／CSS 示意版並標示未嵌入圖片，不得宣稱完成。需要真實圖片時，引導改用具檔案處理能力的對話模式；不要叫手機學員修改資料夾路徑。
+能建立檔案時，提供真正可下載的 index.html（進階版提供 ZIP），並在支援 HTML 預覽的介面呈現可操作預覽。若無預覽能力，提供下載檔與適用目前裝置的開啟方式；手機本機預覽可能不執行 JavaScript，應改用能執行 HTML 的預覽或靜態網站網址測試。不可把程式碼區塊稱為已可操作預覽，也不可承諾手機檔案 App 一定可執行。
+初步以完成可開啟成果為優先，不需要先公開上網。發布前再檢查授權與是否含私人資料。
+
+你現在是一位「前端網站測試工程師、QA 工程師與網站發布檢查人員」。
+
+請檢查我提供的依確認路線交付的網站。
+
+你的任務不是重新設計網站。
+
+請：
+1. 找出會影響公開發布的問題。
+2. 修正真正需要修正的地方。
+3. 不要擅自重寫整個網站。
+4. 不要改變已確認的書籍內容。
+5. 不要改變網站原本的主要視覺風格。
+6. 不要刪除正常功能。
+
+請依序檢查以下項目：
+
+【一、程式語法】
+1. HTML 是否完整。
+2. CSS 是否有語法錯誤。
+3. JavaScript 是否有語法錯誤。
+4. 是否存在未關閉標籤。
+5. 是否存在重複 ID 或明顯衝突。
+
+【二、翻頁功能】
+請測試：
+1. 上一頁
+2. 下一頁
+3. 頁碼
+4. 第一頁邊界
+5. 最後一頁邊界
+6. 快速連點
+7. 頁面切換後內容是否正確
+
+【三、鍵盤操作】
+請確認：
+- ← 左方向鍵
+- → 右方向鍵
+可以正常翻頁。
+
+【四、手機操作】
+請檢查：
+1. 左右滑動。
+2. 390px 寬度畫面。
+3. 是否出現水平捲動。
+4. 按鈕是否容易點擊。
+5. 文字是否過小。
+
+【五、版面】
+請檢查：
+- 文字是否重疊
+- 文字是否被截斷
+- 圖片是否壓住文字
+- 內容是否超出容器
+- 顏色對比是否不足
+- CTA 是否不明顯
+
+【六、圖片】
+請檢查：
+1. 是否有 alt 替代文字。
+2. 是否有載入失敗備援。
+3. 是否存在錯誤圖片網址。
+4. 是否有來源或授權資訊。
+
+【七、動畫與音效】
+請檢查：
+1. 音效是否預設靜音。
+2. 是否可隨時停止。
+3. 按鈕是否顯示目前狀態。
+4. 是否尊重 prefers-reduced-motion。
+5. 動畫是否妨礙閱讀。
+
+【八、連結】
+請檢查：
+1. 是否有無效的 # 連結。
+2. 是否有錯誤網址。
+3. CTA 是否真的可以使用。
+4. 外部連結是否合理使用 target / rel。
+
+【九、內容】
+請檢查：
+- 是否還有「待補」
+- 是否還有 Lorem ipsum
+- 是否有錯字
+- 作者姓名是否一致
+- 書名是否一致
+- 頁碼是否一致
+
+【十、資安】
+請確認 HTML 不包含：
+- API Key
+- Token
+- 密碼
+- 資料庫憑證
+- 私人會員資料
+- 個人隱私紀錄
+- 不應公開的後台資訊
+
+【十一、無障礙】
+請檢查：
+- 圖片 alt
+- 鍵盤 focus
+- button 語意
+- aria-label
+- 對比
+- prefers-reduced-motion
+
+【十二、修改原則】
+只修改真正有問題的地方。
+
+不要：
+- 擅自換框架
+- 擅自刪功能
+- 擅自重新設計
+- 擅自改書籍內容
+- 擅自加入不存在的資料
+
+【十三、輸出格式】
+請依照以下三個部分輸出：
+
+A. 問題清單
+請列出：
+- 問題位置
+- 問題原因
+- 嚴重程度
+
+B. 修正內容摘要
+清楚說明：
+- 修改了什麼
+- 為什麼修改
+- 哪些部分完全沒有動
+
+C. 修正後的完整 index.html
+請提供完整 HTML。
+
+不要只給差異。
+不要只給局部程式碼。
+不要用「其餘相同」。
+
+以下是要檢查的完整 HTML：
+【貼上 Step 5 已完成的完整 index.html】</pre>
+        </div>
+        <div class="teaching-notes teaching-notes-after"><h2>這一步完成後，應該得到</h2>
+<p>一個已經完成：</p>
+<ul>
+<li>內容確認</li>
+<li>功能確認</li>
+<li>手機確認</li>
+<li>連結確認</li>
+<li>資安確認</li>
+<li>發布確認</li>
+</ul>
+<p>的最終網站版本。</p>
+<hr />
+</div>
+      </div>
+    <div class="learner-next"><a class="lesson-btn course-secondary" href="#final-guide">檢查並保存我的作品</a></div>
+</details></div>
+    <p class="copy-announcement" id="copy-status" aria-live="polite"></p>
+  </div>
+</section><section class="course-section" id="final-guide"><div class="lesson-container"><div class="course-section-head"><div><span class="course-index">你的作品完成了嗎？</span><h2>開啟看看，<br>確認別人也能順利閱讀</h2></div><p>把作品當成第一次看到的人來操作。你可以先保存檔案，確認好之後再分享。</p></div><div class="lesson-guide-grid"><article><b>內容</b><h3>你說的資料正確嗎？</h3><p>核對書名、作者、數字及來源。AI 不確定的內容先補查，不直接當成事實。</p></article><article><b>閱讀</b><h3>字看得清楚嗎？</h3><p>淺底使用深字，深底使用淺字。用手機打開，確認字體大小、段落與圖片都容易閱讀。</p></article><article><b>操作</b><h3>每個動作都能用嗎？</h3><p>試試上一頁、下一頁、頁碼和連結。電腦測試方向鍵，手機測試滑動；確認音效能開啟與關閉。</p></article><article><b>保存</b><h3>你能再次開啟作品嗎？</h3><p>保存 index.html、內容企劃和圖片。關閉後再次開啟 HTML，確認作品沒有遺失。</p></article></div><div class="lesson-guide-note"><strong>分享前再看一眼</strong><p>確認素材可以公開，檔案沒有放入密碼、API Key 或私人資料。發布成功後，請另一支手機打開作品網址，確認分享連結可以使用。</p></div><div class="course-actions"><a class="lesson-btn course-primary" href="#classroom-share">下載與分享教材</a><a class="lesson-btn course-secondary" href="#step-6">回 Step 6 修正問題</a></div></div></section><section class="course-section" id="classroom-share">
+      <div class="lesson-container">
+        <div class="course-section-head"><div><span class="course-index">教材帶著走</span><h2>下次再學，<br>也邀朋友一起做</h2></div><p>保存這個網址或 QR，下次可以直接回來。分享給想學 AI 的朋友，對方開啟教材後就能依步驟複製全文。</p></div>
+        <div class="classroom-share-grid">
+          <div class="lesson-qr-card"><img src="/classroom/book-to-flipbook/materials/book-course-entry-qr.png" width="520" height="520" alt="掃描前往書籍轉網站六大步驟教學頁"><strong>掃描進入完整教材</strong><a href="/classroom/book-to-flipbook/materials/book-course-entry-qr.png" download>下載課程 QR 圖片</a></div>
+          <div class="lesson-entry-panel"><h3>繼續學習的小提醒</h3><ol><li>打開這個教材頁，準備自己的書籍素材與 AI 對話。</li><li>依序展開 Step 1～6，按「複製 Prompt」，貼進同一個 AI 對話。</li><li>逐步提供素材、讀取結果並人工確認；確認後才進下一步。</li><li>取得 HTML 檔案，開啟、測試，再分享網址或保存備份。</li></ol>
+            <p>掃不到 QR 時，直接開啟或複製這個網址：</p><a class="lesson-entry-link" id="lesson-entry-url" href="https://abrakai-studio.com/classroom/book-to-flipbook/">https://abrakai-studio.com/classroom/book-to-flipbook/</a>
+            <div class="course-actions"><button type="button" class="lesson-btn course-primary" data-copy-target="lesson-entry-url">複製課程網址</button><a class="lesson-btn course-secondary" href="#cospace-guide">課堂互動工具</a></div>
+            <ul class="lesson-step-links" aria-label="學員步驟入口"><li><a href="#step-1"><b>Step 1</b> 素材與公開範圍</a></li><li><a href="#step-2"><b>Step 2</b> 內容辨識與重點萃取</a></li><li><a href="#step-3"><b>Step 3</b> 網站架構與導讀頁數</a></li><li><a href="#step-4"><b>Step 4</b> 生成 HTML 網站</a></li><li><a href="#step-5"><b>Step 5</b> 圖片、動畫與聲音升級</a></li><li><a href="#step-6"><b>Step 6</b> 發布前除錯與修正</a></li></ul>
+          <div class="course-actions"><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/ai-book-to-website-six-step-prompts-v3.md" download>下載六段完整提示詞</a><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/book-to-website-student-guide-v1.md" download>下載學員操作講義</a></div></div>
+        </div>
+      </div>
+    </section><section class="course-section learner-cospace" id="cospace-guide"><div class="lesson-container"><div class="course-section-head"><div><span class="course-index">一起上課時</span><h2>Co-Space，<br>讓你輕鬆接收提示詞與留言</h2></div><p>如果你正在參加課程，可以掃講師分享的 QR 接收提示詞，也能用飛鴿傳書留下問題。自己學習時，直接使用上面的六步教材即可。</p></div><div class="lesson-guide-grid"><article><b>接收提示詞</b><h3>掃 QR，再按複製</h3><p>掃描課堂投影的 QR。打開提示詞頁後，按複製，再貼到你自己的 AI 對話中。</p></article><article><b>完整書籍教材</b><h3>回這裡複製六段全文</h3><p>書籍轉網站的六段完整提示詞都在本頁。QR 不好掃時，用這個教材網址繼續操作。</p></article><article><b>留下問題</b><h3>飛鴿傳書</h3><p>開啟 Co-Space 的飛鴿傳書入口，依畫面操作留下課堂問題或回饋，避免填入私人資料。</p></article></div><div class="course-actions"><a class="lesson-btn course-primary" href="/tools/co-space/">開啟 Co-Space</a><a class="lesson-btn course-secondary" href="#prompts">回六步教材</a></div></div></section><section class="course-section teacher-downloads" id="teacher-resources"><div class="lesson-container"><span class="course-index">講師下載專區</span><h2>歡迎下載教案與授課投影片</h2><p>要帶領一堂課？教案另附 65 分鐘流程、60／70 分鐘調整方式、Co-Space 操作與課堂備援。舊版 PDF 投影片可作流程參考；用途與頁數規則請以本頁及更新後文字教材為準。學員可留在本頁依步驟實作。</p><div class="course-actions"><a class="lesson-btn course-primary" href="/classroom/book-to-flipbook/materials/book-to-website-teacher-slides-v1.pdf" download>下載授課投影片 PDF</a><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/book-to-website-teacher-plan-v1.md" download>下載講師教案</a><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/book-course-navigation-cards.json" download>下載 Co-Space 導覽卡 JSON</a></div></div></section><section class="course-closing">
+      <div class="lesson-container course-closing-card">
+        <div><span>COURSE COMPLETE</span><h2>你也做得到，<br>讓你的知識成為一個作品。</h2></div>
+        <div class="course-actions"><a class="lesson-btn course-primary" href="/classroom/book-to-flipbook/demo/">開啟完整範例</a><a class="lesson-btn course-secondary" href="#prompts">帶走六段 Prompt</a><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/ai-book-to-website-six-step-prompts-v3.md" download>下載六段 Prompt 原版</a><a class="lesson-btn course-secondary" href="#cospace-guide">課堂互動工具</a><a class="lesson-btn course-secondary" href="/classroom/book-to-flipbook/materials/book-to-website-student-guide-v1.md" download>下載學員操作講義</a></div>
+      </div>
+    </section>
+</main>
+
+  <footer class="site-footer-simple"><div class="lesson-container footer-line"><span>© <span id="year"></span> 阿布拉.凱 工作室｜AI 小教室</span><a href="/classroom/">返回 AI 小教室</a></div></footer>
+</body>
+</html>

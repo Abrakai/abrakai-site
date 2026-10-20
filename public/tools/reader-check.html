@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>朗讀器安裝相容性檢查｜AbraKai</title>
+<style>body{margin:0;background:#eef4f8;color:#17324d;font:17px/1.7 system-ui,sans-serif}main{max-width:820px;margin:auto;padding:24px}h1{font-size:28px}button,a{font:inherit}button{padding:14px 20px;border:0;border-radius:12px;background:#234f79;color:white;cursor:pointer}button:disabled{opacity:.6}.result{margin:16px 0;padding:18px;background:#fff;border:1px solid #becdd9;border-radius:12px}.blocked{border-left:5px solid #b02a36;background:#fff1ef}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}a{color:#165a86}small{display:block;margin-top:24px}</style></head>
+<body><main><a href="./">← 返回工具中心</a><h1>朗讀器安裝相容性檢查</h1><p>檢查這個網站是否允許瀏覽器直接連到語音廠商。只查詢公開／未授權的模型與音色清單，不輸入或傳送 API Key、不傳送文章、不生成音訊。</p><button id="check">開始不計費連線檢查</button><p id="summary" role="status">尚未檢查。</p><div id="results" aria-live="polite"></div><small>部署檢查 V1.0 · 正式朗讀器尚未遷入此頁。此檢查不代表廠商帳戶、音質或額度驗證。</small></main><script>"use strict";
+// Non-billable deployment probe: no credentials, no article, no valid generation payload.
+(() => {
+    const button = document.querySelector('#check');
+    const results = document.querySelector('#results');
+    const summary = document.querySelector('#summary');
+    const rows = new Map();
+    const blocked = new Set();
+    const endpoints = [
+        { name: 'Google 模型查詢', url: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1' },
+        { name: 'ElevenLabs 模型查詢', url: 'https://api.elevenlabs.io/v1/models' },
+        { name: 'xAI 音色查詢', url: 'https://api.x.ai/v1/tts/voices' },
+        { name: 'Azure 音色查詢', url: 'https://eastasia.tts.speech.microsoft.com/cognitiveservices/voices/list' },
+        { name: 'Google 語音介面（未授權）', url: 'https://generativelanguage.googleapis.com/v1beta/interactions', post: true, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': '' }, body: '{}' },
+        { name: 'ElevenLabs 語音介面（未授權）', url: 'https://api.elevenlabs.io/v1/text-to-dialogue?output_format=mp3_44100_128', post: true, headers: { 'Content-Type': 'application/json', 'xi-api-key': '' }, body: '{}' },
+        { name: 'xAI 語音介面（未授權）', url: 'https://api.x.ai/v1/tts', post: true, headers: { 'Content-Type': 'application/json', 'Authorization': '' }, body: '{}' },
+        { name: 'Azure 語音介面（未授權）', url: 'https://eastasia.tts.speech.microsoft.com/cognitiveservices/v1', post: true, headers: { 'Content-Type': 'application/ssml+xml', 'Ocp-Apim-Subscription-Key': '', 'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3' }, body: '<speak/>' }
+    ];
+    document.addEventListener('securitypolicyviolation', event => {
+        const e = event;
+        if (e.disposition !== 'enforce' || e.effectiveDirective !== 'connect-src')
+            return;
+        const host = (() => { try {
+            return new URL(e.blockedURI).host;
+        }
+        catch {
+            return '';
+        } })();
+        const row = rows.get(host);
+        if (!row)
+            return;
+        blocked.add(host);
+        row.className = 'result blocked';
+        row.textContent = host + '：網站安全政策封鎖外部連線（CSP）。請求未送至語音生成介面。';
+        const detail = document.createElement('pre');
+        detail.textContent = '生效政策：' + e.originalPolicy;
+        row.append(detail);
+    });
+    button.addEventListener('click', async () => {
+        button.disabled = true;
+        results.replaceChildren();
+        rows.clear();
+        blocked.clear();
+        summary.textContent = '正在檢查；不使用 API Key，不生成語音。';
+        for (const { name, url, post, headers, body } of endpoints) {
+            const host = new URL(url).host;
+            const row = document.createElement('div');
+            row.className = 'result';
+            row.textContent = name + '：檢查中…';
+            rows.set(host, row);
+            results.append(row);
+            const controller = new AbortController();
+            const deadline = setTimeout(() => controller.abort(), 8000);
+            try {
+                const response = await fetch(url, { method: post ? 'POST' : 'GET', headers, body, mode: 'cors', credentials: 'omit', redirect: 'error', signal: controller.signal });
+                await response.body?.cancel();
+                row.textContent = name + '：可讀取 HTTP ' + response.status + ' 回應。這只證明此查詢可連線，不代表 Key、語音生成、音質或所有介面通過驗收。';
+            }
+            catch {
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (!blocked.has(host))
+                    row.textContent = name + '：未能讀取回應，可能為 CORS、網路或逾時；未確認原因，不判定為 Key 問題。';
+            }
+            finally {
+                clearTimeout(deadline);
+            }
+        }
+        summary.textContent = blocked.size
+            ? '檢查完成：已確認本站 CSP 封鎖外部 API。自備 Key 無法解除此限制；目前不能驗收瀏覽器直連 AI 朗讀。'
+            : '檢查完成。仍須另行驗證個別模型、語音介面與 iPhone 實際播放；本頁沒有執行付費測試。';
+        button.disabled = false;
+    });
+})();
+</script></body></html>
