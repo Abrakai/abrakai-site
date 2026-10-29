@@ -292,7 +292,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.2</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.3</p>
     </aside>
   </div>
 </div>
@@ -919,6 +919,8 @@ async function runAlign(kind){
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
   if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
   if(kind==='gemini') $('aCancel').hidden=false;
+  const awayWarn=()=>{ if(document.hidden && aligning) aBase='請保持這個畫面開著，離開畫面或螢幕關閉時 AI 會中斷。'+aBase.replace(/^請保持這個畫面開著.*?中斷。/,''); };
+  document.addEventListener('visibilitychange', awayWarn);
   const pinnedBefore = lines.filter(l=>l.pin).length;
   if(!$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
@@ -945,7 +947,7 @@ async function runAlign(kind){
       : m==='local' ? '這段聲音分析不出歌聲，請改用「AI 精準對時間」或自己邊聽邊按。'
       : m && m.startsWith('msg:') ? m.slice(4)
       : '分析沒有成功，請再試一次。');
-  }finally{ $('aCancel').hidden=true; aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
+  }finally{ document.removeEventListener('visibilitychange', awayWarn); $('aCancel').hidden=true; aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 }
 $('aLocal').onclick=()=>runAlign('local');
 try{ $('keepPins').checked = localStorage.getItem(KEY+'-keep')==='1'; }catch(e){}
@@ -1006,24 +1008,33 @@ function sseText(raw){
 }
 function xhrStream(url, key, payload, h){
   return new Promise((resolve,reject)=>{
-    const x = new XMLHttpRequest(); curXhr = x;
-    let phase='up', last=Date.now(), reason='', len=0;
-    const dog = setInterval(()=>{
-      const idle = Date.now()-last;
-      if(phase==='up' && idle>60000){ reason='stall-up'; x.abort(); }
-      else if(phase==='wait' && idle>(h.waitLimit||200000)){ reason='stall-wait'; x.abort(); }
-      else if(phase==='stream' && idle>90000){ reason='stall-wait'; x.abort(); }
-    },1000);
-    const done = () => { clearInterval(dog); curXhr=null; };
+    const x = new XMLHttpRequest();
+    let phase='up', last=Date.now(), began=Date.now(), reason='', len=0, settled=false;
+    const hardLimit = (h.hardLimit||360000);
+    const fin = (ok, val) => { if(settled) return; settled=true; clearInterval(dog); document.removeEventListener('visibilitychange', onVis); if(curXhr===ctl) curXhr=null; (ok?resolve:reject)(val); };
+    const kill = r => { reason=r; try{ x.abort(); }catch(e){} fin(false, new Error(r)); };
+    const check = () => {
+      if(settled) return;
+      const now=Date.now(), idle=now-last;
+      if(now-began > hardLimit) kill('stall-wait');
+      else if(phase==='up' && idle>60000) kill('stall-up');
+      else if(phase==='wait' && idle>(h.waitLimit||200000)) kill('stall-wait');
+      else if(phase==='stream' && idle>90000) kill('stall-wait');
+    };
+    const dog = setInterval(check, 1000);
+    const onVis = () => { if(!document.hidden) check(); };
+    document.addEventListener('visibilitychange', onVis);
+    const ctl = { abort: () => kill('cancel') }; curXhr = ctl;
     x.open('POST', url);
     x.setRequestHeader('content-type','application/json');
     x.setRequestHeader('x-goog-api-key', key);
     x.upload.onprogress = e => { last=Date.now(); if(e.lengthComputable) h.onUp(e.loaded/e.total); };
     x.upload.onload = () => { phase='wait'; last=Date.now(); h.onWait(); };
-    x.onprogress = () => { if(x.responseText.length!==len){ len=x.responseText.length; last=Date.now(); phase='stream'; if(x.status===200) h.onText(x.responseText); } };
-    x.onload = () => { done(); if(x.status===200) h.onText(x.responseText); resolve({ status:x.status, text:x.responseText }); };
-    x.onerror = () => { done(); reject(new Error(reason||'net')); };
-    x.onabort = () => { done(); reject(new Error(reason||'cancel')); };
+    x.onprogress = () => { if(settled) return; if(x.responseText.length!==len){ len=x.responseText.length; last=Date.now(); phase='stream'; if(x.status===200) h.onText(x.responseText); } };
+    x.onload = () => { if(settled) return; if(x.status===200) h.onText(x.responseText); fin(true, { status:x.status, text:x.responseText }); };
+    x.onerror = () => fin(false, new Error(reason||'net'));
+    x.onabort = () => fin(false, new Error(reason||'cancel'));
+    x.ontimeout = () => fin(false, new Error('stall-wait'));
     h.onUp(0);
     x.send(payload);
   });
@@ -1042,7 +1053,7 @@ async function gRun(o){
       let seen=0, got=0, res;
       try{
         res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, o.key, payload, {
-          waitLimit:o.waitLimit,
+          waitLimit:o.waitLimit, hardLimit:o.hardLimit,
           onUp: f => o.onUp && o.onUp(f),
           onWait: () => o.onWait && o.onWait(),
           onText: raw => {
@@ -1117,7 +1128,7 @@ ${list1}`;
   // ---- phase 2: refine every character, a few lines at a time with a short clip
   const T = timed().filter(i=>!(lines[i].pin && lines[i].chars));
   const groups=[]; for(let k=0;k<T.length;k+=6) groups.push(T.slice(k,k+6));
-  const order=[r1.model, ...models.filter(m=>m!==r1.model)];
+  const order=[r1.model];
   let refined=0, stopped='';
   for(let g=0; g<groups.length; g++){
     const G=groups[g], first=lines[G[0]], last=lines[G[G.length-1]];
@@ -1134,7 +1145,7 @@ ${list1}`;
 ${beatHint()}
 ${list2}`;
     try{
-      await gRun({ models:order, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000,
+      await gRun({ models:order, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000, hardLimit:150000,
         schema: OBJ({ i:{type:'INTEGER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, ['i','end','c']),
         onUp: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
         onWait: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
