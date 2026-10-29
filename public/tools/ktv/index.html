@@ -103,6 +103,11 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .how a{color:var(--gold)}
 .row .t .pin{font-size:13px}
 .row .t .pin.on{background:var(--gold);border-color:var(--gold)}
+.prog{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.prog{grid-template-columns:1fr}}
+.prog select,.prog input{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px;min-width:0;width:100%}
+.prog .bar input{flex:1 1 96px;min-width:96px;width:auto}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
 @media (max-width:560px){.row{grid-template-columns:24px minmax(0,1fr)}.row .t{grid-column:2}}
 .chars{flex-wrap:wrap;font-size:24px!important;letter-spacing:.04em}
 .chars span{color:var(--muted);border-bottom:3px solid transparent}
@@ -186,6 +191,39 @@ body{margin:0}
         </section>
 
         <section class="sec">
+          <details id="proBox">
+            <summary><span>🎼 節拍設定（專業模式，可不填）</span><span id="proState" class="hint">未設定</span></summary>
+            <div class="in">
+              <p class="hint">知道這首歌的拍號和速度，AI 會對得更準，也能把每個字對齊到拍子上。不知道也沒關係，可以按「自動偵測」或跟著音樂按拍子。</p>
+              <div class="prog">
+                <label class="f">拍號
+                  <select id="pTs"><option value="4/4">4/4（每小節 4 拍）</option><option value="3/4">3/4（每小節 3 拍）</option><option value="2/4">2/4（每小節 2 拍）</option><option value="6/8">6/8（每小節 6 拍）</option></select>
+                </label>
+                <label class="f">速度（每分鐘幾拍，BPM）
+                  <input type="number" id="pBpm" min="30" max="240" step="0.1" inputmode="decimal" placeholder="例：72">
+                </label>
+              </div>
+              <div class="bar">
+                <button id="pDetect">🔍 自動偵測速度</button>
+                <button id="pTap">👆 跟著音樂按拍子</button>
+                <button id="pHalf">速度 ÷2</button><button id="pDouble">速度 ×2</button>
+              </div>
+              <div class="prog">
+                <label class="f">第一拍的位置
+                  <span class="bar"><input type="text" id="pOff" readonly placeholder="未設定"><button id="pOffSet">📍 設在目前位置</button></span>
+                </label>
+                <label class="f">對齊到
+                  <select id="pSub"><option value="0.5">半拍</option><option value="0.25">1/4 拍</option><option value="1">一拍</option></select>
+                </label>
+              </div>
+              <label class="chk"><input type="checkbox" id="pAuto" checked> AI 對完時間後，自動把每個字對齊拍子</label>
+              <div class="bar"><button class="primary" id="pSnap">🎼 每個字對齊拍子</button><button id="pUndo" hidden>復原對齊</button></div>
+              <p class="status" id="pStatus"></p>
+            </div>
+          </details>
+        </section>
+
+        <section class="sec">
           <h3>逐句微調</h3>
           <p class="hint">點歌詞會從那一句前 1 秒開始播放。聽到開口的瞬間按 📍，就會把這一句設在目前的位置；也可以用 −／＋ 每次調 0.1 秒。調過的句子會亮黃燈，再按一次自動對時間時會保留，其他句子會依照它們重新排。</p>
           <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button><button id="autoChars">⚡ 自動推估每個字</button></div>
@@ -250,7 +288,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.8</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.9</p>
     </aside>
   </div>
 </div>
@@ -265,7 +303,7 @@ const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
 const LEAD = 4;
 
 let lines = [];           // {text, role, start, end}
-let meta = { title:'', artist:'', sub:'' };
+let meta = { title:'', artist:'', sub:'', ts:'4/4', bpm:null, off:null, grid:0.5, autoSnap:true };
 let size = 78;            // per mille of height
 let hasVideo = false, videoName = 'KTV';
 let timing = false, k = 0, aligning = false;
@@ -630,7 +668,7 @@ function updateButtons(){
 }
 
 /* ---------- meta ---------- */
-function syncMetaInputs(){ $('mTitle').value=meta.title||''; $('mArtist').value=meta.artist||''; $('mSub').value=meta.sub||''; $('mSize').value=size; $('sizeVal').textContent=size; }
+function syncMetaInputs(){ if(typeof syncPro==='function') syncPro(); $('mTitle').value=meta.title||''; $('mArtist').value=meta.artist||''; $('mSub').value=meta.sub||''; $('mSize').value=size; $('sizeVal').textContent=size; }
 ['mTitle','mArtist','mSub'].forEach(id=>$(id).addEventListener('input',e=>{ meta[{mTitle:'title',mArtist:'artist',mSub:'sub'}[id]]=e.target.value; persist(); }));
 $('mSize').oninput=e=>{ size=+e.target.value; $('sizeVal').textContent=size; persist(); };
 let parseT; $('lyrics').addEventListener('input',()=>{ clearTimeout(parseT); parseT=setTimeout(()=>{ parse(); persist(); },250); });
@@ -711,7 +749,7 @@ $('expBtn').onclick=()=>{
 $('impFile').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); $('lyrics').value=d.text||''; meta=Object.assign({title:'',artist:'',sub:''},d.meta||{}); size=d.size||size; parse(d.times||[]); persist(); $('recStatus').textContent='時間檔讀好了。'; }catch(err){ $('recStatus').textContent='這個檔案不是時間檔，請選「存時間檔」存下來的 .json。'; } };
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); $('lyrics').value=d.text||''; meta=Object.assign({title:'',artist:'',sub:'',ts:'4/4',bpm:null,off:null,grid:0.5,autoSnap:true},d.meta||{}); size=d.size||size; parse(d.times||[]); persist(); $('recStatus').textContent='時間檔讀好了。'; }catch(err){ $('recStatus').textContent='這個檔案不是時間檔，請選「存時間檔」存下來的 .json。'; } };
   r.readAsText(f); e.target.value='';
 };
 
@@ -866,10 +904,12 @@ async function runAlign(kind){
       applyTimes(r,'快速自動對時間');
       aStatus('依照「一個音一個字」推估每個字…'); await tick();
       estimateChars(a); persist(); renderList();
-      aStatus('快速自動對時間完成（含每個字的拍點）！按播放確認，不準的句子按 🎵 逐字對拍修正。');
+      if(meta.bpm && meta.autoSnap) snapAll(true);
+      aStatus(`快速自動對時間完成（含每個字的拍點${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！按播放確認，不準的句子按 🎵 逐字對拍修正。`);
     }else{
       const r = await geminiAlign(a);
       applyTimes(r.times, `AI 精準對時間（由 ${r.model} 分析）`);
+      if(meta.bpm && meta.autoSnap){ snapAll(true); aStatus(`AI 精準對時間（由 ${r.model} 分析）完成，並已對齊拍子！按播放確認，不準的句子按 🎵 修正。`); }
     }
   }catch(err){
     const m = err && err.message;
@@ -967,7 +1007,7 @@ async function geminiAlign(a){
 - c：這一句每個字「開始唱」的時間，依照字的順序列出，數量必須剛好等於括號裡的字數。
 - start：第一個字開始唱的時間（等於 c 的第一個值）。end：最後一個字唱完、聲音停下來的時間。
 - 單位是秒，精確到小數點後兩位。所有時間必須依順序遞增。每一句都要回傳，聽不清楚的請依旋律前後推估。
-
+${beatHint()}
 ${lyricList}`;
   const body = { contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:b64 } }, { text:prompt } ] }],
     generationConfig:{ temperature:0, responseMimeType:'application/json',
@@ -1154,7 +1194,108 @@ $('autoChars').onclick = async () => {
   }finally{ aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 };
 
-restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState();
+/* ---------- beat settings (pro mode) ---------- */
+function beatSec(){ if(!meta.bpm) return null; return 60/meta.bpm; }
+function beatHint(){
+  if(!meta.bpm) return '';
+  const per = meta.ts.split('/')[0], b = beatSec();
+  return `\n節拍資訊（使用者提供）：這首歌是 ${meta.ts} 拍（每小節 ${per} 拍），速度約每分鐘 ${(+meta.bpm).toFixed(1)} 拍，每拍約 ${b.toFixed(3)} 秒${meta.off!=null?`，第一拍大約在 ${meta.off.toFixed(2)} 秒，之後每 ${b.toFixed(3)} 秒一拍`:''}。每個字的長度通常是半拍的整數倍（半拍、一拍、一拍半、兩拍…），字的開始通常落在拍點或半拍上，請參考這個節奏來判斷。\n`;
+}
+function pStatus(m){ $('pStatus').textContent=m; }
+function syncPro(){
+  $('pTs').value=meta.ts||'4/4'; $('pBpm').value=meta.bpm?(+meta.bpm).toFixed(1):''; $('pSub').value=String(meta.grid||0.5);
+  $('pOff').value = meta.off!=null ? fmt(meta.off) : ''; $('pAuto').checked = meta.autoSnap!==false;
+  $('proState').textContent = meta.bpm ? `${meta.ts}．${(+meta.bpm).toFixed(0)} BPM` : '未設定';
+  $('proState').className = meta.bpm ? 'ok' : 'hint';
+  $('pSnap').disabled = !meta.bpm;
+}
+$('pTs').onchange=e=>{ meta.ts=e.target.value; persist(); syncPro(); };
+$('pBpm').onchange=e=>{ const v=parseFloat(e.target.value); meta.bpm = (v>=30&&v<=240) ? v : null; persist(); syncPro(); };
+$('pSub').onchange=e=>{ meta.grid=+e.target.value; persist(); };
+$('pAuto').onchange=e=>{ meta.autoSnap=e.target.checked; persist(); };
+$('pHalf').onclick=()=>{ if(meta.bpm){ meta.bpm=Math.max(30,meta.bpm/2); persist(); syncPro(); } };
+$('pDouble').onclick=()=>{ if(meta.bpm){ meta.bpm=Math.min(240,meta.bpm*2); persist(); syncPro(); } };
+$('pOffSet').onclick=()=>{ if(!hasVideo){ pStatus('請先選影片。'); return; } meta.off=+video.currentTime.toFixed(2); persist(); syncPro(); pStatus('第一拍位置已設定。'); };
+let taps=[], tapTimer=null;
+$('pTap').onclick=()=>{
+  const now=performance.now(); clearTimeout(tapTimer);
+  if(taps.length && now-taps[taps.length-1]>2500) taps=[];
+  taps.push(now);
+  if(hasVideo && !video.paused && taps.length===1) meta.off=+video.currentTime.toFixed(2);
+  if(taps.length>=4){
+    const iv=[]; for(let i=1;i<taps.length;i++) iv.push(taps[i]-taps[i-1]);
+    iv.sort((a,b)=>a-b); const med=iv[Math.floor(iv.length/2)];
+    meta.bpm=+(60000/med).toFixed(1); persist(); syncPro();
+    pStatus(`已按 ${taps.length} 下，速度約 ${meta.bpm.toFixed(0)} BPM。繼續按會更準，停 2.5 秒就重新開始。`);
+  } else pStatus(`跟著音樂的拍子按，已按 ${taps.length} 下（至少 4 下）…${hasVideo&&video.paused?' 建議先按播放。':''}`);
+  tapTimer=setTimeout(()=>{ taps=[]; },2500);
+};
+$('pDetect').onclick=async()=>{
+  if(aligning) return;
+  if(!hasVideo||!curFile){ pStatus('請先選影片。'); return; }
+  aligning=true; updateButtons(); $('pDetect').disabled=true;
+  try{
+    pStatus('讀取影片聲音中…'); await tick();
+    const a=await getAudio();
+    pStatus('分析節奏中…'); await tick();
+    const r=detectTempo(a);
+    if(!r) throw new Error('x');
+    meta.bpm=r.bpm; meta.off=r.off; persist(); syncPro();
+    pStatus(`偵測到速度約 ${r.bpm.toFixed(0)} BPM，第一拍約在 ${fmt(r.off)}。如果感覺快了一倍或慢了一倍，按「速度 ÷2」或「×2」。`);
+  }catch(e){ pStatus('這段聲音偵測不到穩定的節奏，請改用「跟著音樂按拍子」。'); }
+  finally{ aligning=false; $('pDetect').disabled=false; updateButtons(); }
+};
+function detectTempo(a){
+  const x=a.mono, SR=a.SR, hop=Math.round(SR*0.01), F=Math.floor(x.length/hop);
+  const e=new Float32Array(F);
+  for(let f=0;f<F;f++){ let q=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=x[o+i]; q+=v*v; } e[f]=Math.log10(Math.sqrt(q/hop)+1e-5); }
+  const env=new Float32Array(F); for(let f=1;f<F;f++) env[f]=Math.max(0,e[f]-e[f-1]);
+  let m=0; for(let f=0;f<F;f++) m+=env[f]; m/=F; for(let f=0;f<F;f++) env[f]-=m;
+  let best=null;
+  for(let lag=33; lag<=100; lag++){ // 180..60 BPM
+    let acc=0; for(let f=lag; f<F; f++) acc+=env[f]*env[f-lag];
+    const bpm=6000/lag, w=Math.exp(-0.5*Math.pow(Math.log2(bpm/100)/0.9,2));
+    const sc=acc/(F-lag)*w;
+    if(!best||sc>best.sc) best={lag,sc};
+  }
+  if(!best||best.sc<=0) return null;
+  // refine with neighbours
+  const acf=l=>{ let acc=0; for(let f=l; f<F; f++) acc+=env[f]*env[f-l]; return acc/(F-l); };
+  const y0=acf(best.lag-1), y1=acf(best.lag), y2=acf(best.lag+1);
+  const d=(y0-2*y1+y2)!==0 ? 0.5*(y0-y2)/(y0-2*y1+y2) : 0;
+  const lag=best.lag+Math.max(-0.5,Math.min(0.5,d));
+  let bo=0, bs=-1e9;
+  for(let o=0;o<Math.ceil(lag);o++){ let sum=0; for(let p=o; p<F; p+=lag) sum+=Math.max(0,env[Math.round(p)]||0); if(sum>bs){ bs=sum; bo=o; } }
+  // first beat at/after the first sung line if known
+  const T=timed(); let off=bo*0.01;
+  if(T.length){ const s0=lines[T[0]].start; const n=Math.round((s0-off)/(lag*0.01)); off=off+n*lag*0.01; }
+  return { bpm:+(6000/lag).toFixed(1), off:+off.toFixed(2) };
+}
+let snapBackup=null;
+function snapAll(silent){
+  const b=beatSec(); if(!b) return 0;
+  const g=b*(meta.grid||0.5), o=meta.off!=null?meta.off:0;
+  const q=v=>o+Math.round((v-o)/g)*g;
+  snapBackup=lines.map(l=>({ start:l.start, end:l.end, chars:l.chars?l.chars.map(c=>c.slice()):null }));
+  let n=0;
+  lines.forEach(l=>{
+    if(l.start==null) return;
+    if(!l.chars){ const C=unitsOf(l.text).length; if(!C) return; l.chars=buildChars(l,[l.start],l.end)||null; if(!l.chars) return; }
+    const st=[]; l.chars.forEach((c,k)=>{ let v=q(c[0]); if(k>0 && v<=st[k-1]+1e-3) v=st[k-1]+g; st.push(v); });
+    const lastEnd=Math.max(st[st.length-1]+g, q(l.chars[l.chars.length-1][1]));
+    l.chars=st.map((v,k)=>[+v.toFixed(3), +(k<st.length-1 ? Math.max(v+0.05, st[k+1]-0.02) : lastEnd).toFixed(3)]);
+    l.start=l.chars[0][0]; if(l.end!=null) l.end=l.chars[l.chars.length-1][1];
+    n++;
+  });
+  persist(); renderList();
+  $('pUndo').hidden=false;
+  if(!silent) pStatus(`已把 ${n} 句的每個字對齊到${{'0.5':'半拍','0.25':'1/4 拍','1':'一拍'}[String(meta.grid||0.5)]}。不滿意可以按「復原對齊」。`);
+  return n;
+}
+$('pSnap').onclick=()=>{ if(!timed().length){ pStatus('請先用自動對時間把每一句對好。'); return; } snapAll(false); };
+$('pUndo').onclick=()=>{ if(!snapBackup) return; lines.forEach((l,i)=>{ const b=snapBackup[i]; if(b){ l.start=b.start; l.end=b.end; l.chars=b.chars; } }); snapBackup=null; $('pUndo').hidden=true; persist(); renderList(); pStatus('已復原。'); };
+
+restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
 (document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
 })();
