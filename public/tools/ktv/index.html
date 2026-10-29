@@ -162,6 +162,7 @@ body{margin:0}
             <button class="primary" id="aGemini" disabled>✨ AI 精準對時間<small>使用你的 Gemini 金鑰</small></button>
           </div>
           <p class="status" id="aStatus"></p>
+          <div class="bar"><button id="aCancel" hidden>取消 AI 對時間</button></div>
           <details id="keyBox">
             <summary><span>Gemini 金鑰設定</span><span id="keyState" class="hint">尚未設定</span></summary>
             <div class="in">
@@ -229,7 +230,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.5</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.6</p>
     </aside>
   </div>
 </div>
@@ -798,6 +799,7 @@ async function runAlign(kind){
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
   if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
+  if(kind==='gemini') $('aCancel').hidden=false;
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
@@ -817,9 +819,10 @@ async function runAlign(kind){
       : m==='local' ? '這段聲音分析不出歌聲，請改用「AI 精準對時間」或自己邊聽邊按。'
       : m && m.startsWith('msg:') ? m.slice(4)
       : '分析沒有成功，請再試一次。');
-  }finally{ aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
+  }finally{ $('aCancel').hidden=true; aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 }
 $('aLocal').onclick=()=>runAlign('local');
+$('aCancel').onclick=()=>{ if(curXhr) curXhr.abort(); };
 $('aGemini').onclick=()=>runAlign('gemini');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
 $('shiftPlus').onclick=()=>shiftAll(0.2);
@@ -860,6 +863,36 @@ function wavB64(pcm, SR){
   for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
   return btoa(bin);
 }
+let curXhr=null;
+function sseText(raw){
+  let acc='';
+  raw.split(/\r?\n/).forEach(line=>{ if(!line.startsWith('data:')) return; try{ const d=JSON.parse(line.slice(5).trim()); acc += ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join(''); }catch(e){} });
+  return acc;
+}
+function xhrStream(url, key, payload, h){
+  return new Promise((resolve,reject)=>{
+    const x = new XMLHttpRequest(); curXhr = x;
+    let phase='up', last=Date.now(), reason='', len=0;
+    const dog = setInterval(()=>{
+      const idle = Date.now()-last;
+      if(phase==='up' && idle>60000){ reason='stall-up'; x.abort(); }
+      else if(phase==='wait' && idle>200000){ reason='stall-wait'; x.abort(); }
+      else if(phase==='stream' && idle>90000){ reason='stall-wait'; x.abort(); }
+    },1000);
+    const done = () => { clearInterval(dog); curXhr=null; };
+    x.open('POST', url);
+    x.setRequestHeader('content-type','application/json');
+    x.setRequestHeader('x-goog-api-key', key);
+    x.upload.onprogress = e => { last=Date.now(); if(e.lengthComputable) h.onUp(e.loaded/e.total); };
+    x.upload.onload = () => { phase='wait'; last=Date.now(); h.onWait(); };
+    x.onprogress = () => { if(x.responseText.length!==len){ len=x.responseText.length; last=Date.now(); phase='stream'; if(x.status===200) h.onText(x.responseText); } };
+    x.onload = () => { done(); if(x.status===200) h.onText(x.responseText); resolve({ status:x.status, text:x.responseText }); };
+    x.onerror = () => { done(); reject(new Error(reason||'net')); };
+    x.onabort = () => { done(); reject(new Error(reason||'cancel')); };
+    h.onUp(0);
+    x.send(payload);
+  });
+}
 async function geminiAlign(a){
   const key=getKey();
   aStatus('準備 AI 模型中…'); await tick();
@@ -881,57 +914,60 @@ ${lyricList}`;
   let quota=0;
   const backup = lines.map(l=>({ start:l.start, end:l.end }));
   const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; } }); renderList(); };
+  const MB = (b64.length*0.75/1048576).toFixed(1);
+  const tried = [];
   for(const model of models){
-    aStatus(`上傳聲音給 AI（${(b64.length/1048576*0.75).toFixed(1)} MB）…`);
-    const ctl=new AbortController(); let to=setTimeout(()=>ctl.abort(),240000);
-    let r;
-    try{ r = await fetch(`${GBASE}models/${model}:streamGenerateContent?alt=sse`,{ method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key}, body:JSON.stringify(body), signal:ctl.signal }); }
-    catch(e){ clearTimeout(to); continue; }
-    if(r.status===401||r.status===403){ clearTimeout(to); throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); }
-    if(r.status===429){ clearTimeout(to); quota++; continue; }
-    if(r.status===400){ clearTimeout(to); const t=await r.text(); if(/API_KEY_INVALID|API key not valid/i.test(t)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); continue; }
-    if(r.status===404){ clearTimeout(to); try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
-    if(!r.ok || !r.body){ clearTimeout(to); continue; }
-    // clear lines that AI will fill, so progress is visible
-    lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; } }); renderList();
-    aStatus(`AI 正在聽歌，馬上開始一句一句對時間（${model}）…`);
-    const times = lines.map(()=>null);
-    const reader = r.body.getReader(), dec = new TextDecoder();
-    let sse='', acc='', got=0, seen=0, lastAt=-1;
-    try{
-      for(;;){
-        const { value, done } = await reader.read();
-        if(done) break;
-        sse += dec.decode(value, { stream:true });
-        let cut;
-        while((cut = sse.indexOf('\n\n')) >= 0){
-          const block = sse.slice(0,cut); sse = sse.slice(cut+2);
-          const dl = block.split('\n').filter(x=>x.startsWith('data:')).map(x=>x.slice(5).trim()).join('');
-          if(!dl) continue;
-          try{ const d=JSON.parse(dl); acc += ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join(''); }catch(e){}
-        }
-        const objs = acc.match(/\{[^{}]*\}/g) || [];
-        for(; seen<objs.length; seen++){
-          let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
-          const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
-          times[i]={ start:+x.start, end:+x.end }; got++;
-          const l=lines[i];
-          if(!l.pin){ l.start=+(+x.start).toFixed(2); l.end=null; }
-          lastAt=i;
-        }
-        if(lastAt>=0){
-          clearTimeout(to); to=setTimeout(()=>ctl.abort(),120000);
-          renderList(); lastNow=-2; highlightRow(lastAt);
-          if(lines[lastAt].start!=null){ try{ video.currentTime=lines[lastAt].start+0.3; }catch(e){} }
-          aStatus(`AI 對時間中：第 ${got} / ${lines.length} 句「${lines[lastAt].text}」`);
-          lastAt=-1;
-        }
+    let gen = JSON.parse(JSON.stringify(body.generationConfig));
+    if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
+    else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
+    let res;
+    for(let attempt=0; attempt<2; attempt++){
+      const payload = JSON.stringify(Object.assign({}, body, { generationConfig:gen }));
+      const times = lines.map(()=>null);
+      let got=0, seen=0, cleared=false;
+      try{
+        res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, key, payload, {
+          onUp: f => aStatus(`上傳聲音給 AI：${Math.round(f*100)}%（${MB} MB）`),
+          onWait: () => aStatus('AI 正在聽整首歌，通常要 30～90 秒，聽完會一句一句填上時間…'),
+          onText: raw => {
+            const acc = sseText(raw);
+            const objs = acc.match(/\{[^{}]*\}/g) || [];
+            let lastAt=-1;
+            for(; seen<objs.length; seen++){
+              let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
+              const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
+              if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; } }); }
+              times[i]={ start:+x.start, end:+x.end }; got++;
+              if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; }
+              lastAt=i;
+            }
+            if(lastAt>=0){
+              renderList(); lastNow=-2; highlightRow(lastAt);
+              if(lines[lastAt].start!=null){ try{ video.currentTime=lines[lastAt].start+0.3; }catch(e){} }
+              aStatus(`AI 對時間中：第 ${got} / ${lines.length} 句「${lines[lastAt].text}」`);
+            }
+          }
+        });
+      }catch(err){
+        if(cleared) restoreBackup();
+        const why = err && err.message;
+        if(why==='cancel') throw new Error('msg:已取消，時間維持原本的樣子。');
+        if(why==='stall-up') throw new Error('msg:上傳停住了，請確認網路（建議連 Wi-Fi）後再按一次。');
+        if(why==='stall-wait'){ tried.push('wait'); res=null; break; }
+        res=null; break;
       }
-    }catch(e){ clearTimeout(to); if(!got){ restoreBackup(); continue; } }
-    clearTimeout(to);
-    if(!got){ restoreBackup(); continue; }
-    return { times, model };
+      if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
+      if(res.status===200 && got){ return { times, model }; }
+      if(cleared) restoreBackup();
+      break;
+    }
+    if(!res) continue;
+    if(res.status===401||res.status===403) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+    if(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+    if(res.status===429){ quota++; continue; }
+    if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
   }
+  if(tried.includes('wait')){ restoreBackup(); throw new Error('msg:這次 AI 回應太久了，請再按一次試試。'); }
   restoreBackup();
   if(quota) throw new Error('msg:你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
   throw new Error('msg:AI 暫時忙碌中，請稍後再按一次。');
