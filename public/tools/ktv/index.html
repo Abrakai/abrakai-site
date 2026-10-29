@@ -175,6 +175,7 @@ body{margin:0}
             <button id="aLocal" disabled>⚡ 快速自動對時間<small>免金鑰，抓大概位置</small></button>
             <button class="primary" id="aGemini" disabled>✨ AI 精準對時間<small>使用你的 Gemini 金鑰</small></button>
           </div>
+          <label class="chk"><input type="checkbox" id="keepPins"> 保留我手動調過的句子（亮黃燈的句子不重新對）</label>
           <p class="status" id="aStatus"></p>
           <div class="bar"><button id="aCancel" hidden>取消 AI 對時間</button></div>
           <details id="keyBox">
@@ -227,7 +228,7 @@ body{margin:0}
         <section class="sec">
           <h3>逐句微調</h3>
           <p class="hint">點歌詞會從那一句前 1 秒開始播放。聽到開口的瞬間按 📍，就會把這一句設在目前的位置；也可以用 −／＋ 每次調 0.1 秒。調過的句子會亮黃燈，再按一次自動對時間時會保留，其他句子會依照它們重新排。</p>
-          <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button><button id="autoChars">⚡ 自動推估每個字</button></div>
+          <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button><button id="autoChars">⚡ 自動推估每個字</button><button id="clearAll">🗑 清除所有時間</button></div>
           <p class="hint">想讓字幕跟著旋律走：按 🎵 進入「逐字對拍」，跟著歌聲一個字按一下，拉長音就按住不放。也可以先按「自動推估每個字」再挑幾句修。</p>
           <div class="cue" id="charBox" hidden>
             <small id="cbIdx">逐字對拍</small>
@@ -291,7 +292,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.1</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.2</p>
     </aside>
   </div>
 </div>
@@ -909,7 +910,7 @@ function applyTimes(arr, label){
     for(let k2=i;k2<j;k2++) lines[k2].start = +(a0 + (b0-a0)*(k2-i+1)/(j-i+1)).toFixed(2);
   }
   persist(); renderList(); updateButtons();
-  const kept = lines.filter(l=>l.pin).length;
+  const kept = $('keepPins').checked ? lines.filter(l=>l.pin).length : 0;
   aStatus(`${label}完成！${kept?`已保留你調過的 ${kept} 句。`:''}按播放確認，有偏差再用下面的 📍 或 −／＋ 微調。`);
 }
 async function runAlign(kind){
@@ -918,6 +919,8 @@ async function runAlign(kind){
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
   if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
   if(kind==='gemini') $('aCancel').hidden=false;
+  const pinnedBefore = lines.filter(l=>l.pin).length;
+  if(!$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
@@ -945,6 +948,15 @@ async function runAlign(kind){
   }finally{ $('aCancel').hidden=true; aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 }
 $('aLocal').onclick=()=>runAlign('local');
+try{ $('keepPins').checked = localStorage.getItem(KEY+'-keep')==='1'; }catch(e){}
+$('keepPins').onchange=()=>{ try{ localStorage.setItem(KEY+'-keep',$('keepPins').checked?'1':'0'); }catch(e){} };
+$('clearAll').onclick=()=>{
+  const b=$('clearAll');
+  if(b.dataset.armed!=='1'){ b.dataset.armed='1'; b.textContent='確定清除？再按一次'; setTimeout(()=>{ b.dataset.armed=''; b.textContent='🗑 清除所有時間'; },4000); return; }
+  b.dataset.armed=''; b.textContent='🗑 清除所有時間';
+  lines.forEach(l=>{ l.start=null; l.end=null; l.pin=false; l.chars=null; });
+  persist(); renderList(); updateButtons(); aStatus('已清除所有時間，可以重新按自動對時間。');
+};
 $('aCancel').onclick=()=>{ if(curXhr) curXhr.abort(); };
 $('aGemini').onclick=()=>runAlign('gemini');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
@@ -1238,7 +1250,7 @@ function estimateChars(a){
       const U=unitsOf(l.text), C=U.length; if(!C) return;
       const nx = T[j+1]!=null ? lines[T[j+1]].start : null;
       const guess = l.start + Math.max(1.2, C*0.55);
-      const ws=l.start, we = l.end!=null ? l.end : (nx!=null ? Math.min(nx-0.1, ws+Math.max(1.2,C*0.55)*1.6) : guess);
+      const ws=l.start, we = l.end!=null ? l.end : (nx!=null ? Math.min(nx-0.1, ws+C*0.5+0.8) : guess);
       const f0=Math.round((ws+0.12)/0.01), f1=Math.round((we-0.08)/0.01);
       let pk=[];
       for(let f=f0; f<f1; f++){ if(on[f]<=0) continue; let ok=true; for(let d=-6; d<=6; d++){ if(d && on[f+d]>on[f]){ ok=false; break; } } if(ok) pk.push({ f, s:on[f] }); }
@@ -1248,7 +1260,7 @@ function estimateChars(a){
       pick.sort((x,y)=>x-y);
       let starts=[ws, ...pick.map(f=>f*0.01)];
       if(starts.length<C){ starts=[]; for(let k=0;k<C;k++) starts.push(ws+(we-ws)*k/C); }
-      const lastEnd = l.end!=null ? l.end : Math.max(starts[C-1]+0.25, we-0.1);
+      const lastEnd = l.end!=null ? l.end : Math.min(Math.max(starts[C-1]+0.25, we-0.1), starts[C-1]+1.8);
       l.chars = starts.map((st,k)=>[+st.toFixed(2), +(k<C-1 ? Math.max(st+0.05, starts[k+1]-0.02) : lastEnd).toFixed(2)]);
       done++;
     });
