@@ -115,6 +115,7 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .chars span.cur{color:var(--gold);border-bottom-color:var(--gold)}
 .hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;padding:26px 10px!important;font-size:18px!important}
 .hold.down{filter:brightness(1.35);transform:scale(.98)}
+select.sel{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
 #cbRate{background:var(--raise);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:2px}
 [hidden]{display:none!important}
@@ -274,9 +275,11 @@ body{margin:0}
         <label class="f">片頭歌名<input type="text" id="mTitle"></label>
         <label class="f">原唱<input type="text" id="mArtist" placeholder="例：某某 vs 某某"></label>
         <label class="f">片頭副標<input type="text" id="mSub" placeholder="例：重陽敬老茶會．社區舞蹈班"></label>
+        <label class="f">輸出畫質<select id="mRes" class="sel"><option value="720">至少 720p（建議）</option><option value="1080">至少 1080p（電腦較適合）</option><option value="0">跟原影片一樣</option></select></label>
         <label class="f">字幕大小 <span id="sizeVal"></span><input type="range" id="mSize" min="50" max="110" value="78"></label>
         <div class="bar">
           <button class="primary" id="recBtn" disabled>● 錄成 KTV 影片</button>
+          <button id="recResume" class="primary" hidden>繼續錄影</button>
           <button id="recCancel" hidden>停止錄影</button>
           <button id="saveBtn" hidden>存到電腦</button>
         </div>
@@ -288,7 +291,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.0</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.1</p>
     </aside>
   </div>
 </div>
@@ -572,12 +575,19 @@ function armTimer(second){
     vStatus('請直接按上面影片的 ▶ 播放鍵，開始播放後就會自動載入完成。');
   }, second ? 5000 : 8000);
 }
+function sizeCanvas(){
+  const vw=video.videoWidth||1280, vh=video.videoHeight||720;
+  const want = +($('mRes')?.value||0);
+  const h = Math.max(vh, want||0), w = Math.round(vw*h/vh/2)*2;
+  if(cv.width!==w || cv.height!==h){ cv.width=w; cv.height=h; }
+}
 function markLoaded(){
   if(hasVideo || !curFile) return;
   if(video.classList.contains('native')){ video.controls=false; video.classList.remove('native'); try{ video.pause(); video.currentTime=0; }catch(e){} }
-  cv.width = video.videoWidth || 1280; cv.height = video.videoHeight || 720;
+  sizeCanvas();
   hasVideo = true; clearTimeout(loadTimer); audioCache = null; updateButtons(); renderList();
-  vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+'）');
+  const lowRes = video.videoHeight && video.videoHeight < 720;
+  vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+(video.videoWidth?`，${video.videoWidth}×${video.videoHeight}`:'')+'）'+(lowRes?'。畫質偏低：iPhone 從「照片」選影片時會先壓縮，建議先把影片存到「檔案」，再從「瀏覽」選，就能用原始畫質。':''));
 }
 video.addEventListener('error', () => {
   if(!curFile || hasVideo) return;
@@ -596,7 +606,7 @@ $('vfile').onchange = e => {
 };
 ['loadedmetadata','loadeddata','canplay','durationchange','playing'].forEach(ev => video.addEventListener(ev, () => {
   if(!hasVideo && (video.videoWidth || (isFinite(video.duration) && video.duration>0))) markLoaded();
-  if(hasVideo && video.videoWidth && (cv.width!==video.videoWidth || cv.height!==video.videoHeight)){ cv.width=video.videoWidth; cv.height=video.videoHeight; }
+  if(hasVideo && video.videoWidth) sizeCanvas();
 }));
 video.addEventListener('play', () => $('play').textContent='❚❚ 暫停');
 video.addEventListener('pause', () => $('play').textContent='▶ 播放');
@@ -670,6 +680,8 @@ function updateButtons(){
 /* ---------- meta ---------- */
 function syncMetaInputs(){ if(typeof syncPro==='function') syncPro(); $('mTitle').value=meta.title||''; $('mArtist').value=meta.artist||''; $('mSub').value=meta.sub||''; $('mSize').value=size; $('sizeVal').textContent=size; }
 ['mTitle','mArtist','mSub'].forEach(id=>$(id).addEventListener('input',e=>{ meta[{mTitle:'title',mArtist:'artist',mSub:'sub'}[id]]=e.target.value; persist(); }));
+$('mRes').onchange=()=>{ if(hasVideo) sizeCanvas(); try{ localStorage.setItem(KEY+'-res',$('mRes').value); }catch(e){} };
+try{ const rv=localStorage.getItem(KEY+'-res'); if(rv!=null) $('mRes').value=rv; }catch(e){}
 $('mSize').oninput=e=>{ size=+e.target.value; $('sizeVal').textContent=size; persist(); };
 let parseT; $('lyrics').addEventListener('input',()=>{ clearTimeout(parseT); parseT=setTimeout(()=>{ parse(); persist(); },250); });
 
@@ -724,22 +736,35 @@ $('recBtn').onclick=async()=>{
   catch(e){ rec=null; $('recStatus').textContent='無法開始錄影，請改用電腦版 Chrome。'; return; }
   rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
   rec.onstop=()=>{
-    const cancelled=rec._cancel; rec=null; updateButtons(); $('recCancel').hidden=true; video.removeEventListener('ended',onEnd);
+    const cancelled=rec._cancel, st=rec._stats(); rec._cleanup(); rec=null; updateButtons(); $('recCancel').hidden=true; $('recResume').hidden=true; video.removeEventListener('ended',onEnd);
     if(cancelled||!chunks.length){ $('recStatus').textContent='已停止錄影。'; return; }
     recBlob=new Blob(chunks,{type:mime});
-    $('recStatus').textContent=`錄好了（${(recBlob.size/1048576).toFixed(1)} MB），按「存到電腦」。`;
+    $('recStatus').textContent=`錄好了（${(recBlob.size/1048576).toFixed(1)} MB），按「存到電腦」。` + (st.drift>0.4 ? `錄影過程中畫面卡頓了一下，聲音和字幕可能差了約 ${st.drift.toFixed(1)} 秒；建議接上電源、關掉其他 App 後再錄一次。` : (st.stalls ? `錄影時卡頓 ${st.stalls} 次，已自動暫停接續，聲音和字幕不受影響。` : ''));
     $('saveBtn').hidden=false;
   };
-  const onEnd=()=>{ if(rec&&rec.state!=='inactive') rec.stop(); };
-  video.addEventListener('ended',onEnd);
+  let stalls=0, ended=false, wake=null, activeMs=0, lastTick=0, vStart=0;
+  const onEnd=()=>{ ended=true; if(rec&&rec.state!=='inactive'){ if(rec.state==='paused') rec.resume(); rec.stop(); } };
+  const onStall=()=>{ if(rec && rec.state==='recording'){ rec.pause(); stalls++; } };
+  const onPlaying=()=>{ if(rec && rec.state==='paused' && !rec._userPause){ rec.resume(); lastTick=performance.now(); $('recResume').hidden=true; } };
+  const onPause=()=>{ if(rec && !ended && rec.state==='recording'){ rec.pause(); rec._userPause=true; $('recResume').hidden=false; $('recStatus').textContent='錄影暫停了（離開畫面或影片被暫停）。按「繼續錄影」接著錄。'; } };
+  const onVis=()=>{ if(document.hidden && rec && !ended) video.pause(); };
+  video.addEventListener('ended',onEnd); video.addEventListener('waiting',onStall); video.addEventListener('stalled',onStall);
+  video.addEventListener('playing',onPlaying); video.addEventListener('pause',onPause); document.addEventListener('visibilitychange',onVis);
+  rec._cleanup=()=>{ ['waiting','stalled'].forEach(ev=>video.removeEventListener(ev,onStall)); video.removeEventListener('playing',onPlaying); video.removeEventListener('pause',onPause); document.removeEventListener('visibilitychange',onVis); try{ wake&&wake.release(); }catch(e){} };
+  rec._stats=()=>({ stalls, drift: Math.abs(activeMs/1000 - (video.currentTime - vStart)) });
+  try{ wake = await navigator.wakeLock?.request('screen'); }catch(e){}
   if(timing) stopTiming(' ');
   video.pause(); video.currentTime=0;
   await new Promise(r=>{ const f=()=>{video.removeEventListener('seeked',f);r();}; video.addEventListener('seeked',f); setTimeout(r,800); });
   rec.start(1000); updateButtons(); $('recCancel').hidden=false;
-  const tick=()=>{ if(!rec) return; $('recStatus').innerHTML='<span class="rec"></span> 錄影中 '+fmtShort(video.currentTime)+' / '+fmtShort(video.duration); setTimeout(tick,500); };
+  vStart=video.currentTime; lastTick=performance.now();
+  const meter=()=>{ if(!rec) return; const now=performance.now(); if(rec.state==='recording') activeMs+=now-lastTick; lastTick=now; requestAnimationFrame(meter); };
+  requestAnimationFrame(meter);
+  const tick=()=>{ if(!rec) return; if(rec.state==='paused'){ setTimeout(tick,500); return; } $('recStatus').innerHTML='<span class="rec"></span> 錄影中 '+fmtShort(video.currentTime)+' / '+fmtShort(video.duration); setTimeout(tick,500); };
   tick();
   await playVideo();
 };
+$('recResume').onclick=()=>{ if(rec){ rec._userPause=false; playVideo(); } };
 $('recCancel').onclick=()=>{ if(rec){ rec._cancel=true; rec.stop(); video.pause(); } };
 $('saveBtn').onclick=()=>{ if(recBlob) offer((meta.title||videoName)+'_KTV.'+recExt, recBlob, $('recStatus')); };
 $('expBtn').onclick=()=>{
