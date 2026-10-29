@@ -27,6 +27,7 @@ header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 h1{font-family:var(--display);font-size:30px;margin:0;letter-spacing:.06em;color:var(--fg);text-shadow:0 0 18px color-mix(in srgb,var(--female) 55%,transparent)}
 h1 span{color:var(--female)}
 .sub{color:var(--muted);font-size:14px}
+.ver{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.04em}
 .legend{display:flex;gap:12px;margin-left:auto;font-size:13px;color:var(--muted)}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
@@ -138,6 +139,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
+    <span class="ver" id="verBadge" title="目前版本">版本 2.5</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -294,7 +296,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.4</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.5</p>
     </aside>
   </div>
 </div>
