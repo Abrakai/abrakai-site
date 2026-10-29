@@ -408,42 +408,47 @@ function ensureAudio(){
     src.connect(actx.destination); src.connect(dest);
   }catch(e){ actx=null; }
 }
-async function playVideo(){ ensureAudio(); try{ await actx?.resume(); }catch(e){} try{ await video.play(); }catch(e){} }
-let loadTry = 0, loadTimer = null, curFile = null;
-function vStatus(msg){ $('vStatus').textContent = msg; }
-function tryLoad(){
-  clearTimeout(loadTimer);
-  const f = curFile; if(!f) return;
-  const attempt = ++loadTry;
-  if(attempt === 1){
-    vStatus('影片載入中…');
-    video.src = URL.createObjectURL(f);
-    loadTimer = setTimeout(() => { if(!hasVideo) tryLoad(); }, 5000);
-  } else if(attempt === 2){
-    vStatus('換另一種方式載入中，大檔案要等一下…');
-    const r = new FileReader();
-    r.onload = () => { video.src = r.result; loadTimer = setTimeout(() => { if(!hasVideo) loadFailed(); }, 15000); };
-    r.onerror = loadFailed;
-    r.readAsDataURL(f);
-  } else loadFailed();
+async function playVideo(){ video.muted = false; ensureAudio(); try{ await actx?.resume(); }catch(e){} try{ await video.play(); }catch(e){} }
+let loadTimer = null, curFile = null, curUrl = null;
+function vStatus(msg, btn){
+  const el=$('vStatus'); el.textContent = msg;
+  if(btn){ const k=document.createElement('button'); k.type='button'; k.textContent=btn; k.style.marginLeft='8px'; k.onclick=()=>{ vStatus('影片載入中…'); kick(); armTimer(); }; el.append(k); }
 }
-function loadFailed(){
-  clearTimeout(loadTimer);
-  if(hasVideo) return;
-  vStatus('這支影片無法在這個瀏覽器播放。請改用 Chrome 或 Safari，或先把影片轉成 MP4 再試一次。');
+function kick(){
+  try{ video.load(); }catch(e){}
+  video.muted = true;
+  const p = video.play();
+  if(p && p.then) p.then(()=>{ video.pause(); video.currentTime = 0; video.muted = false; }).catch(()=>{ video.muted = false; });
+  else video.muted = false;
 }
-video.addEventListener('error', () => { if(curFile && !hasVideo) tryLoad(); });
-$('vfile').onchange = e => {
-  const f=e.target.files[0]; if(!f) return;
-  videoName = f.name.replace(/\.[^.]+$/,'');
-  hasVideo = false; curFile = f; loadTry = 0; updateButtons();
-  tryLoad();
-};
-video.addEventListener('loadedmetadata', () => {
+function armTimer(){
+  clearTimeout(loadTimer);
+  loadTimer = setTimeout(() => { if(!hasVideo) vStatus('影片還在準備中。', '點這裡繼續載入'); }, 8000);
+}
+function markLoaded(){
+  if(hasVideo || !curFile) return;
   cv.width = video.videoWidth || 1280; cv.height = video.videoHeight || 720;
   hasVideo = true; clearTimeout(loadTimer); updateButtons();
   vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+'）');
+}
+video.addEventListener('error', () => {
+  if(!curFile || hasVideo) return;
+  clearTimeout(loadTimer);
+  vStatus('這支影片的格式無法在這個瀏覽器播放。請改用 Chrome 或 Safari，或先把影片轉成 MP4 再試一次。');
 });
+$('vfile').onchange = e => {
+  const f=e.target.files[0]; if(!f) return;
+  videoName = f.name.replace(/\.[^.]+$/,'');
+  hasVideo = false; curFile = f; updateButtons();
+  if(curUrl) URL.revokeObjectURL(curUrl);
+  curUrl = URL.createObjectURL(f);
+  video.src = curUrl;
+  vStatus('影片載入中…');
+  kick(); armTimer();
+};
+['loadedmetadata','loadeddata','canplay'].forEach(ev => video.addEventListener(ev, () => {
+  if(!hasVideo && video.videoWidth) markLoaded();
+}));
 video.addEventListener('play', () => $('play').textContent='❚❚ 暫停');
 video.addEventListener('pause', () => $('play').textContent='▶ 播放');
 video.addEventListener('ended', () => { if(timing) stopTiming('影片播完了，時間已記下。'); });
