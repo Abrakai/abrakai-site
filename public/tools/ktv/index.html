@@ -89,6 +89,7 @@ label.f input[type=range]{accent-color:var(--female)}
 .aigrid button{flex-direction:column;align-items:flex-start;text-align:left;padding:12px;gap:2px}
 .aigrid button small{font-weight:500;font-size:12px;color:var(--muted)}
 .aigrid button.primary small{color:#ffe3ef}
+#aRefine{flex-direction:column;align-items:flex-start;gap:2px}#aRefine small{font-weight:500;font-size:12px;color:var(--muted)}
 @media (max-width:420px){.aigrid{grid-template-columns:1fr}}
 details{border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 details > summary{cursor:pointer;padding:10px 12px;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:8px}
@@ -175,6 +176,7 @@ body{margin:0}
             <button id="aLocal" disabled>⚡ 快速自動對時間<small>免金鑰，抓大概位置</small></button>
             <button class="primary" id="aGemini" disabled>✨ AI 精準對時間<small>使用你的 Gemini 金鑰</small></button>
           </div>
+          <button id="aRefine" hidden>✨ 補精修剩下的句子<small id="aRefineN"></small></button>
           <label class="chk"><input type="checkbox" id="keepPins"> 保留我手動調過的句子（亮黃燈的句子不重新對）</label>
           <p class="status" id="aStatus"></p>
           <div class="bar"><button id="aCancel" hidden>取消 AI 對時間</button></div>
@@ -292,7 +294,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.3</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.4</p>
     </aside>
   </div>
 </div>
@@ -317,7 +319,7 @@ let rec = null, recBlob = null, recExt = 'mp4';
 /* ---------- storage ---------- */
 const KEY = 'abrakai-ktv-v1';
 function persist(){
-  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null]), meta, size })); }catch(e){}
+  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0]), meta, size })); }catch(e){}
 }
 function restore(){
   try{
@@ -346,8 +348,8 @@ function parse(times){
     out.push({ text:s, role, start:null, end:null });
   }
   out.forEach((l,i) => {
-    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; l.chars = times[i][3] || null; }
-    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; l.chars = old[i].chars; }
+    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; l.chars = times[i][3] || null; l.ref = !!times[i][4]; }
+    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; l.chars = old[i].chars; l.ref = old[i].ref; }
   });
   lines = out;
   if(title && !times) meta.title = title;
@@ -675,6 +677,8 @@ function updateButtons(){
   $('tStart').disabled=$('tEnd').disabled=$('tBack').disabled=!timing;
   $('recBtn').disabled=!hasVideo||!timed().length||!!rec;
   $('aLocal').disabled=$('aGemini').disabled=!ok||aligning||timing;
+  { const left=lines.filter(l=>l.start!=null && !l.ref && !(l.pin&&l.chars)).length, any=lines.some(l=>l.ref);
+    $('aRefine').hidden = !(any && left && getKey()); $('aRefine').disabled = !ok||aligning||timing; $('aRefineN').textContent = left ? `還有 ${left} 句是自動推估的` : ''; }
   $('shiftMinus').disabled=$('shiftPlus').disabled=$('autoChars').disabled=!timed().length||aligning;
 }
 
@@ -769,7 +773,7 @@ $('recResume').onclick=()=>{ if(rec){ rec._userPause=false; playVideo(); } };
 $('recCancel').onclick=()=>{ if(rec){ rec._cancel=true; rec.stop(); video.pause(); } };
 $('saveBtn').onclick=()=>{ if(recBlob) offer((meta.title||videoName)+'_KTV.'+recExt, recBlob, $('recStatus')); };
 $('expBtn').onclick=()=>{
-  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null]), meta, size },null,1);
+  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0]), meta, size },null,1);
   offer((meta.title||videoName)+'_時間檔.json', data, $('recStatus'));
 };
 $('impFile').onchange=e=>{
@@ -893,7 +897,7 @@ function applyTimes(arr, label){
   let last=-1;
   lines.forEach((l,i)=>{
     if(l.pin && l.start!=null){ last = l.start; return; }
-    l.chars = null;
+    l.chars = null; l.ref = false;
     const a = arr[i]; if(!a || a.start==null || isNaN(a.start)){ l.start=null; l.end=null; return; }
     let st = Math.max(0, Math.min(+a.start, (video.duration||1e9)-0.5));
     if(st <= last) st = +(last+0.4).toFixed(2);
@@ -917,12 +921,12 @@ async function runAlign(kind){
   if(aligning) return;
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
-  if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
-  if(kind==='gemini') $('aCancel').hidden=false;
+  if((kind==='gemini'||kind==='refine') && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
+  if(kind!=='local') $('aCancel').hidden=false;
   const awayWarn=()=>{ if(document.hidden && aligning) aBase='請保持這個畫面開著，離開畫面或螢幕關閉時 AI 會中斷。'+aBase.replace(/^請保持這個畫面開著.*?中斷。/,''); };
   document.addEventListener('visibilitychange', awayWarn);
   const pinnedBefore = lines.filter(l=>l.pin).length;
-  if(!$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
+  if(kind!=='refine' && !$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
@@ -936,6 +940,10 @@ async function runAlign(kind){
       estimateChars(a); persist(); renderList();
       if(meta.bpm && meta.autoSnap) snapAll(true);
       aStatus(`快速自動對時間完成（含每個字的拍點${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！按播放確認，不準的句子按 🎵 逐字對拍修正。`);
+    }else if(kind==='refine'){
+      const models = await gModels(getKey());
+      const r = await refineChars(a, getKey(), models, true);
+      aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
       const r = await geminiAlign(a);
       if(meta.bpm && meta.autoSnap) snapAll(true);
@@ -961,6 +969,7 @@ $('clearAll').onclick=()=>{
 };
 $('aCancel').onclick=()=>{ if(curXhr) curXhr.abort(); };
 $('aGemini').onclick=()=>runAlign('gemini');
+$('aRefine').onclick=()=>runAlign('refine');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
 $('shiftPlus').onclick=()=>shiftAll(0.2);
 function shiftAll(d){ lines.forEach(l=>shiftLine(l,d)); persist(); renderList(); }
@@ -1045,6 +1054,7 @@ function gErr(m){ return new Error('msg:'+m); }
 async function gRun(o){
   let quota=0, slow=false;
   for(const model of o.models){
+    if(o.dead && o.dead.has(model)) continue;
     let gen = { temperature:0, responseMimeType:'application/json', responseSchema:o.schema, maxOutputTokens:16384 };
     if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
     else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
@@ -1074,12 +1084,12 @@ async function gRun(o){
       if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
       if(res.status===200 && got) return { model, got };
       if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) throw gErr('你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-      if(res.status===429) quota++;
+      if(res.status===429){ quota++; if(o.dead) o.dead.add(model); }
       if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} }
       break;
     }
   }
-  if(quota) throw gErr('QUOTA');
+  if(quota || (o.dead && o.models.every(m=>o.dead.has(m)))) throw gErr('QUOTA');
   if(slow) throw gErr('這次 AI 回應太久了，請再按一次試試。');
   throw gErr('AI 暫時忙碌中，請稍後再按一次。');
 }
@@ -1125,10 +1135,14 @@ ${list1}`;
   }
   applyTimes(times, '');
   estimateChars(a); persist(); renderList();
-  // ---- phase 2: refine every character, a few lines at a time with a short clip
-  const T = timed().filter(i=>!(lines[i].pin && lines[i].chars));
+  const r2 = await refineChars(a, key, [r1.model, ...models.filter(m=>m!==r1.model)], false);
+  return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
+}
+// phase 2: refine every character, a few lines at a time with a short clip
+async function refineChars(a, key, order, onlyMissing){
+  const T = timed().filter(i=>!(lines[i].pin && lines[i].chars) && !(onlyMissing && lines[i].ref));
   const groups=[]; for(let k=0;k<T.length;k+=6) groups.push(T.slice(k,k+6));
-  const order=[r1.model];
+  const dead = new Set();
   let refined=0, stopped='';
   for(let g=0; g<groups.length; g++){
     const G=groups[g], first=lines[G[0]], last=lines[G[G.length-1]];
@@ -1145,7 +1159,7 @@ ${list1}`;
 ${beatHint()}
 ${list2}`;
     try{
-      await gRun({ models:order, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000, hardLimit:150000,
+      await gRun({ models:order, dead, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000, hardLimit:150000,
         schema: OBJ({ i:{type:'INTEGER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, ['i','end','c']),
         onUp: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
         onWait: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
@@ -1159,19 +1173,19 @@ ${list2}`;
           l.chars=ch;
           if(l.pin && keep!=null) shiftLine(l, keep-ch[0][0]);
           if(l.end!=null) l.end=l.chars[l.chars.length-1][1];
-          refined++; renderList(); lastNow=-2; highlightRow(i);
+          l.ref=true; refined++; renderList(); lastNow=-2; highlightRow(i);
           return true;
         } });
     }catch(err){
       if(err.message==='msg:已取消。'){ stopped='已取消逐字精修，其餘句子使用自動推估的拍點。'; break; }
-      if(err.message==='msg:QUOTA'){ stopped='Gemini 額度用完了，其餘句子使用自動推估的拍點。'; break; }
+      if(err.message==='msg:QUOTA'){ const left=T.filter(i=>!lines[i].ref).length; stopped=`Gemini 今天的額度用完了，還有 ${left} 句先用自動推估的拍點。額度通常每天會重置，之後按「補精修剩下的句子」就能只補這幾句。`; break; }
       if(/金鑰/.test(err.message)) { stopped=err.message.slice(4); break; }
       // other failures: keep the local estimate for this group and move on
     }
     persist();
   }
   persist(); renderList();
-  return { times:null, model:r1.model, refined, stopped };
+  return { refined, stopped };
 }
 
 /* ---------- per-character tapping ---------- */
