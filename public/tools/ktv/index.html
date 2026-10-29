@@ -103,6 +103,14 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .how a{color:var(--gold)}
 .row .t .pin{font-size:13px}
 .row .t .pin.on{background:var(--gold);border-color:var(--gold)}
+@media (max-width:560px){.row{grid-template-columns:24px minmax(0,1fr)}.row .t{grid-column:2}}
+.chars{flex-wrap:wrap;font-size:24px!important;letter-spacing:.04em}
+.chars span{color:var(--muted);border-bottom:3px solid transparent}
+.chars span.done{color:var(--fg)}
+.chars span.cur{color:var(--gold);border-bottom-color:var(--gold)}
+.hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;padding:26px 10px!important;font-size:18px!important}
+.hold.down{filter:brightness(1.35);transform:scale(.98)}
+#cbRate{background:var(--raise);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:2px}
 [hidden]{display:none!important}
 #vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;pointer-events:none}
@@ -180,7 +188,19 @@ body{margin:0}
         <section class="sec">
           <h3>逐句微調</h3>
           <p class="hint">點歌詞會從那一句前 1 秒開始播放。聽到開口的瞬間按 📍，就會把這一句設在目前的位置；也可以用 −／＋ 每次調 0.1 秒。調過的句子會亮黃燈，再按一次自動對時間時會保留，其他句子會依照它們重新排。</p>
-          <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button></div>
+          <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button><button id="autoChars">⚡ 自動推估每個字</button></div>
+          <p class="hint">想讓字幕跟著旋律走：按 🎵 進入「逐字對拍」，跟著歌聲一個字按一下，拉長音就按住不放。也可以先按「自動推估每個字」再挑幾句修。</p>
+          <div class="cue" id="charBox" hidden>
+            <small id="cbIdx">逐字對拍</small>
+            <div class="big chars" id="cbText"></div>
+            <button class="tap start hold" id="cbHold">按住＝正在唱這個字<kbd>電腦可按住空白鍵</kbd></button>
+            <div class="bar">
+              <label class="hint" for="cbRate">速度</label>
+              <select id="cbRate"><option value="1">1 倍</option><option value="0.75">0.75 倍</option><option value="0.5">0.5 倍</option></select>
+              <button id="cbBack">↶ 退回一個字</button><button id="cbRedo">這句重來</button><button id="cbExit">結束逐字</button>
+            </div>
+            <p class="hint">字一唱出來就按下去，唱到下一個字之前放開；拉長音就一直按著。這句的字都按完，會自動接到下一句。</p>
+          </div>
           <div class="list" id="list"><div class="empty">貼上歌詞後，這裡會列出每一句</div></div>
         </section>
 
@@ -230,7 +250,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.6</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.7</p>
     </aside>
   </div>
 </div>
@@ -255,7 +275,7 @@ let rec = null, recBlob = null, recExt = 'mp4';
 /* ---------- storage ---------- */
 const KEY = 'abrakai-ktv-v1';
 function persist(){
-  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0]), meta, size })); }catch(e){}
+  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null]), meta, size })); }catch(e){}
 }
 function restore(){
   try{
@@ -284,8 +304,8 @@ function parse(times){
     out.push({ text:s, role, start:null, end:null });
   }
   out.forEach((l,i) => {
-    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; }
-    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; }
+    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; l.chars = times[i][3] || null; }
+    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; l.chars = old[i].chars; }
   });
   lines = out;
   if(title && !times) meta.title = title;
@@ -318,12 +338,21 @@ function renderList(){
     const pin = document.createElement('button'); pin.className='pin'; pin.textContent='📍'; pin.title='設為目前播放位置'; pin.setAttribute('aria-label','把這一句設在目前播放位置');
     pin.disabled = !hasVideo;
     if(l.pin) pin.classList.add('on');
-    pin.onclick = () => { l.pin=true; l.start=+video.currentTime.toFixed(2); if(l.end!=null && l.end<=l.start) l.end=null; persist(); renderList(); };
-    t.append(minus,val,plus,pin);
+    pin.onclick = () => { const now=+video.currentTime.toFixed(2); l.pin=true; if(l.chars && l.start!=null) shiftLine(l, now-l.start); else { l.start=now; if(l.end!=null && l.end<=l.start) l.end=null; } persist(); renderList(); };
+    const mus = document.createElement('button'); mus.className='pin'; mus.textContent='🎵'; mus.title='逐字對拍'; mus.setAttribute('aria-label','逐字對拍這一句');
+    mus.disabled = !hasVideo; if(l.chars) mus.classList.add('on');
+    mus.onclick = () => openChar(i);
+    t.append(minus,val,plus,pin,mus);
     r.append(chip,tx,t); box.append(r);
   });
 }
-function nudge(i,d){ const l=lines[i]; if(l.start==null) return; l.pin=true; l.start=Math.max(0,+(l.start+d).toFixed(2)); persist(); renderList(); }
+function unitsOf(text){ const u=[]; for(let i=0;i<text.length;i++){ if(!/[\s　]/.test(text[i])) u.push(i); } return u; }
+function shiftLine(l,d){
+  if(l.start!=null) l.start=Math.max(0,+(l.start+d).toFixed(2));
+  if(l.end!=null) l.end=Math.max(0,+(l.end+d).toFixed(2));
+  if(l.chars) l.chars=l.chars.map(c=>[Math.max(0,+(c[0]+d).toFixed(2)), Math.max(0,+(c[1]+d).toFixed(2))]);
+}
+function nudge(i,d){ const l=lines[i]; if(l.start==null) return; l.pin=true; shiftLine(l,d); persist(); renderList(); }
 let lastNow = -2;
 function highlightRow(idx){
   if(idx===lastNow) return; lastNow = idx;
@@ -367,7 +396,7 @@ function scene(t){
 }
 
 /* ---------- drawing ---------- */
-function drawLine(L,row,p){
+function drawLine(L,row,p,t){
   const W=cv.width,H=cv.height;
   let fs = H*size/1000;
   g.font = `900 ${fs}px ${FONT}`;
@@ -391,8 +420,19 @@ function drawLine(L,row,p){
   g.lineJoin='round';
   g.lineWidth=fs*0.17; g.strokeStyle='rgba(10,6,16,.92)'; g.strokeText(L.text,tx,y);
   g.fillStyle='#ffffff'; g.fillText(L.text,tx,y);
-  if(p>0){
-    g.save(); g.beginPath(); g.rect(tx-fs*0.3, y-fs*1.3, fs*0.3 + w*p, fs*1.8); g.clip();
+  let fw = w*p;
+  if(L.chars && L.chars.length && t!=null){
+    const U = unitsOf(L.text), pre = n => g.measureText(L.text.slice(0,n)).width;
+    fw = w;
+    for(let k=0;k<U.length && k<L.chars.length;k++){
+      const [cs,ce] = L.chars[k];
+      if(t < cs){ fw = pre(U[k]); break; }
+      if(t < ce){ const a0=pre(U[k]), a1=pre(U[k]+1); fw = a0 + (a1-a0)*(t-cs)/Math.max(0.05,ce-cs); break; }
+      if(k===U.length-1 || k===L.chars.length-1) fw = w;
+    }
+  }
+  if(fw>0){
+    g.save(); g.beginPath(); g.rect(tx-fs*0.3, y-fs*1.3, fs*0.3 + fw, fs*1.8); g.clip();
     g.lineWidth=fs*0.17; g.strokeStyle='#ffffff'; g.strokeText(L.text,tx,y);
     g.fillStyle=col; g.fillText(L.text,tx,y);
     g.restore();
@@ -452,7 +492,7 @@ function frame(){
       const a = Math.min(1, t<0.6 ? 1 : 1, (first-LEAD-t)/0.8);
       if(t < Math.min(first-LEAD, 12)) drawTitle(Math.max(0,Math.min(1,a)));
     }
-    for(const it of s.items||[]) drawLine(it.L,it.row,it.p);
+    for(const it of s.items||[]) drawLine(it.L,it.row,it.p,t);
     if(s.dots) drawDots(s.dots);
     if(s.cur!=null && s.cur>=0) highlightRow(s.cur);
     $('seek').value = video.duration ? Math.round(t/video.duration*1000) : 0;
@@ -541,7 +581,7 @@ function updateCue(){
 }
 function startTiming(fromStart){
   if(!hasVideo||!lines.length) return;
-  if(fromStart){ lines.forEach(l=>{l.start=null;l.end=null;l.pin=false;}); k=0; video.currentTime=0; }
+  if(fromStart){ lines.forEach(l=>{l.start=null;l.end=null;l.pin=false;l.chars=null;}); k=0; video.currentTime=0; }
   else{ k=lines.findIndex(l=>l.start==null); if(k<0) k=lines.length; video.currentTime=Math.max(0,(lines[k-1]?.start??0)-1); }
   timing=true; renderList(); updateCue(); updateButtons();
   $('tStatus').textContent='對時間中…聽到開口就按';
@@ -550,7 +590,7 @@ function startTiming(fromStart){
 function stopTiming(msg){ timing=false; video.pause(); updateButtons(); persist(); renderList(); $('tStatus').textContent=msg||'已暫停，按「接著對」可以繼續。'; }
 function markStart(){
   if(!timing||k>=lines.length) return;
-  lines[k].start=+video.currentTime.toFixed(2); lines[k].end=null; lines[k].pin=true;
+  lines[k].start=+video.currentTime.toFixed(2); lines[k].end=null; lines[k].pin=true; lines[k].chars=null;
   if(k>0 && lines[k-1].end!=null && lines[k-1].end>lines[k].start) lines[k-1].end=null;
   k++; persist(); updateCue(); renderList();
   if(k>=lines.length) $('tStatus').textContent='最後一句標好了，唱完按 Enter，或直接到「輸出」。';
@@ -586,7 +626,7 @@ function updateButtons(){
   $('tStart').disabled=$('tEnd').disabled=$('tBack').disabled=!timing;
   $('recBtn').disabled=!hasVideo||!timed().length||!!rec;
   $('aLocal').disabled=$('aGemini').disabled=!ok||aligning||timing;
-  $('shiftMinus').disabled=$('shiftPlus').disabled=!timed().length;
+  $('shiftMinus').disabled=$('shiftPlus').disabled=$('autoChars').disabled=!timed().length||aligning;
 }
 
 /* ---------- meta ---------- */
@@ -665,7 +705,7 @@ $('recBtn').onclick=async()=>{
 $('recCancel').onclick=()=>{ if(rec){ rec._cancel=true; rec.stop(); video.pause(); } };
 $('saveBtn').onclick=()=>{ if(recBlob) offer((meta.title||videoName)+'_KTV.'+recExt, recBlob, $('recStatus')); };
 $('expBtn').onclick=()=>{
-  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0]), meta, size },null,1);
+  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null]), meta, size },null,1);
   offer((meta.title||videoName)+'_時間檔.json', data, $('recStatus'));
 };
 $('impFile').onchange=e=>{
@@ -776,6 +816,7 @@ function applyTimes(arr, label){
   let last=-1;
   lines.forEach((l,i)=>{
     if(l.pin && l.start!=null){ last = l.start; return; }
+    l.chars = null;
     const a = arr[i]; if(!a || a.start==null || isNaN(a.start)){ l.start=null; l.end=null; return; }
     let st = Math.max(0, Math.min(+a.start, (video.duration||1e9)-0.5));
     if(st <= last) st = +(last+0.4).toFixed(2);
@@ -826,7 +867,7 @@ $('aCancel').onclick=()=>{ if(curXhr) curXhr.abort(); };
 $('aGemini').onclick=()=>runAlign('gemini');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
 $('shiftPlus').onclick=()=>shiftAll(0.2);
-function shiftAll(d){ lines.forEach(l=>{ if(l.start!=null) l.start=Math.max(0,+(l.start+d).toFixed(2)); if(l.end!=null) l.end=Math.max(0,+(l.end+d).toFixed(2)); }); persist(); renderList(); }
+function shiftAll(d){ lines.forEach(l=>shiftLine(l,d)); persist(); renderList(); }
 
 /* ---------- Gemini ---------- */
 const GKEY='abrakai-ktv-gemini-key', GMODELS='abrakai-ktv-gemini-models';
@@ -912,8 +953,8 @@ ${lyricList}`;
     generationConfig:{ temperature:0, responseMimeType:'application/json',
       responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, required:['i','start','end'] } } } };
   let quota=0;
-  const backup = lines.map(l=>({ start:l.start, end:l.end }));
-  const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; } }); renderList(); };
+  const backup = lines.map(l=>({ start:l.start, end:l.end, chars:l.chars }));
+  const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; l.chars=backup[i].chars; } }); renderList(); };
   const MB = (b64.length*0.75/1048576).toFixed(1);
   const tried = [];
   for(const model of models){
@@ -936,7 +977,7 @@ ${lyricList}`;
             for(; seen<objs.length; seen++){
               let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
               const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
-              if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; } }); }
+              if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; l.chars=null; } }); }
               times[i]={ start:+x.start, end:+x.end }; got++;
               if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; }
               lastAt=i;
@@ -972,6 +1013,122 @@ ${lyricList}`;
   if(quota) throw new Error('msg:你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
   throw new Error('msg:AI 暫時忙碌中，請稍後再按一次。');
 }
+
+/* ---------- per-character tapping ---------- */
+let cm = null;
+function lineSeekStart(i){
+  const l=lines[i]; if(l.start!=null) return l.start;
+  for(let j=i-1;j>=0;j--){ if(lines[j].end!=null) return lines[j].end; if(lines[j].start!=null) return lines[j].start+2; }
+  return video.currentTime;
+}
+function openChar(i){
+  if(!hasVideo) return;
+  if(timing) stopTiming(' ');
+  cm = { i, k:0, arr:[], down:false };
+  $('charBox').hidden = false;
+  video.currentTime = Math.max(0, lineSeekStart(i)-2);
+  video.playbackRate = +$('cbRate').value;
+  paintCB(); playVideo();
+  $('charBox').scrollIntoView({ block:'center', behavior:'smooth' });
+}
+function paintCB(){
+  if(!cm) return;
+  const l=lines[cm.i], U=unitsOf(l.text);
+  $('cbIdx').textContent = `逐字對拍：第 ${cm.i+1} / ${lines.length} 句．第 ${Math.min(cm.k+1,U.length)} / ${U.length} 字`;
+  const box=$('cbText'); box.innerHTML='';
+  const c=document.createElement('span'); c.className='chip '+l.role; c.textContent=l.role||'♪'; box.append(c);
+  const wrap=document.createElement('span');
+  for(let n=0;n<l.text.length;n++){
+    const sp=document.createElement('span'); sp.textContent=l.text[n];
+    const ui=U.indexOf(n);
+    if(ui>=0 && ui<cm.k) sp.className='done'; else if(ui===cm.k) sp.className='cur';
+    wrap.append(sp);
+  }
+  box.append(wrap);
+  $('cbHold').classList.toggle('down', cm.down);
+  lastNow=-2; highlightRow(cm.i);
+}
+function cbDown(){
+  if(!cm || cm.down) return;
+  const U=unitsOf(lines[cm.i].text); if(cm.k>=U.length) return;
+  cm.arr[cm.k]=[+video.currentTime.toFixed(2), null]; cm.down=true; paintCB();
+}
+function cbUp(){
+  if(!cm || !cm.down) return;
+  cm.down=false;
+  const c=cm.arr[cm.k]; c[1]=+Math.max(video.currentTime, c[0]+0.05).toFixed(2);
+  cm.k++;
+  const l=lines[cm.i], U=unitsOf(l.text);
+  if(cm.k>=U.length){
+    l.chars=cm.arr; l.start=cm.arr[0][0]; l.end=cm.arr[cm.arr.length-1][1]; l.pin=true;
+    persist(); renderList();
+    if(cm.i+1<lines.length){ cm={ i:cm.i+1, k:0, arr:[], down:false }; }
+    else { exitChar('整首逐字對拍完成！按播放看看效果。'); return; }
+  }
+  paintCB();
+}
+function exitChar(msg){
+  cm=null; video.pause(); video.playbackRate=1; $('charBox').hidden=true;
+  if(msg) aStatus(msg);
+  renderList();
+}
+const hold=$('cbHold');
+hold.addEventListener('pointerdown', e=>{ e.preventDefault(); try{ hold.setPointerCapture(e.pointerId); }catch(_){} cbDown(); });
+['pointerup','pointercancel'].forEach(ev=>hold.addEventListener(ev, e=>{ e.preventDefault(); cbUp(); }));
+hold.addEventListener('contextmenu', e=>e.preventDefault());
+$('cbBack').onclick=()=>{ if(!cm||cm.down) return; if(cm.k>0){ cm.k--; cm.arr.pop(); } else if(cm.i>0){ cm={ i:cm.i-1, k:0, arr:[], down:false }; } video.currentTime=Math.max(0,video.currentTime-2); paintCB(); };
+$('cbRedo').onclick=()=>{ if(!cm) return; cm.k=0; cm.arr=[]; cm.down=false; video.currentTime=Math.max(0, lineSeekStart(cm.i)-2); paintCB(); playVideo(); };
+$('cbExit').onclick=()=>exitChar('');
+$('cbRate').onchange=()=>{ if(cm) video.playbackRate=+$('cbRate').value; };
+document.addEventListener('keydown', e=>{
+  if(!cm || e.target.matches('input,textarea,select')) return;
+  if(e.code==='Space'){ e.preventDefault(); e.stopImmediatePropagation(); if(!e.repeat) cbDown(); }
+  else if(e.key==='Backspace'||e.key==='ArrowLeft'){ e.preventDefault(); e.stopImmediatePropagation(); $('cbBack').click(); }
+}, true);
+document.addEventListener('keyup', e=>{ if(cm && e.code==='Space'){ e.preventDefault(); cbUp(); } }, true);
+
+/* ---------- automatic per-character estimate ---------- */
+$('autoChars').onclick = async () => {
+  if(aligning) return;
+  if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
+  if(!timed().length){ aStatus('請先用上面的自動對時間，把每一句的開頭對好。'); return; }
+  aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
+  try{
+    aStatus('讀取影片聲音中…'); await tick();
+    const a = await getAudio();
+    aStatus('分析每個字的拍點中…'); await tick();
+    const { vocal, SR } = a, hop=Math.round(SR*0.01), F=Math.floor(vocal.length/hop);
+    const e=new Float32Array(F);
+    for(let f=0;f<F;f++){ let q=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=vocal[o+i]; q+=v*v; } e[f]=Math.log10(Math.sqrt(q/hop)+1e-5); }
+    const P=new Float64Array(F+1); for(let f=0;f<F;f++) P[f+1]=P[f]+e[f];
+    const mean=(x,y)=>{ x=Math.max(0,x); y=Math.min(F,y); return y>x?(P[y]-P[x])/(y-x):0; };
+    const on=new Float32Array(F); for(let f=12;f<F-4;f++) on[f]=Math.max(0, mean(f,f+4)-mean(f-12,f));
+    const T=timed(); let done=0;
+    T.forEach((li,j)=>{
+      const l=lines[li]; if(l.pin && l.chars) return;
+      const U=unitsOf(l.text), C=U.length; if(!C) return;
+      const nx = T[j+1]!=null ? lines[T[j+1]].start : null;
+      const guess = l.start + Math.max(1.2, C*0.55);
+      const ws=l.start, we = l.end!=null ? l.end : (nx!=null ? Math.min(nx-0.1, ws+Math.max(1.2,C*0.55)*1.6) : guess);
+      const f0=Math.round((ws+0.12)/0.01), f1=Math.round((we-0.08)/0.01);
+      let pk=[];
+      for(let f=f0; f<f1; f++){ if(on[f]<=0) continue; let ok=true; for(let d=-6; d<=6; d++){ if(d && on[f+d]>on[f]){ ok=false; break; } } if(ok) pk.push({ f, s:on[f] }); }
+      pk.sort((x,y)=>y.s-x.s);
+      const pick=[];
+      for(const c of pk){ if(pick.length>=C-1) break; if(pick.every(q=>Math.abs(q-c.f)>=10)) pick.push(c.f); }
+      pick.sort((x,y)=>x-y);
+      let starts=[ws, ...pick.map(f=>f*0.01)];
+      if(starts.length<C){ starts=[]; for(let k=0;k<C;k++) starts.push(ws+(we-ws)*k/C); }
+      const lastEnd = l.end!=null ? l.end : Math.max(starts[C-1]+0.25, we-0.1);
+      l.chars = starts.map((st,k)=>[+st.toFixed(2), +(k<C-1 ? Math.max(st+0.05, starts[k+1]-0.02) : lastEnd).toFixed(2)]);
+      done++;
+    });
+    persist(); renderList();
+    aStatus(`已推估 ${done} 句的每個字。按播放看看，不準的句子按 🎵 逐字對拍修正。`);
+  }catch(err){
+    aStatus(err && err.message==='decode' ? '讀不到這支影片的聲音，請改用電腦版 Chrome，或先把影片轉成 MP4。' : '推估沒有成功，請再試一次。');
+  }finally{ aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
+};
 
 restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
