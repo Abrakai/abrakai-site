@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#120d19">
+<title>AbraKai KTV 字幕機｜演出影片 KTV 動態字幕工具｜阿布拉.凱 工作室</title>
+<meta name="description" content="AbraKai KTV 字幕機：選自己的演出影片、貼上歌詞，邊聽邊點一下對時間，就能錄出男女分色、逐字變色的 KTV 動態字幕影片。影片只在你的裝置上處理。">
+<link rel="icon" href="/assets/icons/icon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@900&display=swap">
+<style>
+/* Layout: stage on the left (the KTV screen), a three-step side panel on the right; stacks on phones. Single deliberate dark "karaoke room" look. */
+:root{
+  --bg:#120d19; --panel:#1b1424; --raise:#251c31; --line:#352a45;
+  --fg:#f4eef8; --muted:#a99cbb;
+  --female:#ff4f9a; --male:#3fa9ff; --duet:#3ddc84; --gold:#ffc93c;
+  --ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--ui);font-size:15px;line-height:1.6;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:30px;margin:0;letter-spacing:.06em;color:var(--fg);text-shadow:0 0 18px color-mix(in srgb,var(--female) 55%,transparent)}
+h1 span{color:var(--female)}
+.sub{color:var(--muted);font-size:14px}
+.legend{display:flex;gap:12px;margin-left:auto;font-size:13px;color:var(--muted)}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+.screen{position:relative;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+canvas#cv{display:block;width:100%;height:auto;max-width:100%}
+.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.transport input[type=range]{flex:1;min-width:140px;accent-color:var(--female)}
+.time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;min-width:92px;text-align:right}
+button,.btn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--raise);color:var(--fg);border-radius:8px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button:hover,.btn:hover{border-color:var(--muted)}
+button:focus-visible,.btn:focus-within,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.primary{background:var(--female);border-color:var(--female);color:#fff}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btn input{display:none}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-radius:0;background:none;color:var(--muted);padding:12px 6px;justify-content:center;font-size:14px;border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--female)}
+.tabs i{font-style:normal;font-variant-numeric:tabular-nums;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--raise);font-size:12px}
+.tabs button[aria-selected=true] i{background:var(--female);color:#fff}
+.pane{padding:16px;display:flex;flex-direction:column;gap:12px}
+.hint{color:var(--muted);font-size:13px;margin:0}
+textarea{width:100%;box-sizing:border-box;min-height:210px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;font-size:14px;line-height:1.7}
+textarea::placeholder{color:color-mix(in srgb,var(--muted) 70%,transparent)}
+.list{max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row.now{background:color-mix(in srgb,var(--female) 16%,transparent)}
+.row .txt{cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px}
+.row .t button{padding:0 6px;font-size:12px;border-radius:5px}
+.chip{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:900;color:#fff;background:var(--gold)}
+.chip.女{background:var(--female)}.chip.男{background:var(--male)}.chip.合{background:var(--duet);color:#0d2a18}
+.empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+.cue{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.cue small{color:var(--muted);font-size:12px;letter-spacing:.08em}
+.cue .big{font-size:20px;font-weight:900;display:flex;gap:8px;align-items:center;min-height:30px}
+.cue .next{color:var(--muted);font-size:14px}
+.tapgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tap{padding:16px 10px;flex-direction:column;justify-content:center;font-size:16px}
+.tap kbd{font-family:var(--ui);font-size:11px;font-weight:500;color:inherit;opacity:.75}
+.tap.start{background:var(--female);border-color:var(--female);color:#fff}
+.tap.wide{grid-column:1/-1;padding:10px;flex-direction:row;font-size:14px}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.f input[type=text]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
+label.f input[type=range]{accent-color:var(--female)}
+.status{font-size:13px;color:var(--gold);min-height:1.4em;margin:0}
+.rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff3b3b;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.rec{animation:none}}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:2px}
+[hidden]{display:none!important}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;pointer-events:none}
+canvas#cv{position:relative;z-index:1}
+*{box-sizing:border-box}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px}
+.topbar a{color:var(--fg);text-decoration:none;font-weight:700}
+.topbar a:hover{color:var(--female)}
+.topbar span{color:var(--muted);font-size:12px;letter-spacing:.12em;font-weight:700}
+.legal{color:var(--muted);font-size:12px;line-height:1.7;border-top:1px solid var(--line);padding:14px 16px 16px;margin:0}
+body{margin:0}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
+  <header>
+    <h1>KTV <span>字幕機</span></h1>
+    <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
+    <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
+  </header>
+
+  <div class="main">
+    <section class="stage">
+      <div class="screen"><video id="vid" playsinline webkit-playsinline preload="auto"></video><canvas id="cv" width="1280" height="720"></canvas></div>
+      <div class="transport">
+        <label class="btn" for="vfile">選影片<input id="vfile" type="file" accept="video/*"></label>
+        <button id="play" disabled>▶ 播放</button>
+        <input id="seek" type="range" min="0" max="1000" value="0" disabled aria-label="播放位置">
+        <span class="time" id="time">0:00 / 0:00</span>
+        <button id="fs" title="全螢幕">⛶</button>
+      </div>
+      <p class="status" id="vStatus"></p>
+    </section>
+
+    <aside class="panel">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="0"><i>1</i>貼歌詞</button>
+        <button role="tab" aria-selected="false" data-tab="1"><i>2</i>對時間</button>
+        <button role="tab" aria-selected="false" data-tab="2"><i>3</i>輸出</button>
+      </div>
+
+      <div class="pane" data-pane="0">
+        <p class="hint">用 ⦅女⦆ ⦅男⦆ ⦅合⦆ 標出誰唱，標記之後的每一行都算同一個人，直到下一個標記。《歌名》會變成片頭。</p>
+        <textarea id="lyrics" spellcheck="false" placeholder="《歌名》&#10;&#10;⦅女⦆ 女聲第一句&#10;女聲第二句&#10;&#10;⦅男⦆ 男聲第一句&#10;男聲第二句&#10;&#10;⦅合⦆ 合唱這一句"></textarea>
+        <div class="list" id="list"><div class="empty">貼上歌詞後，這裡會列出每一句</div></div>
+      </div>
+
+      <div class="pane" data-pane="1" hidden>
+        <ol class="steps">
+          <li>按「從頭開始」，影片會從頭播放</li>
+          <li>每句一開口，就按 <b>空白鍵</b>（或粉紅按鈕）</li>
+          <li>遇到間奏，在最後一句唱完時按 <b>Enter</b></li>
+        </ol>
+        <div class="cue">
+          <small>下一句要標記</small>
+          <div class="big" id="cueNow">—</div>
+          <div class="next" id="cueNext"></div>
+        </div>
+        <div class="tapgrid">
+          <button class="tap start" id="tStart" disabled>這句開始<kbd>空白鍵</kbd></button>
+          <button class="tap" id="tEnd" disabled>唱完．進間奏<kbd>Enter</kbd></button>
+          <button class="tap wide" id="tBack" disabled>↶ 退回上一句（倒帶 3 秒）<kbd>←</kbd></button>
+        </div>
+        <div class="bar">
+          <button class="primary" id="tGo" disabled>從頭開始</button>
+          <button id="tResume" disabled>接著對</button>
+          <button id="tStop" disabled>暫停對時間</button>
+        </div>
+        <p class="status" id="tStatus"></p>
+        <p class="hint">對完回到「貼歌詞」，每句都能用 −／＋ 微調 0.1 秒，點歌詞可以跳過去聽。</p>
+      </div>
+
+      <div class="pane" data-pane="2" hidden>
+        <label class="f">片頭歌名<input type="text" id="mTitle"></label>
+        <label class="f">原唱<input type="text" id="mArtist" placeholder="例：某某 vs 某某"></label>
+        <label class="f">片頭副標<input type="text" id="mSub" placeholder="例：重陽敬老茶會．社區舞蹈班"></label>
+        <label class="f">字幕大小 <span id="sizeVal"></span><input type="range" id="mSize" min="50" max="110" value="78"></label>
+        <div class="bar">
+          <button class="primary" id="recBtn" disabled>● 錄成 KTV 影片</button>
+          <button id="recCancel" hidden>停止錄影</button>
+          <button id="saveBtn" hidden>存到電腦</button>
+        </div>
+        <p class="status" id="recStatus"></p>
+        <p class="hint">錄影會從頭完整播放一次，所以要跟影片一樣長的時間。錄影時請保持這個分頁在最前面。</p>
+        <div class="bar">
+          <button id="expBtn">存時間檔</button>
+          <label class="btn" for="impFile">讀取時間檔<input id="impFile" type="file" accept=".json,application/json"></label>
+        </div>
+        <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
+      </div>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。</p>
+    </aside>
+  </div>
+</div>
+
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const cv = $('cv'), g = cv.getContext('2d'), video = $('vid');
+const COLORS = { '女':'#ff4f9a', '男':'#3fa9ff', '合':'#3ddc84', '':'#ffc93c' };
+const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+const LEAD = 4;
+
+let lines = [];           // {text, role, start, end}
+let meta = { title:'', artist:'', sub:'' };
+let size = 78;            // per mille of height
+let hasVideo = false, videoName = 'KTV';
+let timing = false, k = 0;
+let actx = null, dest = null;
+let rec = null, recBlob = null, recExt = 'mp4';
+
+/* ---------- storage ---------- */
+const KEY = 'abrakai-ktv-v1';
+function persist(){
+  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end]), meta, size })); }catch(e){}
+}
+function restore(){
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if(!d) return;
+    $('lyrics').value = d.text || '';
+    meta = Object.assign(meta, d.meta || {});
+    size = d.size || size;
+    parse(d.times);
+  }catch(e){}
+}
+
+/* ---------- parsing ---------- */
+const ROLE_RE = /^[⦅(（\[【〔]\s*(女|男|合)\s*[⦆)）\]】〕]\s*(.*)$/;
+function parse(times){
+  const old = lines;
+  const out = []; let role = '';
+  let title = '', artist = '';
+  for(const raw of $('lyrics').value.split(/\r?\n/)){
+    let s = raw.trim(); if(!s) continue;
+    let m;
+    if((m = s.match(/^《(.+)》$/))){ title = m[1].trim(); continue; }
+    if((m = s.match(/^(歌曲名稱|歌名)\s*[:：]\s*(.*)$/))){ title = m[2].replace(/[《》]/g,'').trim(); continue; }
+    if((m = s.match(/^(原唱|演唱|主唱)\s*[:：]\s*(.*)$/))){ artist = m[2].trim(); continue; }
+    if((m = s.match(ROLE_RE))){ role = m[1]; s = m[2].trim(); if(!s) continue; }
+    out.push({ text:s, role, start:null, end:null });
+  }
+  out.forEach((l,i) => {
+    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; }
+    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; }
+  });
+  lines = out;
+  if(title && !times) meta.title = title;
+  if(artist && !times) meta.artist = artist;
+  if(times === undefined){ if(title) meta.title = title; if(artist) meta.artist = artist; }
+  syncMetaInputs();
+  renderList(); updateButtons(); updateCue();
+}
+
+/* ---------- list ---------- */
+const fmt = t => { if(t==null||isNaN(t)) return '—'; const m=Math.floor(t/60), s=t-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1); };
+const fmtShort = t => { t = t||0; const m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+(s<10?'0':'')+s; };
+function renderList(){
+  const box = $('list');
+  if(!lines.length){ box.innerHTML = '<div class="empty">貼上歌詞後，這裡會列出每一句</div>'; return; }
+  box.innerHTML = '';
+  lines.forEach((l,i) => {
+    const r = document.createElement('div'); r.className = 'row'; r.dataset.i = i;
+    const chip = document.createElement('span'); chip.className = 'chip ' + l.role; chip.textContent = l.role || '♪';
+    const tx = document.createElement('span'); tx.className = 'txt'; tx.textContent = l.text; tx.title = '跳到這一句';
+    tx.onclick = () => { if(hasVideo && l.start!=null){ video.currentTime = Math.max(0,l.start-1); playVideo(); } };
+    const t = document.createElement('span'); t.className = 't';
+    const minus = document.createElement('button'); minus.textContent = '−'; minus.setAttribute('aria-label','提早 0.1 秒');
+    const plus = document.createElement('button'); plus.textContent = '＋'; plus.setAttribute('aria-label','延後 0.1 秒');
+    const val = document.createElement('span'); val.textContent = fmt(l.start);
+    minus.onclick = () => nudge(i,-0.1); plus.onclick = () => nudge(i,0.1);
+    minus.disabled = plus.disabled = l.start==null;
+    t.append(minus,val,plus);
+    r.append(chip,tx,t); box.append(r);
+  });
+}
+function nudge(i,d){ const l=lines[i]; if(l.start==null) return; l.start=Math.max(0,+(l.start+d).toFixed(2)); persist(); renderList(); }
+let lastNow = -2;
+function highlightRow(idx){
+  if(idx===lastNow) return; lastNow = idx;
+  document.querySelectorAll('.row.now').forEach(r=>r.classList.remove('now'));
+  const r = document.querySelector('.row[data-i="'+idx+'"]');
+  if(r){ r.classList.add('now'); const box=$('list'); const top=r.offsetTop-box.offsetTop; if(top<box.scrollTop||top>box.scrollTop+box.clientHeight-40) box.scrollTop=top-60; }
+}
+
+/* ---------- timeline logic ---------- */
+function timed(){ const a=[]; lines.forEach((l,i)=>{ if(l.start!=null) a.push(i); }); return a; }
+function endOf(T,j){ const L=lines[T[j]]; if(L.end!=null) return L.end; const nx=T[j+1]; return nx!=null ? lines[nx].start : L.start+4; }
+function wipeEnd(T,j){ const L=lines[T[j]], e=endOf(T,j); return L.end!=null ? e : e - Math.min(0.5,(e-L.start)*0.15); }
+function prog(T,j,t){ const L=lines[T[j]]; const e=wipeEnd(T,j); return Math.max(0,Math.min(1,(t-L.start)/Math.max(0.3,e-L.start))); }
+
+function scene(t){
+  const T = timed();
+  if(!T.length) return { title:true, items:[] };
+  let c=-1; for(let j=0;j<T.length;j++) if(lines[T[j]].start<=t) c=j;
+  const pair = (j, dots) => {
+    const items=[{ L:lines[T[j]], row:j%2, p:prog(T,j,t) }];
+    if(T[j+1]!=null) items.push({ L:lines[T[j+1]], row:(j+1)%2, p:0 });
+    return { items, dots, cur:T[j] };
+  };
+  if(c===-1){
+    const rem = lines[T[0]].start - t;
+    if(rem > LEAD) return { title:true, items:[] };
+    return Object.assign(pair(0, rem<=3 ? Math.ceil(rem) : 0), { items:[ {L:lines[T[0]],row:0,p:0}, ...(T[1]!=null?[{L:lines[T[1]],row:1,p:0}]:[]) ] , cur:-1});
+  }
+  const e = endOf(T,c);
+  if(t <= e + 0.6) return pair(c,0);
+  if(c+1 < T.length){
+    const rem = lines[T[c+1]].start - t;
+    if(rem <= LEAD){
+      const gap = lines[T[c+1]].start - e;
+      const r = pair(c+1, gap>=3 && rem<=3 ? Math.ceil(rem) : 0);
+      r.items[0].p = 0; r.cur = -1; return r;
+    }
+    return { items:[], interlude:true, cur:-1 };
+  }
+  return { items:[], cur:-1, outro:true };
+}
+
+/* ---------- drawing ---------- */
+function drawLine(L,row,p){
+  const W=cv.width,H=cv.height;
+  let fs = H*size/1000;
+  g.font = `900 ${fs}px ${FONT}`;
+  let w = g.measureText(L.text).width;
+  const maxW = W*0.80;
+  if(w>maxW){ fs*=maxW/w; g.font=`900 ${fs}px ${FONT}`; w=g.measureText(L.text).width; }
+  const tagW = L.role ? fs*1.05 : 0;
+  const total = tagW + w;
+  const x0 = row===0 ? W*0.06 : W*0.94 - total;
+  const y = row===0 ? H - fs*1.95 - H*0.04 : H - fs*0.55 - H*0.04;
+  const col = COLORS[L.role]||COLORS[''];
+  if(L.role){
+    const cx=x0+fs*0.42, cy=y-fs*0.36, r=fs*0.42;
+    g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2); g.fillStyle=col; g.fill();
+    g.lineWidth=fs*0.06; g.strokeStyle='rgba(255,255,255,.9)'; g.stroke();
+    g.font=`900 ${fs*0.5}px ${FONT}`; g.fillStyle='#fff'; g.textAlign='center'; g.textBaseline='middle';
+    g.fillText(L.role,cx,cy+fs*0.02);
+    g.textAlign='left'; g.textBaseline='alphabetic'; g.font=`900 ${fs}px ${FONT}`;
+  }
+  const tx = x0+tagW;
+  g.lineJoin='round';
+  g.lineWidth=fs*0.17; g.strokeStyle='rgba(10,6,16,.92)'; g.strokeText(L.text,tx,y);
+  g.fillStyle='#ffffff'; g.fillText(L.text,tx,y);
+  if(p>0){
+    g.save(); g.beginPath(); g.rect(tx-fs*0.3, y-fs*1.3, fs*0.3 + w*p, fs*1.8); g.clip();
+    g.lineWidth=fs*0.17; g.strokeStyle='#ffffff'; g.strokeText(L.text,tx,y);
+    g.fillStyle=col; g.fillText(L.text,tx,y);
+    g.restore();
+  }
+  return {x0,y,fs};
+}
+function drawDots(n){
+  const W=cv.width,H=cv.height, fs=H*size/1000;
+  const y = H - fs*1.95 - H*0.04 - fs*1.25;
+  for(let i=0;i<3;i++){
+    g.beginPath(); g.arc(W*0.06+fs*0.3+i*fs*0.65, y, fs*0.2, 0, Math.PI*2);
+    g.fillStyle = i < n ? COLORS['合'] : 'rgba(255,255,255,.25)'; g.fill();
+  }
+}
+function drawTitle(alpha){
+  const W=cv.width,H=cv.height;
+  if(!meta.title && !meta.artist && !meta.sub) return;
+  g.save(); g.globalAlpha=alpha; g.textAlign='center'; g.lineJoin='round';
+  const big=H*0.11;
+  g.fillStyle='rgba(8,4,14,.55)'; g.fillRect(0,H*0.30,W,H*0.40);
+  if(meta.title){
+    g.font=`900 ${big}px "Noto Serif TC","Songti TC",serif`;
+    g.lineWidth=big*0.12; g.strokeStyle='rgba(10,6,16,.9)'; g.strokeText(meta.title,W/2,H*0.48);
+    g.fillStyle='#ffc93c'; g.fillText(meta.title,W/2,H*0.48);
+  }
+  g.font=`700 ${H*0.042}px ${FONT}`;
+  if(meta.artist){ g.fillStyle='#ffffff'; g.fillText('原唱　'+meta.artist,W/2,H*0.565); }
+  if(meta.sub){ g.fillStyle='#ffd3e6'; g.fillText(meta.sub,W/2,H*0.63); }
+  g.restore();
+}
+function shade(){
+  const W=cv.width,H=cv.height;
+  const gr=g.createLinearGradient(0,H*0.62,0,H);
+  gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.45)');
+  g.fillStyle=gr; g.fillRect(0,H*0.62,W,H*0.38);
+}
+function demoFrame(){
+  const W=cv.width,H=cv.height, t=performance.now()/1000;
+  const bg=g.createLinearGradient(0,0,W,H); bg.addColorStop(0,'#2a1238'); bg.addColorStop(1,'#0f1a33');
+  g.fillStyle=bg; g.fillRect(0,0,W,H);
+  for(let i=0;i<14;i++){ const x=(i*97+t*30)%W, y=(i*53)%(H*0.6)+30; g.fillStyle=`rgba(255,255,255,${0.04+0.04*Math.sin(t+i)})`; g.beginPath(); g.arc(x,y,40+i*3,0,Math.PI*2); g.fill(); }
+  g.textAlign='center'; g.fillStyle='rgba(255,255,255,.55)'; g.font=`700 ${H*0.04}px ${FONT}`;
+  g.fillText('按左下「選影片」載入你的演出影片',W/2,H*0.36); g.textAlign='left';
+  const cyc=t%9;
+  const A={text:'女聲是粉紅色　一個字一個字亮起來',role:'女'}, B={text:'男聲是藍色　合唱是綠色',role:'男'};
+  const pa=Math.max(0,Math.min(1,cyc/3.6)), pb=Math.max(0,Math.min(1,(cyc-4)/3.2));
+  drawLine(A,0,pa); drawLine(B,1,pb);
+}
+function frame(){
+  const W=cv.width,H=cv.height;
+  if(!hasVideo){ demoFrame(); }
+  else{
+    g.drawImage(video,0,0,W,H); shade();
+    const t=video.currentTime, s=scene(t);
+    if(s.title){
+      const T=timed(); const first = T.length ? lines[T[0]].start : Infinity;
+      const a = Math.min(1, t<0.6 ? 1 : 1, (first-LEAD-t)/0.8);
+      if(t < Math.min(first-LEAD, 12)) drawTitle(Math.max(0,Math.min(1,a)));
+    }
+    for(const it of s.items||[]) drawLine(it.L,it.row,it.p);
+    if(s.dots) drawDots(s.dots);
+    if(s.cur!=null && s.cur>=0) highlightRow(s.cur);
+    $('seek').value = video.duration ? Math.round(t/video.duration*1000) : 0;
+    $('time').textContent = fmtShort(t)+' / '+fmtShort(video.duration);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- video & audio ---------- */
+function ensureAudio(){
+  if(actx) return;
+  try{
+    actx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = actx.createMediaElementSource(video);
+    dest = actx.createMediaStreamDestination();
+    src.connect(actx.destination); src.connect(dest);
+  }catch(e){ actx=null; }
+}
+async function playVideo(){ ensureAudio(); try{ await actx?.resume(); }catch(e){} try{ await video.play(); }catch(e){} }
+let loadTry = 0, loadTimer = null, curFile = null;
+function vStatus(msg){ $('vStatus').textContent = msg; }
+function tryLoad(){
+  clearTimeout(loadTimer);
+  const f = curFile; if(!f) return;
+  const attempt = ++loadTry;
+  if(attempt === 1){
+    vStatus('影片載入中…');
+    video.src = URL.createObjectURL(f);
+    loadTimer = setTimeout(() => { if(!hasVideo) tryLoad(); }, 5000);
+  } else if(attempt === 2){
+    vStatus('換另一種方式載入中，大檔案要等一下…');
+    const r = new FileReader();
+    r.onload = () => { video.src = r.result; loadTimer = setTimeout(() => { if(!hasVideo) loadFailed(); }, 15000); };
+    r.onerror = loadFailed;
+    r.readAsDataURL(f);
+  } else loadFailed();
+}
+function loadFailed(){
+  clearTimeout(loadTimer);
+  if(hasVideo) return;
+  vStatus('這支影片無法在這個瀏覽器播放。請改用 Chrome 或 Safari，或先把影片轉成 MP4 再試一次。');
+}
+video.addEventListener('error', () => { if(curFile && !hasVideo) tryLoad(); });
+$('vfile').onchange = e => {
+  const f=e.target.files[0]; if(!f) return;
+  videoName = f.name.replace(/\.[^.]+$/,'');
+  hasVideo = false; curFile = f; loadTry = 0; updateButtons();
+  tryLoad();
+};
+video.addEventListener('loadedmetadata', () => {
+  cv.width = video.videoWidth || 1280; cv.height = video.videoHeight || 720;
+  hasVideo = true; clearTimeout(loadTimer); updateButtons();
+  vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+'）');
+});
+video.addEventListener('play', () => $('play').textContent='❚❚ 暫停');
+video.addEventListener('pause', () => $('play').textContent='▶ 播放');
+video.addEventListener('ended', () => { if(timing) stopTiming('影片播完了，時間已記下。'); });
+$('play').onclick = () => video.paused ? playVideo() : video.pause();
+$('seek').oninput = e => { if(video.duration) video.currentTime = e.target.value/1000*video.duration; };
+$('fs').onclick = () => { try{ const p=cv.requestFullscreen?.(); p&&p.catch(()=>{}); }catch(e){} };
+
+/* ---------- timing ---------- */
+function updateCue(){
+  const now=lines[k], nx=lines[k+1];
+  const cue=$('cueNow');
+  cue.innerHTML='';
+  if(!lines.length){ cue.textContent='先到「貼歌詞」貼上歌詞'; $('cueNext').textContent=''; return; }
+  if(!now){ cue.textContent='全部標完了 🎉'; $('cueNext').textContent='可以到「輸出」錄成影片'; return; }
+  const c=document.createElement('span'); c.className='chip '+now.role; c.textContent=now.role||'♪';
+  const s=document.createElement('span'); s.textContent=now.text;
+  cue.append(c,s);
+  $('cueNext').textContent = nx ? '接著：'+nx.text : '這是最後一句';
+}
+function startTiming(fromStart){
+  if(!hasVideo||!lines.length) return;
+  if(fromStart){ lines.forEach(l=>{l.start=null;l.end=null;}); k=0; video.currentTime=0; }
+  else{ k=lines.findIndex(l=>l.start==null); if(k<0) k=lines.length; video.currentTime=Math.max(0,(lines[k-1]?.start??0)-1); }
+  timing=true; renderList(); updateCue(); updateButtons();
+  $('tStatus').textContent='對時間中…聽到開口就按';
+  playVideo();
+}
+function stopTiming(msg){ timing=false; video.pause(); updateButtons(); persist(); renderList(); $('tStatus').textContent=msg||'已暫停，按「接著對」可以繼續。'; }
+function markStart(){
+  if(!timing||k>=lines.length) return;
+  lines[k].start=+video.currentTime.toFixed(2); lines[k].end=null;
+  if(k>0 && lines[k-1].end!=null && lines[k-1].end>lines[k].start) lines[k-1].end=null;
+  k++; persist(); updateCue(); renderList();
+  if(k>=lines.length) $('tStatus').textContent='最後一句標好了，唱完按 Enter，或直接到「輸出」。';
+}
+function markEnd(){
+  if(!timing||k===0) return;
+  lines[k-1].end=+video.currentTime.toFixed(2); persist(); renderList();
+  $('tStatus').textContent='已標記「唱完」，間奏時畫面會先收起歌詞。';
+  if(k>=lines.length) stopTiming('全部完成！到「輸出」錄成影片。');
+}
+function undo(){
+  if(!timing||k===0) return;
+  k--; lines[k].start=null; lines[k].end=null;
+  video.currentTime=Math.max(0,video.currentTime-3);
+  persist(); updateCue(); renderList();
+}
+$('tGo').onclick=()=>startTiming(true);
+$('tResume').onclick=()=>startTiming(false);
+$('tStop').onclick=()=>stopTiming();
+$('tStart').onclick=markStart; $('tEnd').onclick=markEnd; $('tBack').onclick=undo;
+document.addEventListener('keydown',e=>{
+  if(!timing) return;
+  if(e.target.matches('input,textarea')) return;
+  if(e.code==='Space'){ e.preventDefault(); markStart(); }
+  else if(e.key==='Enter'){ e.preventDefault(); markEnd(); }
+  else if(e.key==='ArrowLeft'||e.key==='Backspace'){ e.preventDefault(); undo(); }
+});
+
+function updateButtons(){
+  const ok=hasVideo&&lines.length>0;
+  $('play').disabled=!hasVideo; $('seek').disabled=!hasVideo;
+  $('tGo').disabled=!ok||timing; $('tResume').disabled=!ok||timing; $('tStop').disabled=!timing;
+  $('tStart').disabled=$('tEnd').disabled=$('tBack').disabled=!timing;
+  $('recBtn').disabled=!hasVideo||!timed().length||!!rec;
+}
+
+/* ---------- meta ---------- */
+function syncMetaInputs(){ $('mTitle').value=meta.title||''; $('mArtist').value=meta.artist||''; $('mSub').value=meta.sub||''; $('mSize').value=size; $('sizeVal').textContent=size; }
+['mTitle','mArtist','mSub'].forEach(id=>$(id).addEventListener('input',e=>{ meta[{mTitle:'title',mArtist:'artist',mSub:'sub'}[id]]=e.target.value; persist(); }));
+$('mSize').oninput=e=>{ size=+e.target.value; $('sizeVal').textContent=size; persist(); };
+let parseT; $('lyrics').addEventListener('input',()=>{ clearTimeout(parseT); parseT=setTimeout(()=>{ parse(); persist(); },250); });
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab);
+  try{ localStorage.setItem(KEY+'-tab',b.dataset.tab); }catch(e){}
+});
+
+/* ---------- save helpers ---------- */
+async function offer(filename,data,statusEl){
+  if(matchMedia('(pointer:coarse)').matches && navigator.canShare){
+    try{
+      const file=new File([data instanceof Blob?data:new Blob([data])],filename,{type:filename.endsWith('.json')?'application/json':(data.type||'video/mp4')});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file]});
+        statusEl.textContent='已開啟分享選單，可以選「儲存影片」存到相簿。'; return true;
+      }
+    }catch(err){ if(err&&err.name==='AbortError'){ statusEl.textContent='已取消。'; return false; } }
+  }
+  let dl=null; try{ dl=await window.claude?.use?.('downloads'); }catch(e){}
+  if(!dl){
+    try{
+      const blob = data instanceof Blob ? data : new Blob([data]);
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
+      document.body.append(a); a.click(); a.remove();
+      statusEl.textContent='已存好：'+filename; return true;
+    }catch(e){ statusEl.textContent='存檔沒有成功，請再試一次。'; return false; }
+  }
+  try{ await dl.save({filename,data}); statusEl.textContent='已存好：'+filename; return true; }
+  catch(err){
+    const c=err&&err.code;
+    statusEl.textContent = c==='declined' ? '已取消存檔。' : c==='rate_limited' ? '存檔視窗已經開著，請先處理它。' : '存檔沒有成功，請再試一次。';
+    return false;
+  }
+}
+
+/* ---------- recording ---------- */
+$('recBtn').onclick=async()=>{
+  if(!hasVideo||rec) return;
+  ensureAudio();
+  if(!actx||!dest){ $('recStatus').textContent='這個瀏覽器無法同時錄下聲音，請改用 Chrome。'; return; }
+  try{ await actx.resume(); }catch(e){}
+  const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mime=types.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t));
+  if(!mime){ $('recStatus').textContent='這個瀏覽器不支援錄影，請改用電腦版 Chrome。'; return; }
+  recExt=mime.startsWith('video/mp4')?'mp4':'webm';
+  const stream=new MediaStream([...cv.captureStream(30).getVideoTracks(),...dest.stream.getAudioTracks()]);
+  const chunks=[]; recBlob=null; $('saveBtn').hidden=true;
+  try{ rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8e6,audioBitsPerSecond:192e3}); }
+  catch(e){ rec=null; $('recStatus').textContent='無法開始錄影，請改用電腦版 Chrome。'; return; }
+  rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{
+    const cancelled=rec._cancel; rec=null; updateButtons(); $('recCancel').hidden=true; video.removeEventListener('ended',onEnd);
+    if(cancelled||!chunks.length){ $('recStatus').textContent='已停止錄影。'; return; }
+    recBlob=new Blob(chunks,{type:mime});
+    $('recStatus').textContent=`錄好了（${(recBlob.size/1048576).toFixed(1)} MB），按「存到電腦」。`;
+    $('saveBtn').hidden=false;
+  };
+  const onEnd=()=>{ if(rec&&rec.state!=='inactive') rec.stop(); };
+  video.addEventListener('ended',onEnd);
+  if(timing) stopTiming(' ');
+  video.pause(); video.currentTime=0;
+  await new Promise(r=>{ const f=()=>{video.removeEventListener('seeked',f);r();}; video.addEventListener('seeked',f); setTimeout(r,800); });
+  rec.start(1000); updateButtons(); $('recCancel').hidden=false;
+  const tick=()=>{ if(!rec) return; $('recStatus').innerHTML='<span class="rec"></span> 錄影中 '+fmtShort(video.currentTime)+' / '+fmtShort(video.duration); setTimeout(tick,500); };
+  tick();
+  await playVideo();
+};
+$('recCancel').onclick=()=>{ if(rec){ rec._cancel=true; rec.stop(); video.pause(); } };
+$('saveBtn').onclick=()=>{ if(recBlob) offer((meta.title||videoName)+'_KTV.'+recExt, recBlob, $('recStatus')); };
+$('expBtn').onclick=()=>{
+  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end]), meta, size },null,1);
+  offer((meta.title||videoName)+'_時間檔.json', data, $('recStatus'));
+};
+$('impFile').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); $('lyrics').value=d.text||''; meta=Object.assign({title:'',artist:'',sub:''},d.meta||{}); size=d.size||size; parse(d.times||[]); persist(); $('recStatus').textContent='時間檔讀好了。'; }catch(err){ $('recStatus').textContent='這個檔案不是時間檔，請選「存時間檔」存下來的 .json。'; } };
+  r.readAsText(f); e.target.value='';
+};
+
+/* ---------- boot ---------- */
+restore(); syncMetaInputs(); updateCue(); updateButtons();
+try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
+(document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
+})();
+</script>
+
+</body>
+</html>
