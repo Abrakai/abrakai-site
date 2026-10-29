@@ -81,6 +81,7 @@ label.f input[type=range]{accent-color:var(--female)}
 .rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff3b3b;animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.2}}
 @media (prefers-reduced-motion:reduce){.rec{animation:none}}
+@media (max-width:900px){textarea,input[type=text],input[type=password]{font-size:16px!important}}
 .sec{display:flex;flex-direction:column;gap:10px}
 .sec h3{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
 .sec + .sec{border-top:1px solid var(--line);padding-top:14px}
@@ -227,7 +228,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.2</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.3</p>
     </aside>
   </div>
 </div>
@@ -668,7 +669,9 @@ $('impFile').onchange=e=>{
 /* ---------- auto alignment ---------- */
 let audioCache = null;
 const tick = () => new Promise(r=>setTimeout(r,30));
-function aStatus(m){ $('aStatus').textContent=m; }
+let aBase='', aStart=0, aTimer=null;
+function aStatus(m){ aBase=m; paintA(); }
+function paintA(){ const el=$('aStatus'); if(aligning && aStart){ el.innerHTML=''; const d=document.createElement('span'); d.className='rec'; el.append(d,' '+aBase+'（已經過 '+Math.round((Date.now()-aStart)/1000)+' 秒）'); } else el.textContent=aBase; }
 async function getAudio(){
   if(audioCache) return audioCache;
   ensureAudio();
@@ -786,12 +789,7 @@ async function runAlign(kind){
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
   if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
-  if(lines.some(l=>l.start!=null && !l.pin)){
-    const b=$(kind==='gemini'?'aGemini':'aLocal');
-    if(b.dataset.armed!=='1'){ b.dataset.armed='1'; aStatus('再按一次會重新對時間（亮黃燈、你調過的句子會保留）。'); setTimeout(()=>{ b.dataset.armed=''; },5000); return; }
-    b.dataset.armed='';
-  }
-  aligning=true; updateButtons(); video.pause();
+  aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
     const a = await getAudio();
@@ -810,7 +808,7 @@ async function runAlign(kind){
       : m==='local' ? '這段聲音分析不出歌聲，請改用「AI 精準對時間」或自己邊聽邊按。'
       : m && m.startsWith('msg:') ? m.slice(4)
       : '分析沒有成功，請再試一次。');
-  }finally{ aligning=false; updateButtons(); }
+  }finally{ aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 }
 $('aLocal').onclick=()=>runAlign('local');
 $('aGemini').onclick=()=>runAlign('gemini');
