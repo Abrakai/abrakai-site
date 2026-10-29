@@ -120,7 +120,12 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .chars span.cur{color:var(--gold);border-bottom-color:var(--gold)}
 .hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;padding:26px 10px!important;font-size:18px!important}
 .hold.down{filter:brightness(1.35);transform:scale(.98)}
-select.sel{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
+select.tlwrap{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tlhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.tlhead b{font-size:15px}
+#tl{width:100%;height:170px;display:block;border-radius:8px;background:var(--bg);touch-action:none;cursor:grab}
+#tl.dragging{cursor:grabbing}
+.tlbar button{padding:6px 10px;font-size:13px}
+.sel{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
 #cbRate{background:var(--raise);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:2px}
 [hidden]{display:none!important}
@@ -142,7 +147,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 2.6</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 2.7</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -158,6 +163,19 @@ body{margin:0}
         <button id="fs" title="全螢幕">⛶</button>
       </div>
       <p class="status" id="vStatus"></p>
+      <div class="tlwrap" id="tlWrap" hidden>
+        <div class="tlhead">
+          <b>時間軸微調</b>
+          <span class="hint" id="tlSel">拖每個字的方塊就能調整；拖左右邊緣改開始或結束，拖空白處前後移動。</span>
+        </div>
+        <canvas id="tl" height="170"></canvas>
+        <div class="bar tlbar">
+          <button id="tlWave">🌊 顯示聲音波形</button>
+          <button id="tlZoomIn" aria-label="放大時間軸">🔍＋</button><button id="tlZoomOut" aria-label="縮小時間軸">🔍－</button>
+          <button id="tlL" disabled>◀ 提早 0.05 秒</button><button id="tlR" disabled>延後 0.05 秒 ▶</button>
+          <button id="tlPlayLine" disabled>▶ 播這一句</button>
+        </div>
+      </div>
     </section>
 
     <aside class="panel">
@@ -300,7 +318,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.6</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.7</p>
     </aside>
   </div>
 </div>
@@ -1477,6 +1495,158 @@ function snapAll(silent){
 }
 $('pSnap').onclick=()=>{ if(!timed().length){ pStatus('請先用自動對時間把每一句對好。'); return; } snapAll(false); };
 $('pUndo').onclick=()=>{ if(!snapBackup) return; lines.forEach((l,i)=>{ const b=snapBackup[i]; if(b){ l.start=b.start; l.end=b.end; l.chars=b.chars; } }); snapBackup=null; $('pUndo').hidden=true; persist(); renderList(); pStatus('已復原。'); };
+
+/* ---------- waveform timeline editor ---------- */
+const tl=$('tl'), tg=tl.getContext('2d');
+let tlWin=8, peaks=null, tlDrag=null, tlSelc=null, tlDirty=false;
+function lineEndOf(i){
+  const l=lines[i]; if(l.chars&&l.chars.length) return l.chars[l.chars.length-1][1];
+  if(l.end!=null) return l.end;
+  for(let j=i+1;j<lines.length;j++) if(lines[j].start!=null) return lines[j].start-0.05;
+  return l.start+4;
+}
+function ensureChars(i){
+  const l=lines[i]; if(l.chars||l.start==null) return;
+  const C=unitsOf(l.text).length; if(!C) return;
+  const e=lineEndOf(i), st=[]; for(let k=0;k<C;k++) st.push(l.start+(e-l.start)*k/C);
+  l.chars=st.map((v,k)=>[+v.toFixed(2), +(k<C-1? st[k+1]-0.02 : e).toFixed(2)]);
+}
+function buildPeaks(){
+  if(!audioCache) return;
+  const x=audioCache.vocal||audioCache.mono, SR=audioCache.SR, hop=Math.round(SR*0.01), n=Math.floor(x.length/hop);
+  const r=new Float32Array(n);
+  for(let i=0;i<n;i++){ let q=0; const o=i*hop; for(let j=0;j<hop;j++){ const v=x[o+j]; q+=v*v; } r[i]=Math.log10(Math.sqrt(q/hop)+1e-5); }
+  const sorted=Float32Array.from(r).sort(), lo=sorted[Math.floor(n*0.15)], hi=sorted[Math.floor(n*0.995)]||lo+1;
+  peaks=new Float32Array(n);
+  for(let i=0;i<n;i++) peaks[i]=Math.max(0,Math.min(1,(r[i]-lo)/(hi-lo||1)));
+}
+$('tlWave').onclick=async()=>{
+  if(!hasVideo||!curFile) return;
+  $('tlWave').disabled=true; $('tlWave').textContent='讀取聲音中…';
+  try{ await getAudio(); buildPeaks(); $('tlWave').hidden=true; }
+  catch(e){ $('tlWave').textContent='讀不到聲音'; }
+};
+$('tlZoomIn').onclick=()=>{ tlWin=Math.max(2,tlWin/1.6); };
+$('tlZoomOut').onclick=()=>{ tlWin=Math.min(40,tlWin*1.6); };
+const TL={ wave:[18,78], line:[84,108], chr:[114,164] };
+function tlView(){ const W=tl.clientWidth||600, t=video.currentTime||0; return { W, t0:t-tlWin/2, sp:tlWin/W, t }; }
+function drawTL(){
+  const box=$('tlWrap');
+  const show = hasVideo && lines.some(l=>l.start!=null);
+  if(box.hidden===show) box.hidden=!show;
+  if(!show || box.offsetParent===null) return;
+  if(peaks==null && audioCache){ buildPeaks(); $('tlWave').hidden=true; }
+  const dpr=window.devicePixelRatio||1, W=tl.clientWidth, H=170;
+  if(tl.width!==Math.round(W*dpr)){ tl.width=Math.round(W*dpr); tl.height=Math.round(H*dpr); }
+  tg.setTransform(dpr,0,0,dpr,0,0); tg.clearRect(0,0,W,H);
+  const v=tlView(), X=t=>(t-v.t0)/v.sp;
+  // ticks
+  tg.fillStyle='rgba(169,156,187,.8)'; tg.font='10px sans-serif'; tg.textAlign='center';
+  const step = tlWin>16 ? 5 : tlWin>6 ? 1 : 0.5;
+  for(let t=Math.ceil(v.t0/step)*step; t<v.t0+tlWin; t+=step){ const x=X(t); tg.fillRect(x,12,1,4); if(Math.abs(t%1)<1e-6 || step>=1) tg.fillText(fmtShort(t),x,10); }
+  // waveform
+  const [w0,w1]=TL.wave, mid=(w0+w1)/2, amp=(w1-w0)/2;
+  if(peaks){
+    tg.fillStyle='rgba(122,92,180,.75)';
+    for(let x=0;x<W;x++){ const a=Math.floor((v.t0+x*v.sp)*100), b=Math.max(a+1,Math.floor((v.t0+(x+1)*v.sp)*100)); let m=0; for(let i=Math.max(0,a);i<Math.min(peaks.length,b);i++) if(peaks[i]>m) m=peaks[i]; const h=m*amp; tg.fillRect(x,mid-h,1,h*2||1); }
+  } else { tg.fillStyle='rgba(169,156,187,.6)'; tg.font='12px sans-serif'; tg.fillText('按下方「顯示聲音波形」就能看到歌聲的位置',W/2,mid+4); }
+  // lines + chars
+  tg.textAlign='center'; tg.textBaseline='middle';
+  lines.forEach((l,i)=>{
+    if(l.start==null) return;
+    const e=lineEndOf(i); if(e<v.t0 || l.start>v.t0+tlWin) return;
+    const col=COLORS[l.role]||COLORS[''];
+    const x0=X(l.start), x1=X(e);
+    tg.globalAlpha=.35; tg.fillStyle=col; tg.fillRect(x0,TL.line[0],Math.max(2,x1-x0),TL.line[1]-TL.line[0]); tg.globalAlpha=1;
+    tg.fillStyle='#fff'; tg.font='12px sans-serif'; tg.save(); tg.beginPath(); tg.rect(x0,TL.line[0],Math.max(2,x1-x0),24); tg.clip();
+    tg.textAlign='left'; tg.fillText(`${i+1}. ${l.text}`, x0+4, (TL.line[0]+TL.line[1])/2); tg.restore(); tg.textAlign='center';
+    const U=unitsOf(l.text);
+    const cs = l.chars || (()=>{ const C=U.length, st=[]; for(let k=0;k<C;k++) st.push([l.start+(e-l.start)*k/C, l.start+(e-l.start)*(k+1)/C-0.02]); return st; })();
+    cs.forEach((c,k)=>{
+      const a=X(c[0]), b=X(c[1]), sel=tlSelc && tlSelc.i===i && tlSelc.k===k;
+      tg.fillStyle=col; tg.globalAlpha=l.chars?.85:.35; tg.fillRect(a,TL.chr[0],Math.max(2,b-a),TL.chr[1]-TL.chr[0]); tg.globalAlpha=1;
+      tg.strokeStyle= sel ? '#ffc93c' : 'rgba(18,13,25,.9)'; tg.lineWidth= sel?3:1; tg.strokeRect(a+.5,TL.chr[0]+.5,Math.max(2,b-a)-1,TL.chr[1]-TL.chr[0]-1);
+      if(b-a>10){ tg.fillStyle='#fff'; tg.font=`bold ${Math.min(20,Math.max(11,(b-a)*.7))}px "Noto Sans TC",sans-serif`; tg.fillText(l.text[U[k]]||'', (a+b)/2, (TL.chr[0]+TL.chr[1])/2+1); }
+    });
+  });
+  // playhead
+  tg.fillStyle='#ffc93c'; tg.fillRect(W/2-1,0,2,H);
+}
+function tlHit(x,y){
+  const v=tlView(), t=v.t0+x*v.sp, tol=8*v.sp;
+  if(y>=TL.chr[0]-4){
+    for(let i=0;i<lines.length;i++){ const l=lines[i]; if(l.start==null) continue; const e=lineEndOf(i); if(t<l.start-tol||t>e+tol) continue;
+      ensureChars(i); const c=lines[i].chars; if(!c) continue;
+      for(let k=0;k<c.length;k++){ if(t>=c[k][0]-tol && t<=c[k][1]+tol){
+        const nearS=Math.abs(t-c[k][0])<=tol, nearE=Math.abs(t-c[k][1])<=tol;
+        return { type:'char', i, k, mode: nearS&&!nearE?'start': nearE&&!nearS?'end':'move' }; } } }
+  } else if(y>=TL.line[0]-4 && y<=TL.line[1]+4){
+    for(let i=0;i<lines.length;i++){ const l=lines[i]; if(l.start==null) continue; if(t>=l.start && t<=lineEndOf(i)) return { type:'line', i }; }
+  }
+  return { type:'pan' };
+}
+const snap = l => ({ start:l.start, end:l.end, chars:l.chars?l.chars.map(c=>c.slice()):null });
+tl.addEventListener('pointerdown', e=>{
+  if(!hasVideo) return;
+  const r=tl.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  const h=tlHit(x,y);
+  tlDrag=Object.assign(h,{ x0:x, moved:false, wasPlaying:!video.paused, vt:video.currentTime, sp:tlView().sp });
+  if(h.type!=='pan'){ const l=lines[h.i]; tlDrag.orig=snap(l); if(h.type==='char'){ const c=l.chars; tlDrag.prev=h.k>0?c[h.k-1].slice():null; tlDrag.next=h.k<c.length-1?c[h.k+1].slice():null; } }
+  video.pause(); tl.setPointerCapture(e.pointerId); tl.classList.add('dragging'); e.preventDefault();
+});
+tl.addEventListener('pointermove', e=>{
+  if(!tlDrag) return;
+  const r=tl.getBoundingClientRect(), x=e.clientX-r.left, dx=x-tlDrag.x0;
+  if(Math.abs(dx)>3) tlDrag.moved=true;
+  if(!tlDrag.moved) return;
+  const dt=dx*tlDrag.sp;
+  if(tlDrag.type==='pan'){ video.currentTime=Math.max(0,Math.min(video.duration||1e9, tlDrag.vt-dt)); return; }
+  const l=lines[tlDrag.i], o=tlDrag.orig;
+  if(tlDrag.type==='line'){
+    l.start=+(o.start+dt).toFixed(3); l.end=o.end!=null?+(o.end+dt).toFixed(3):null; l.chars=o.chars?o.chars.map(c=>[+(c[0]+dt).toFixed(3),+(c[1]+dt).toFixed(3)]):null;
+  } else {
+    const k=tlDrag.k, c=l.chars, oc=o.chars[k], P=tlDrag.prev, N=tlDrag.next;
+    const pc = P && P[1] >= oc[0]-0.06, nc = N && N[0] <= oc[1]+0.06;
+    let s0=oc[0], e0=oc[1];
+    if(tlDrag.mode==='start'){ s0=Math.min(oc[1]-0.05, Math.max(P?P[0]+0.05:-1e9, oc[0]+dt)); }
+    else if(tlDrag.mode==='end'){ e0=Math.max(oc[0]+0.05, Math.min(N?N[1]-0.07:1e9, oc[1]+dt)); }
+    else { let d=dt; if(P) d=Math.max(d, P[0]+0.05-oc[0]); if(N) d=Math.min(d, N[1]-0.07-oc[1]); s0=oc[0]+d; e0=oc[1]+d; }
+    c[k]=[+s0.toFixed(3), +e0.toFixed(3)];
+    if(P){ c[k-1]=P.slice(); if(pc || P[1]>s0-0.02) c[k-1][1]=+(s0-0.02).toFixed(3); }
+    if(N){ c[k+1]=N.slice(); if(nc || N[0]<e0+0.02) c[k+1][0]=+(e0+0.02).toFixed(3); }
+    l.start=c[0][0]; if(l.end!=null) l.end=c[c.length-1][1];
+  }
+  l.pin=true; tlDirty=true;
+});
+const tlUp = e => {
+  if(!tlDrag) return;
+  const d=tlDrag; tlDrag=null; tl.classList.remove('dragging');
+  if(!d.moved && d.type!=='pan'){
+    if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; video.currentTime=Math.max(0, lines[d.i].chars[d.k][0]); }
+    else { tlSelc=null; video.currentTime=Math.max(0, lines[d.i].start); }
+    selInfo();
+  } else if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; selInfo(); }
+  if(tlDirty){ tlDirty=false; persist(); renderList(); }
+  if(d.wasPlaying && d.type==='pan') playVideo();
+};
+tl.addEventListener('pointerup', tlUp); tl.addEventListener('pointercancel', tlUp);
+function selInfo(){
+  const ok=!!tlSelc && lines[tlSelc.i] && lines[tlSelc.i].chars;
+  $('tlL').disabled=$('tlR').disabled=$('tlPlayLine').disabled=!ok;
+  if(ok){ const l=lines[tlSelc.i], U=unitsOf(l.text), c=l.chars[tlSelc.k]; $('tlSel').textContent=`已選：第 ${tlSelc.i+1} 句的「${l.text[U[tlSelc.k]]||''}」 ${fmt(c[0])}～${fmt(c[1])}（${(c[1]-c[0]).toFixed(2)} 秒）`; }
+}
+function nudgeSel(d){
+  if(!tlSelc) return; const l=lines[tlSelc.i], c=l.chars, k=tlSelc.k; if(!c) return;
+  const P=k>0?c[k-1]:null, N=k<c.length-1?c[k+1]:null;
+  const ns=Math.min(c[k][1]-0.05, Math.max(P?P[0]+0.05:0, c[k][0]+d));
+  if(P && P[1]>=c[k][0]-0.06) P[1]=+(ns-0.02).toFixed(3);
+  c[k][0]=+ns.toFixed(3); l.start=c[0][0]; l.pin=true;
+  video.currentTime=Math.max(0,ns); persist(); renderList(); selInfo();
+}
+$('tlL').onclick=()=>nudgeSel(-0.05);
+$('tlR').onclick=()=>nudgeSel(0.05);
+$('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
+(function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
 restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
