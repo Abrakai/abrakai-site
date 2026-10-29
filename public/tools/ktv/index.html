@@ -250,7 +250,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.7</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.8</p>
     </aside>
   </div>
 </div>
@@ -812,6 +812,19 @@ function localAlign(a){
     return { start:+st.toFixed(2), end };
   });
 }
+function buildChars(l, cs, end){
+  const C = unitsOf(l.text).length; if(!C) return null;
+  let st = (Array.isArray(cs) ? cs.map(Number).filter(v=>isFinite(v)) : []);
+  const s0 = l.start;
+  if(st.length !== C){
+    if(st.length >= 2 && C >= 2){ // resample to the right count
+      const r=[]; for(let k=0;k<C;k++){ const x=k*(st.length-1)/(C-1), a0=Math.floor(x), a1=Math.min(st.length-1,a0+1); r.push(st[a0]+(st[a1]-st[a0])*(x-a0)); } st=r;
+    } else return null;
+  }
+  for(let k=0;k<C;k++){ if(k===0) st[0]=s0; else if(st[k] <= st[k-1]+0.05) st[k]=st[k-1]+0.08; }
+  const e = (end!=null && end > st[C-1]+0.1) ? end : st[C-1]+0.5;
+  return st.map((v,k)=>[+v.toFixed(2), +(k<C-1 ? Math.max(v+0.05, st[k+1]-0.02) : e).toFixed(2)]);
+}
 function applyTimes(arr, label){
   let last=-1;
   lines.forEach((l,i)=>{
@@ -822,6 +835,7 @@ function applyTimes(arr, label){
     if(st <= last) st = +(last+0.4).toFixed(2);
     l.start = +st.toFixed(2);
     l.end = (a.end!=null && !isNaN(a.end) && +a.end > l.start+0.3) ? +(+a.end).toFixed(2) : null;
+    if(a.c){ l.chars = buildChars(l, a.c, l.end); if(l.chars) l.end = l.chars[l.chars.length-1][1]; }
     last = l.start;
   });
   // fill gaps by interpolation
@@ -850,6 +864,9 @@ async function runAlign(kind){
       const r = localAlign(a);
       if(!r) throw new Error('local');
       applyTimes(r,'快速自動對時間');
+      aStatus('依照「一個音一個字」推估每個字…'); await tick();
+      estimateChars(a); persist(); renderList();
+      aStatus('快速自動對時間完成（含每個字的拍點）！按播放確認，不準的句子按 🎵 逐字對拍修正。');
     }else{
       const r = await geminiAlign(a);
       applyTimes(r.times, `AI 精準對時間（由 ${r.model} 分析）`);
@@ -942,16 +959,19 @@ async function geminiAlign(a){
   let pcm = a.mono, SR = a.SR;
   if(pcm.length/SR > 600) throw new Error('msg:影片超過 10 分鐘，請先剪短再試。');
   const b64 = wavB64(pcm, SR);
-  const lyricList = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}`).join('\n');
+  const lyricList = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}（${unitsOf(l.text).length} 個字：${unitsOf(l.text).map(n=>l.text[n]).join(' ')}）`).join('\n');
   const prompt = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
 下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
-請仔細聽音檔，找出每一句「開始唱第一個字」的時間 start，以及「唱完最後一個字」的時間 end，單位是秒，精確到小數點後一位。
-時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。
+請仔細聽音檔，用「一個音就是一個字」的原則對時間：
+- 每唱出一個新的音，就是下一個字開始。每個字可能只唱半拍，也可能拉長成一拍、一拍半或兩拍以上；在下一個音出現之前，都還算是同一個字。
+- c：這一句每個字「開始唱」的時間，依照字的順序列出，數量必須剛好等於括號裡的字數。
+- start：第一個字開始唱的時間（等於 c 的第一個值）。end：最後一個字唱完、聲音停下來的時間。
+- 單位是秒，精確到小數點後兩位。所有時間必須依順序遞增。每一句都要回傳，聽不清楚的請依旋律前後推估。
 
 ${lyricList}`;
   const body = { contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:b64 } }, { text:prompt } ] }],
     generationConfig:{ temperature:0, responseMimeType:'application/json',
-      responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, required:['i','start','end'] } } } };
+      responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, required:['i','start','end','c'] } }, maxOutputTokens:32768 } };
   let quota=0;
   const backup = lines.map(l=>({ start:l.start, end:l.end, chars:l.chars }));
   const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; l.chars=backup[i].chars; } }); renderList(); };
@@ -978,8 +998,8 @@ ${lyricList}`;
               let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
               const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
               if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; l.chars=null; } }); }
-              times[i]={ start:+x.start, end:+x.end }; got++;
-              if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; }
+              times[i]={ start:+x.start, end:+x.end, c:x.c }; got++;
+              if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; lines[i].chars=buildChars(lines[i], x.c, +x.end); }
               lastAt=i;
             }
             if(lastAt>=0){
@@ -1088,15 +1108,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keyup', e=>{ if(cm && e.code==='Space'){ e.preventDefault(); cbUp(); } }, true);
 
 /* ---------- automatic per-character estimate ---------- */
-$('autoChars').onclick = async () => {
-  if(aligning) return;
-  if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
-  if(!timed().length){ aStatus('請先用上面的自動對時間，把每一句的開頭對好。'); return; }
-  aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
-  try{
-    aStatus('讀取影片聲音中…'); await tick();
-    const a = await getAudio();
-    aStatus('分析每個字的拍點中…'); await tick();
+function estimateChars(a){
     const { vocal, SR } = a, hop=Math.round(SR*0.01), F=Math.floor(vocal.length/hop);
     const e=new Float32Array(F);
     for(let f=0;f<F;f++){ let q=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=vocal[o+i]; q+=v*v; } e[f]=Math.log10(Math.sqrt(q/hop)+1e-5); }
@@ -1123,6 +1135,18 @@ $('autoChars').onclick = async () => {
       l.chars = starts.map((st,k)=>[+st.toFixed(2), +(k<C-1 ? Math.max(st+0.05, starts[k+1]-0.02) : lastEnd).toFixed(2)]);
       done++;
     });
+    return done;
+}
+$('autoChars').onclick = async () => {
+  if(aligning) return;
+  if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
+  if(!timed().length){ aStatus('請先用上面的自動對時間，把每一句的開頭對好。'); return; }
+  aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
+  try{
+    aStatus('讀取影片聲音中…'); await tick();
+    const a = await getAudio();
+    aStatus('分析每個字的拍點中…'); await tick();
+    const done = estimateChars(a);
     persist(); renderList();
     aStatus(`已推估 ${done} 句的每個字。按播放看看，不準的句子按 🎵 逐字對拍修正。`);
   }catch(err){
