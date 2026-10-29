@@ -288,7 +288,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.9</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.0</p>
     </aside>
   </div>
 </div>
@@ -908,8 +908,8 @@ async function runAlign(kind){
       aStatus(`快速自動對時間完成（含每個字的拍點${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！按播放確認，不準的句子按 🎵 逐字對拍修正。`);
     }else{
       const r = await geminiAlign(a);
-      applyTimes(r.times, `AI 精準對時間（由 ${r.model} 分析）`);
-      if(meta.bpm && meta.autoSnap){ snapAll(true); aStatus(`AI 精準對時間（由 ${r.model} 分析）完成，並已對齊拍子！按播放確認，不準的句子按 🎵 修正。`); }
+      if(meta.bpm && meta.autoSnap) snapAll(true);
+      aStatus(`AI 精準對時間完成（由 ${r.model} 分析，逐字精修 ${r.refined} 句${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！${r.stopped?r.stopped+' ':''}按播放確認，不準的句子按 🎵 修正。`);
     }
   }catch(err){
     const m = err && err.message;
@@ -974,7 +974,7 @@ function xhrStream(url, key, payload, h){
     const dog = setInterval(()=>{
       const idle = Date.now()-last;
       if(phase==='up' && idle>60000){ reason='stall-up'; x.abort(); }
-      else if(phase==='wait' && idle>200000){ reason='stall-wait'; x.abort(); }
+      else if(phase==='wait' && idle>(h.waitLimit||200000)){ reason='stall-wait'; x.abort(); }
       else if(phase==='stream' && idle>90000){ reason='stall-wait'; x.abort(); }
     },1000);
     const done = () => { clearInterval(dog); curXhr=null; };
@@ -991,87 +991,139 @@ function xhrStream(url, key, payload, h){
     x.send(payload);
   });
 }
+function wavClip(a, t0, t1){ const SR=a.SR; return wavB64(a.mono.subarray(Math.max(0,Math.floor(t0*SR)), Math.min(a.mono.length, Math.ceil(t1*SR))), SR); }
+function gErr(m){ return new Error('msg:'+m); }
+// one Gemini call with model fallback; onObj gets each complete JSON object as it streams in
+async function gRun(o){
+  let quota=0, slow=false;
+  for(const model of o.models){
+    let gen = { temperature:0, responseMimeType:'application/json', responseSchema:o.schema, maxOutputTokens:16384 };
+    if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
+    else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
+    for(let attempt=0; attempt<2; attempt++){
+      const payload = JSON.stringify({ contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:o.b64 } }, { text:o.prompt } ] }], generationConfig:gen });
+      let seen=0, got=0, res;
+      try{
+        res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, o.key, payload, {
+          waitLimit:o.waitLimit,
+          onUp: f => o.onUp && o.onUp(f),
+          onWait: () => o.onWait && o.onWait(),
+          onText: raw => {
+            const acc = sseText(raw);
+            const objs = acc.match(/\{[^{}]*\}/g) || [];
+            for(; seen<objs.length; seen++){ let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; } if(o.onObj(x)) got++; }
+            if(!got && acc.length && o.onBytes) o.onBytes(acc.length);
+          }
+        });
+      }catch(err){
+        const why = err && err.message;
+        if(why==='cancel') throw gErr('已取消。');
+        if(why==='stall-up') throw gErr('上傳停住了，請確認網路（建議連 Wi-Fi）後再按一次。');
+        if(got) return { model, got };
+        slow = slow || why==='stall-wait';
+        break;
+      }
+      if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
+      if(res.status===200 && got) return { model, got };
+      if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) throw gErr('你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+      if(res.status===429) quota++;
+      if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} }
+      break;
+    }
+  }
+  if(quota) throw gErr('QUOTA');
+  if(slow) throw gErr('這次 AI 回應太久了，請再按一次試試。');
+  throw gErr('AI 暫時忙碌中，請稍後再按一次。');
+}
+const OBJ = (props, req) => ({ type:'ARRAY', items:{ type:'OBJECT', properties:props, required:req } });
 async function geminiAlign(a){
   const key=getKey();
   aStatus('準備 AI 模型中…'); await tick();
   const models = await gModels(key);
+  if(a.duration > 600) throw gErr('影片超過 10 分鐘，請先剪短再試。');
   aStatus('整理聲音檔中…'); await tick();
-  let pcm = a.mono, SR = a.SR;
-  if(pcm.length/SR > 600) throw new Error('msg:影片超過 10 分鐘，請先剪短再試。');
-  const b64 = wavB64(pcm, SR);
-  const lyricList = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}（${unitsOf(l.text).length} 個字：${unitsOf(l.text).map(n=>l.text[n]).join(' ')}）`).join('\n');
-  const prompt = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
-下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
-請仔細聽音檔，用「一個音就是一個字」的原則對時間：
-- 每唱出一個新的音，就是下一個字開始。每個字可能只唱半拍，也可能拉長成一拍、一拍半或兩拍以上；在下一個音出現之前，都還算是同一個字。
-- c：這一句每個字「開始唱」的時間，依照字的順序列出，數量必須剛好等於括號裡的字數。
-- start：第一個字開始唱的時間（等於 c 的第一個值）。end：最後一個字唱完、聲音停下來的時間。
-- 單位是秒，精確到小數點後兩位。所有時間必須依順序遞增。每一句都要回傳，聽不清楚的請依旋律前後推估。
-${beatHint()}
-${lyricList}`;
-  const body = { contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:b64 } }, { text:prompt } ] }],
-    generationConfig:{ temperature:0, responseMimeType:'application/json',
-      responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, required:['i','start','end','c'] } }, maxOutputTokens:32768 } };
-  let quota=0;
+  const b64 = wavB64(a.mono, a.SR), MB=(b64.length*0.75/1048576).toFixed(1);
   const backup = lines.map(l=>({ start:l.start, end:l.end, chars:l.chars }));
   const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; l.chars=backup[i].chars; } }); renderList(); };
-  const MB = (b64.length*0.75/1048576).toFixed(1);
-  const tried = [];
-  for(const model of models){
-    let gen = JSON.parse(JSON.stringify(body.generationConfig));
-    if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
-    else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
-    let res;
-    for(let attempt=0; attempt<2; attempt++){
-      const payload = JSON.stringify(Object.assign({}, body, { generationConfig:gen }));
-      const times = lines.map(()=>null);
-      let got=0, seen=0, cleared=false;
-      try{
-        res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, key, payload, {
-          onUp: f => aStatus(`上傳聲音給 AI：${Math.round(f*100)}%（${MB} MB）`),
-          onWait: () => aStatus('AI 正在聽整首歌，通常要 30～90 秒，聽完會一句一句填上時間…'),
-          onText: raw => {
-            const acc = sseText(raw);
-            const objs = acc.match(/\{[^{}]*\}/g) || [];
-            let lastAt=-1;
-            for(; seen<objs.length; seen++){
-              let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
-              const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
-              if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; l.chars=null; } }); }
-              times[i]={ start:+x.start, end:+x.end, c:x.c }; got++;
-              if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; lines[i].chars=buildChars(lines[i], x.c, +x.end); }
-              lastAt=i;
-            }
-            if(lastAt>=0){
-              renderList(); lastNow=-2; highlightRow(lastAt);
-              if(lines[lastAt].start!=null){ try{ video.currentTime=lines[lastAt].start+0.3; }catch(e){} }
-              aStatus(`AI 對時間中：第 ${got} / ${lines.length} 句「${lines[lastAt].text}」`);
-            }
-          }
-        });
-      }catch(err){
-        if(cleared) restoreBackup();
-        const why = err && err.message;
-        if(why==='cancel') throw new Error('msg:已取消，時間維持原本的樣子。');
-        if(why==='stall-up') throw new Error('msg:上傳停住了，請確認網路（建議連 Wi-Fi）後再按一次。');
-        if(why==='stall-wait'){ tried.push('wait'); res=null; break; }
-        res=null; break;
-      }
-      if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
-      if(res.status===200 && got){ return { times, model }; }
-      if(cleared) restoreBackup();
-      break;
-    }
-    if(!res) continue;
-    if(res.status===401||res.status===403) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-    if(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-    if(res.status===429){ quota++; continue; }
-    if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
+  // ---- phase 1: every line's start / end over the whole song
+  const list1 = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}`).join('\n');
+  const prompt1 = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
+下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
+請仔細聽音檔，找出每一句第一個字開始唱的時間 start，以及最後一個字唱完、聲音停下來的時間 end，單位是秒，精確到小數點後一位。時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。
+${beatHint()}
+${list1}`;
+  const times = lines.map(()=>null);
+  let cleared=false, got=0, r1;
+  try{
+    r1 = await gRun({ models, key, b64, prompt:prompt1, waitLimit:200000,
+      schema: OBJ({ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, ['i','start','end']),
+      onUp: f => aStatus(`第 1 步：上傳聲音給 AI ${Math.round(f*100)}%（${MB} MB）`),
+      onWait: () => aStatus('第 1 步：AI 正在聽整首歌、找每一句的位置，通常 30～90 秒…'),
+      onBytes: n => aStatus(`第 1 步：AI 回覆中…（已收到 ${n} 字）`),
+      onObj: x => {
+        const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) return false;
+        if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; l.chars=null; } }); }
+        times[i]={ start:+x.start, end:+x.end }; got++;
+        if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; }
+        renderList(); lastNow=-2; highlightRow(i);
+        try{ video.currentTime=(lines[i].start||0)+0.3; }catch(e){}
+        aStatus(`第 1 步：找到第 ${got} / ${lines.length} 句「${lines[i].text}」`);
+        return true;
+      } });
+  }catch(err){
+    if(cleared) restoreBackup();
+    if(err.message==='msg:QUOTA') throw gErr('你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
+    throw err;
   }
-  if(tried.includes('wait')){ restoreBackup(); throw new Error('msg:這次 AI 回應太久了，請再按一次試試。'); }
-  restoreBackup();
-  if(quota) throw new Error('msg:你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
-  throw new Error('msg:AI 暫時忙碌中，請稍後再按一次。');
+  applyTimes(times, '');
+  estimateChars(a); persist(); renderList();
+  // ---- phase 2: refine every character, a few lines at a time with a short clip
+  const T = timed().filter(i=>!(lines[i].pin && lines[i].chars));
+  const groups=[]; for(let k=0;k<T.length;k+=6) groups.push(T.slice(k,k+6));
+  const order=[r1.model, ...models.filter(m=>m!==r1.model)];
+  let refined=0, stopped='';
+  for(let g=0; g<groups.length; g++){
+    const G=groups[g], first=lines[G[0]], last=lines[G[G.length-1]];
+    const nxIdx = timed().find(i=>i>G[G.length-1]);
+    const lastEnd = last.end!=null ? last.end : (nxIdx!=null ? lines[nxIdx].start : last.start+6);
+    const t0=Math.max(0, first.start-0.8), t1=Math.min(a.duration, lastEnd+0.8);
+    const list2 = G.map(i=>{ const l=lines[i], U=unitsOf(l.text); return `${i+1}. [${l.role||'唱'}] ${l.text}（約在片段的 ${(l.start-t0).toFixed(1)} 秒開始；${U.length} 個字：${U.map(n=>l.text[n]).join(' ')}）`; }).join('\n');
+    const prompt2 = `這是一首歌其中一段的錄音片段，長度約 ${(t1-t0).toFixed(1)} 秒（片段裡的 0 秒）。可能是台語或華語歌，可能有伴奏或現場雜音。
+這段裡依序唱了下面 ${G.length} 句。請用「一個音就是一個字」的原則，找出每一句裡每個字開始唱的時間：
+- 每唱出一個新的音，就是下一個字開始。每個字可能只唱半拍，也可能拉長成一拍、一拍半或兩拍以上；在下一個音出現之前，都還算是同一個字。
+- c：這一句每個字開始唱的時間（片段裡的秒數），依照字的順序列出，數量必須剛好等於括號裡的字數。
+- end：這一句最後一個字唱完、聲音停下來的時間（片段裡的秒數）。
+- 精確到小數點後兩位，時間依順序遞增。聽不清楚的字請依旋律推估。
+${beatHint()}
+${list2}`;
+    try{
+      await gRun({ models:order, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000,
+        schema: OBJ({ i:{type:'INTEGER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, ['i','end','c']),
+        onUp: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        onWait: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        onObj: x => {
+          const i=(x.i|0)-1; if(!G.includes(i) || !Array.isArray(x.c) || !x.c.length) return false;
+          const l=lines[i], keep=l.start;
+          const cs=x.c.map(v=>+v+t0);
+          if(!l.pin) l.start=+cs[0].toFixed(2);
+          const ch=buildChars(l, cs, x.end!=null ? +x.end+t0 : null);
+          if(!ch) return false;
+          l.chars=ch;
+          if(l.pin && keep!=null) shiftLine(l, keep-ch[0][0]);
+          if(l.end!=null) l.end=l.chars[l.chars.length-1][1];
+          refined++; renderList(); lastNow=-2; highlightRow(i);
+          return true;
+        } });
+    }catch(err){
+      if(err.message==='msg:已取消。'){ stopped='已取消逐字精修，其餘句子使用自動推估的拍點。'; break; }
+      if(err.message==='msg:QUOTA'){ stopped='Gemini 額度用完了，其餘句子使用自動推估的拍點。'; break; }
+      if(/金鑰/.test(err.message)) { stopped=err.message.slice(4); break; }
+      // other failures: keep the local estimate for this group and move on
+    }
+    persist();
+  }
+  persist(); renderList();
+  return { times:null, model:r1.model, refined, stopped };
 }
 
 /* ---------- per-character tapping ---------- */
