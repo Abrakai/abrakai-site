@@ -107,6 +107,7 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 [hidden]{display:none!important}
 #vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;pointer-events:none}
 canvas#cv{position:relative;z-index:1}
+#vid.native{z-index:2;pointer-events:auto;background:#000}
 *{box-sizing:border-box}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px}
 .topbar a{color:var(--fg);text-decoration:none;font-weight:700}
@@ -228,7 +229,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.4</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.5</p>
     </aside>
   </div>
 </div>
@@ -473,7 +474,7 @@ async function playVideo(){ video.muted = false; ensureAudio(); try{ await actx?
 let loadTimer = null, curFile = null, curUrl = null;
 function vStatus(msg, btn){
   const el=$('vStatus'); el.textContent = msg;
-  if(btn){ const k=document.createElement('button'); k.type='button'; k.textContent=btn; k.style.marginLeft='8px'; k.onclick=()=>{ vStatus('影片載入中…'); kick(); armTimer(); }; el.append(k); }
+  if(btn){ const k=document.createElement('button'); k.type='button'; k.textContent=btn; k.style.marginLeft='8px'; k.onclick=()=>{ vStatus('影片載入中…'); kick(); armTimer(true); }; el.append(k); }
 }
 function kick(){
   try{ video.load(); }catch(e){}
@@ -482,12 +483,19 @@ function kick(){
   if(p && p.then) p.then(()=>{ video.pause(); video.currentTime = 0; video.muted = false; }).catch(()=>{ video.muted = false; });
   else video.muted = false;
 }
-function armTimer(){
+function armTimer(second){
   clearTimeout(loadTimer);
-  loadTimer = setTimeout(() => { if(!hasVideo) vStatus('影片還在準備中。', '點這裡繼續載入'); }, 8000);
+  loadTimer = setTimeout(() => {
+    if(hasVideo) return;
+    if(!second){ vStatus('影片還在準備中。', '點這裡繼續載入'); return; }
+    // let the viewer start the video with the native player; that always loads on phones
+    video.controls = true; video.classList.add('native');
+    vStatus('請直接按上面影片的 ▶ 播放鍵，開始播放後就會自動載入完成。');
+  }, second ? 5000 : 8000);
 }
 function markLoaded(){
   if(hasVideo || !curFile) return;
+  if(video.classList.contains('native')){ video.controls=false; video.classList.remove('native'); try{ video.pause(); video.currentTime=0; }catch(e){} }
   cv.width = video.videoWidth || 1280; cv.height = video.videoHeight || 720;
   hasVideo = true; clearTimeout(loadTimer); audioCache = null; updateButtons(); renderList();
   vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+'）');
@@ -507,8 +515,9 @@ $('vfile').onchange = e => {
   vStatus('影片載入中…');
   kick(); armTimer();
 };
-['loadedmetadata','loadeddata','canplay'].forEach(ev => video.addEventListener(ev, () => {
-  if(!hasVideo && video.videoWidth) markLoaded();
+['loadedmetadata','loadeddata','canplay','durationchange','playing'].forEach(ev => video.addEventListener(ev, () => {
+  if(!hasVideo && (video.videoWidth || (isFinite(video.duration) && video.duration>0))) markLoaded();
+  if(hasVideo && video.videoWidth && (cv.width!==video.videoWidth || cv.height!==video.videoHeight)){ cv.width=video.videoWidth; cv.height=video.videoHeight; }
 }));
 video.addEventListener('play', () => $('play').textContent='❚❚ 暫停');
 video.addEventListener('pause', () => $('play').textContent='▶ 播放');
