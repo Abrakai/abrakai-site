@@ -109,6 +109,9 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 @media (max-width:420px){.prog{grid-template-columns:1fr}}
 .prog select,.prog input{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px;min-width:0;width:100%}
 .prog .bar input{flex:1 1 96px;min-width:96px;width:auto}
+.mlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mlist li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:2px 6px;font-size:13px}
+.mlist li b{font-weight:700;overflow-wrap:anywhere}.mlist li small{grid-column:2;color:var(--muted)}
 .chk{display:flex;gap:8px;align-items:center;font-size:14px}
 @media (max-width:560px){.row{grid-template-columns:24px minmax(0,1fr)}.row .t{grid-column:2}}
 .chars{flex-wrap:wrap;font-size:24px!important;letter-spacing:.04em}
@@ -139,7 +142,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 2.5</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 2.6</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -190,6 +193,7 @@ body{margin:0}
                 <li>按「Create API key」建立金鑰，再按複製</li>
                 <li>貼到下面，按「儲存」</li>
               </ol>
+              <div id="modelPanel"></div>
               <div class="keyrow"><input id="keyIn" type="password" autocomplete="off" placeholder="貼上 Gemini 金鑰（AIza 開頭）" aria-label="Gemini 金鑰"><button id="keySave">儲存</button><button id="keyDel">刪除</button></div>
               <p class="hint">金鑰只存在這台裝置的瀏覽器，不會傳到我們這裡，隨時可以刪除。按「AI 精準對時間」時，影片的聲音會傳給 Google 分析，每次會用到一次你的 Gemini 額度。使用 AI 是你和 Google 之間的服務：申請、額度與付費都在 Google 那邊進行，我們不販售、不代收任何 AI 費用。免費方案的內容可能會被 Google 用來改善服務。</p>
             </div>
@@ -296,7 +300,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.5</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.6</p>
     </aside>
   </div>
 </div>
@@ -924,6 +928,7 @@ async function runAlign(kind){
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
   if((kind==='gemini'||kind==='refine') && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
+  cancelReq=false;
   if(kind!=='local') $('aCancel').hidden=false;
   const awayWarn=()=>{ if(document.hidden && aligning) aBase='請保持這個畫面開著，離開畫面或螢幕關閉時 AI 會中斷。'+aBase.replace(/^請保持這個畫面開著.*?中斷。/,''); };
   document.addEventListener('visibilitychange', awayWarn);
@@ -944,7 +949,7 @@ async function runAlign(kind){
       aStatus(`快速自動對時間完成（含每個字的拍點${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！按播放確認，不準的句子按 🎵 逐字對拍修正。`);
     }else if(kind==='refine'){
       const models = await gModels(getKey());
-      const r = await refineChars(a, getKey(), models, true);
+      const r = await refineChars(a, getKey(), orderModels(models), true);
       aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
       const r = await geminiAlign(a);
@@ -969,7 +974,8 @@ $('clearAll').onclick=()=>{
   lines.forEach(l=>{ l.start=null; l.end=null; l.pin=false; l.chars=null; });
   persist(); renderList(); updateButtons(); aStatus('已清除所有時間，可以重新按自動對時間。');
 };
-$('aCancel').onclick=()=>{ if(curXhr) curXhr.abort(); };
+let cancelReq=false;
+$('aCancel').onclick=()=>{ cancelReq=true; if(curXhr) curXhr.abort(); };
 $('aGemini').onclick=()=>runAlign('gemini');
 $('aRefine').onclick=()=>runAlign('refine');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
@@ -994,10 +1000,55 @@ async function gModels(key){
     .filter(n=>/^gemini-/.test(n) && /flash/.test(n) && !/image|tts|live|audio|embed|thinking|learnlm|-exp/.test(n));
   const rank = n => (/lite/.test(n)?2:0) + (/preview/.test(n)?1:0);
   all.sort((a,b)=> rank(a)-rank(b) || ver(b)-ver(a) || a.length-b.length);
-  const list = all.slice(0,6);
+  const list = all.slice(0,10);
   if(!list.length) list.push('gemini-2.5-flash');
   try{ localStorage.setItem(GMODELS, JSON.stringify({ at:Date.now(), list })); }catch(e){}
+  renderModels();
   return list;
+}
+/* ---------- model quota lights ---------- */
+const GQ='abrakai-ktv-gemini-quota', GLAST='abrakai-ktv-gemini-last', GPREF='abrakai-ktv-gemini-pref';
+function qAll(){ try{ return JSON.parse(localStorage.getItem(GQ)||'{}'); }catch(e){ return {}; } }
+function qSet(m, kind, until){ const q=qAll(); q[m]={ kind, until }; try{ localStorage.setItem(GQ, JSON.stringify(q)); }catch(e){} renderModels(); }
+function qState(m){ const x=qAll()[m]; if(!x || x.until < Date.now()) return { s:'ok' }; return { s:x.kind, until:x.until }; }
+function nextPacificMidnight(){
+  const p=new Intl.DateTimeFormat('en-US',{ timeZone:'America/Los_Angeles', hour:'numeric', minute:'numeric', second:'numeric', hour12:false }).formatToParts(new Date());
+  const g=t=>+(p.find(x=>x.type===t)||{value:0}).value;
+  const h=g('hour')%24, m=g('minute'), sec=g('second');
+  return Date.now() + ((24-h)*3600 - m*60 - sec)*1000;
+}
+const hhmm = t => new Date(t).toLocaleTimeString('zh-TW',{ hour:'2-digit', minute:'2-digit', hour12:false });
+function orderModels(list, first){
+  let pref=''; try{ pref=localStorage.getItem(GPREF)||''; }catch(e){}
+  let arr=[...list];
+  const lift = m => { if(m && arr.includes(m)){ arr=[m, ...arr.filter(x=>x!==m)]; } };
+  lift(first); lift(pref);
+  const rank = m => ({ ok:0, min:1, day:9 })[qState(m).s];
+  return arr.filter(m=>qState(m).s!=='day').sort((a,b)=>rank(a)-rank(b));
+}
+function renderModels(){
+  const box=$('modelPanel'); if(!box) return;
+  let list=[]; try{ list=(JSON.parse(localStorage.getItem(GMODELS)||'null')||{}).list||[]; }catch(e){}
+  let last='', pref=''; try{ last=localStorage.getItem(GLAST)||''; pref=localStorage.getItem(GPREF)||''; }catch(e){}
+  if(!list.length){ box.innerHTML='<p class="hint">第一次按「AI 精準對時間」後，這裡會列出你的金鑰可以用的模型和額度狀態。</p>'; return; }
+  box.innerHTML='';
+  const sel=document.createElement('select'); sel.id='modelPref'; sel.className='sel';
+  sel.innerHTML='<option value="">自動挑選（建議）</option>'+list.map(m=>`<option value="${m}">${m}</option>`).join('');
+  sel.value=pref; sel.onchange=()=>{ try{ localStorage.setItem(GPREF, sel.value); }catch(e){} };
+  const lab=document.createElement('label'); lab.className='f'; lab.textContent='優先使用的模型'; lab.append(sel); box.append(lab);
+  const ul=document.createElement('ul'); ul.className='mlist';
+  list.forEach(m=>{
+    const st=qState(m), li=document.createElement('li');
+    const light = st.s==='ok' ? '🟢' : st.s==='min' ? '🟡' : '🔴';
+    const note = st.s==='ok' ? '可以用' : st.s==='min' ? `這一分鐘的次數用完，${hhmm(st.until)} 後恢復` : `今天的額度用完，約 ${hhmm(st.until)} 重置`;
+    li.innerHTML=`<span>${light}</span><b></b><small></small>`;
+    li.querySelector('b').textContent=m + (m===last?'（最近使用）':'');
+    li.querySelector('small').textContent=note;
+    ul.append(li);
+  });
+  box.append(ul);
+  const bt=document.createElement('button'); bt.textContent='更新模型清單'; bt.onclick=async()=>{ try{ localStorage.removeItem(GMODELS); }catch(e){} try{ await gModels(getKey()); aStatus('模型清單已更新。'); }catch(e){ aStatus(e.message.replace(/^msg:/,'')); } renderModels(); };
+  box.append(bt);
 }
 function wavB64(pcm, SR){
   const n=pcm.length, buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
@@ -1057,17 +1108,19 @@ async function gRun(o){
   let quota=0, slow=false;
   for(const model of o.models){
     if(o.dead && o.dead.has(model)) continue;
+    if(qState(model).s==='day'){ if(o.dead) o.dead.add(model); continue; }
+    let minuteWaits=0;
     let gen = { temperature:0, responseMimeType:'application/json', responseSchema:o.schema, maxOutputTokens:16384 };
     if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
     else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
-    for(let attempt=0; attempt<2; attempt++){
+    for(let attempt=0; attempt<6; attempt++){
       const payload = JSON.stringify({ contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:o.b64 } }, { text:o.prompt } ] }], generationConfig:gen });
       let seen=0, got=0, res;
       try{
         res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, o.key, payload, {
           waitLimit:o.waitLimit, hardLimit:o.hardLimit,
-          onUp: f => o.onUp && o.onUp(f),
-          onWait: () => o.onWait && o.onWait(),
+          onUp: f => o.onUp && o.onUp(f, model),
+          onWait: () => o.onWait && o.onWait(model),
           onText: raw => {
             const acc = sseText(raw);
             const objs = acc.match(/\{[^{}]*\}/g) || [];
@@ -1084,14 +1137,25 @@ async function gRun(o){
         break;
       }
       if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
-      if(res.status===200 && got) return { model, got };
+      if(res.status===200 && got){ try{ localStorage.setItem(GLAST, model); }catch(e){} renderModels(); return { model, got }; }
       if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) throw gErr('你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-      if(res.status===429){ quota++; if(o.dead) o.dead.add(model); }
+      if(res.status===429){
+        let perDay=/PerDay/i.test(res.text), delay=30;
+        try{ const d=JSON.parse(res.text); const det=(d.error&&d.error.details)||[];
+          det.forEach(x=>{ if(x.retryDelay) delay=parseFloat(x.retryDelay)||delay; (x.violations||[]).forEach(v=>{ if(/PerDay/i.test(v.quotaId||'')) perDay=true; }); }); }catch(e){}
+        if(!perDay && delay<=65 && minuteWaits<3){
+          minuteWaits++;
+          for(let sec=Math.ceil(delay)+1; sec>0; sec--){ if(o.onQuotaWait) o.onQuotaWait(model, sec); await new Promise(r=>setTimeout(r,1000)); if(o.cancelled && o.cancelled()) throw gErr('已取消。'); }
+          continue;
+        }
+        if(perDay) qSet(model,'day',nextPacificMidnight()); else qSet(model,'min',Date.now()+delay*1000);
+        quota++; if(o.dead) o.dead.add(model);
+      }
       if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} }
       break;
     }
   }
-  if(quota || (o.dead && o.models.every(m=>o.dead.has(m)))) throw gErr('QUOTA');
+  if(quota || !o.models.length || (o.dead && o.models.every(m=>o.dead.has(m)))) throw gErr('QUOTA');
   if(slow) throw gErr('這次 AI 回應太久了，請再按一次試試。');
   throw gErr('AI 暫時忙碌中，請稍後再按一次。');
 }
@@ -1115,10 +1179,11 @@ ${list1}`;
   const times = lines.map(()=>null);
   let cleared=false, got=0, r1;
   try{
-    r1 = await gRun({ models, key, b64, prompt:prompt1, waitLimit:200000,
+    r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, cancelled:()=>cancelReq,
+      onQuotaWait:(m,sec)=>aStatus(`第 1 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續…`),
       schema: OBJ({ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, ['i','start','end']),
-      onUp: f => aStatus(`第 1 步：上傳聲音給 AI ${Math.round(f*100)}%（${MB} MB）`),
-      onWait: () => aStatus('第 1 步：AI 正在聽整首歌、找每一句的位置，通常 30～90 秒…'),
+      onUp: (f,m) => aStatus(`第 1 步：上傳聲音給 AI ${Math.round(f*100)}%（${MB} MB，${m}）`),
+      onWait: m => aStatus(`第 1 步：${m} 正在聽整首歌、找每一句的位置，通常 30～90 秒…`),
       onBytes: n => aStatus(`第 1 步：AI 回覆中…（已收到 ${n} 字）`),
       onObj: x => {
         const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) return false;
@@ -1132,12 +1197,12 @@ ${list1}`;
       } });
   }catch(err){
     if(cleared) restoreBackup();
-    if(err.message==='msg:QUOTA') throw gErr('你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
+    if(err.message==='msg:QUOTA') throw gErr(`你的 Gemini 模型今天的額度都用完了，約在 ${hhmm(nextPacificMidnight())} 重置。也可以先用「快速自動對時間」。`);
     throw err;
   }
   applyTimes(times, '');
   estimateChars(a); persist(); renderList();
-  const r2 = await refineChars(a, key, [r1.model, ...models.filter(m=>m!==r1.model)], false);
+  const r2 = await refineChars(a, key, orderModels(models, r1.model), false);
   return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
 }
 // phase 2: refine every character, a few lines at a time with a short clip
@@ -1163,8 +1228,10 @@ ${list2}`;
     try{
       await gRun({ models:order, dead, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000, hardLimit:150000,
         schema: OBJ({ i:{type:'INTEGER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, ['i','end','c']),
-        onUp: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
-        onWait: () => aStatus(`第 2 步：AI 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        cancelled:()=>cancelReq,
+        onQuotaWait:(m,sec)=>aStatus(`第 2 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續（第 ${g+1} / ${groups.length} 段）…`),
+        onUp: (f,m) => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        onWait: m => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
         onObj: x => {
           const i=(x.i|0)-1; if(!G.includes(i) || !Array.isArray(x.c) || !x.c.length) return false;
           const l=lines[i], keep=l.start;
@@ -1180,7 +1247,7 @@ ${list2}`;
         } });
     }catch(err){
       if(err.message==='msg:已取消。'){ stopped='已取消逐字精修，其餘句子使用自動推估的拍點。'; break; }
-      if(err.message==='msg:QUOTA'){ const left=T.filter(i=>!lines[i].ref).length; stopped=`Gemini 今天的額度用完了，還有 ${left} 句先用自動推估的拍點。額度通常每天會重置，之後按「補精修剩下的句子」就能只補這幾句。`; break; }
+      if(err.message==='msg:QUOTA'){ const left=T.filter(i=>!lines[i].ref).length; stopped=`你的 Gemini 模型今天的額度都用完了，還有 ${left} 句先用自動推估的拍點。額度約在 ${hhmm(nextPacificMidnight())} 重置，之後按「補精修剩下的句子」就能只補這幾句。`; break; }
       if(/金鑰/.test(err.message)) { stopped=err.message.slice(4); break; }
       // other failures: keep the local estimate for this group and move on
     }
@@ -1411,7 +1478,7 @@ function snapAll(silent){
 $('pSnap').onclick=()=>{ if(!timed().length){ pStatus('請先用自動對時間把每一句對好。'); return; } snapAll(false); };
 $('pUndo').onclick=()=>{ if(!snapBackup) return; lines.forEach((l,i)=>{ const b=snapBackup[i]; if(b){ l.start=b.start; l.end=b.end; l.chars=b.chars; } }); snapBackup=null; $('pUndo').hidden=true; persist(); renderList(); pStatus('已復原。'); };
 
-restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro();
+restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
 (document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
 })();
