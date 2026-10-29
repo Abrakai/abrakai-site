@@ -81,6 +81,27 @@ label.f input[type=range]{accent-color:var(--female)}
 .rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff3b3b;animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.2}}
 @media (prefers-reduced-motion:reduce){.rec{animation:none}}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
+.sec + .sec{border-top:1px solid var(--line);padding-top:14px}
+.aigrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.aigrid button{flex-direction:column;align-items:flex-start;text-align:left;padding:12px;gap:2px}
+.aigrid button small{font-weight:500;font-size:12px;color:var(--muted)}
+.aigrid button.primary small{color:#ffe3ef}
+@media (max-width:420px){.aigrid{grid-template-columns:1fr}}
+details{border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+details > summary{cursor:pointer;padding:10px 12px;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:8px}
+details > summary::-webkit-details-marker{display:none}
+details > summary::after{content:'▾';color:var(--muted)}
+details[open] > summary::after{content:'▴'}
+details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.keyrow{display:flex;gap:8px;flex-wrap:wrap}
+.keyrow input{flex:1;min-width:0;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
+.ok{color:var(--duet)}
+.how{margin:0;padding-left:20px;font-size:13px;color:var(--fg);display:flex;flex-direction:column;gap:2px}
+.how a{color:var(--gold)}
+.row .t .pin{font-size:13px}
+.row .t .pin.on{background:var(--gold);border-color:var(--gold)}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:2px}
 [hidden]{display:none!important}
 #vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;pointer-events:none}
@@ -127,10 +148,42 @@ body{margin:0}
       <div class="pane" data-pane="0">
         <p class="hint">用 ⦅女⦆ ⦅男⦆ ⦅合⦆ 標出誰唱，標記之後的每一行都算同一個人，直到下一個標記。《歌名》會變成片頭。</p>
         <textarea id="lyrics" spellcheck="false" placeholder="《歌名》&#10;&#10;⦅女⦆ 女聲第一句&#10;女聲第二句&#10;&#10;⦅男⦆ 男聲第一句&#10;男聲第二句&#10;&#10;⦅合⦆ 合唱這一句"></textarea>
-        <div class="list" id="list"><div class="empty">貼上歌詞後，這裡會列出每一句</div></div>
+        <p class="status" id="lineCount"></p>
       </div>
 
       <div class="pane" data-pane="1" hidden>
+        <section class="sec">
+          <h3>自動對時間</h3>
+          <p class="hint">先讓 AI 抓好每一句開始的時間，再到下面逐句微調。</p>
+          <div class="aigrid">
+            <button id="aLocal" disabled>⚡ 快速自動對時間<small>免金鑰，抓大概位置</small></button>
+            <button class="primary" id="aGemini" disabled>✨ AI 精準對時間<small>使用你的 Gemini 金鑰</small></button>
+          </div>
+          <p class="status" id="aStatus"></p>
+          <details id="keyBox">
+            <summary><span>Gemini 金鑰設定</span><span id="keyState" class="hint">尚未設定</span></summary>
+            <div class="in">
+              <ol class="how">
+                <li>打開 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio 金鑰頁</a>，用 Google 帳號登入</li>
+                <li>按「Create API key」建立金鑰，再按複製</li>
+                <li>貼到下面，按「儲存」</li>
+              </ol>
+              <div class="keyrow"><input id="keyIn" type="password" autocomplete="off" placeholder="貼上 Gemini 金鑰（AIza 開頭）" aria-label="Gemini 金鑰"><button id="keySave">儲存</button><button id="keyDel">刪除</button></div>
+              <p class="hint">金鑰只存在這台裝置的瀏覽器，不會傳到我們這裡，隨時可以刪除。按「AI 精準對時間」時，影片的聲音會傳給 Google 分析，每次會用到一次你的 Gemini 額度。使用 AI 是你和 Google 之間的服務：申請、額度與付費都在 Google 那邊進行，我們不販售、不代收任何 AI 費用。免費方案的內容可能會被 Google 用來改善服務。</p>
+            </div>
+          </details>
+        </section>
+
+        <section class="sec">
+          <h3>逐句微調</h3>
+          <p class="hint">點歌詞會從那一句前 1 秒開始播放。聽到開口的瞬間按 📍，就會把這一句設在目前的位置；也可以用 −／＋ 每次調 0.1 秒。調過的句子會亮黃燈，再按一次自動對時間時會保留，其他句子會依照它們重新排。</p>
+          <div class="bar"><button id="shiftMinus">全部提早 0.2 秒</button><button id="shiftPlus">全部延後 0.2 秒</button></div>
+          <div class="list" id="list"><div class="empty">貼上歌詞後，這裡會列出每一句</div></div>
+        </section>
+
+        <details class="manual">
+          <summary><span>自己邊聽邊按（不用 AI）</span></summary>
+          <div class="in">
         <ol class="steps">
           <li>按「從頭開始」，影片會從頭播放</li>
           <li>每句一開口，就按 <b>空白鍵</b>（或粉紅按鈕）</li>
@@ -152,7 +205,8 @@ body{margin:0}
           <button id="tStop" disabled>暫停對時間</button>
         </div>
         <p class="status" id="tStatus"></p>
-        <p class="hint">對完回到「貼歌詞」，每句都能用 −／＋ 微調 0.1 秒，點歌詞可以跳過去聽。</p>
+          </div>
+        </details>
       </div>
 
       <div class="pane" data-pane="2" hidden>
@@ -173,7 +227,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.1</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.2</p>
     </aside>
   </div>
 </div>
@@ -191,14 +245,14 @@ let lines = [];           // {text, role, start, end}
 let meta = { title:'', artist:'', sub:'' };
 let size = 78;            // per mille of height
 let hasVideo = false, videoName = 'KTV';
-let timing = false, k = 0;
+let timing = false, k = 0, aligning = false;
 let actx = null, dest = null;
 let rec = null, recBlob = null, recExt = 'mp4';
 
 /* ---------- storage ---------- */
 const KEY = 'abrakai-ktv-v1';
 function persist(){
-  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end]), meta, size })); }catch(e){}
+  try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0]), meta, size })); }catch(e){}
 }
 function restore(){
   try{
@@ -227,8 +281,8 @@ function parse(times){
     out.push({ text:s, role, start:null, end:null });
   }
   out.forEach((l,i) => {
-    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; }
-    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; }
+    if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; }
+    else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; }
   });
   lines = out;
   if(title && !times) meta.title = title;
@@ -243,6 +297,8 @@ const fmt = t => { if(t==null||isNaN(t)) return '—'; const m=Math.floor(t/60),
 const fmtShort = t => { t = t||0; const m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+(s<10?'0':'')+s; };
 function renderList(){
   const box = $('list');
+  const n = lines.filter(l=>l.start!=null).length;
+  $('lineCount').textContent = lines.length ? `已辨識 ${lines.length} 句歌詞${n?`，${n} 句已有時間`:''}。下一步到「對時間」。` : '';
   if(!lines.length){ box.innerHTML = '<div class="empty">貼上歌詞後，這裡會列出每一句</div>'; return; }
   box.innerHTML = '';
   lines.forEach((l,i) => {
@@ -256,11 +312,15 @@ function renderList(){
     const val = document.createElement('span'); val.textContent = fmt(l.start);
     minus.onclick = () => nudge(i,-0.1); plus.onclick = () => nudge(i,0.1);
     minus.disabled = plus.disabled = l.start==null;
-    t.append(minus,val,plus);
+    const pin = document.createElement('button'); pin.className='pin'; pin.textContent='📍'; pin.title='設為目前播放位置'; pin.setAttribute('aria-label','把這一句設在目前播放位置');
+    pin.disabled = !hasVideo;
+    if(l.pin) pin.classList.add('on');
+    pin.onclick = () => { l.pin=true; l.start=+video.currentTime.toFixed(2); if(l.end!=null && l.end<=l.start) l.end=null; persist(); renderList(); };
+    t.append(minus,val,plus,pin);
     r.append(chip,tx,t); box.append(r);
   });
 }
-function nudge(i,d){ const l=lines[i]; if(l.start==null) return; l.start=Math.max(0,+(l.start+d).toFixed(2)); persist(); renderList(); }
+function nudge(i,d){ const l=lines[i]; if(l.start==null) return; l.pin=true; l.start=Math.max(0,+(l.start+d).toFixed(2)); persist(); renderList(); }
 let lastNow = -2;
 function highlightRow(idx){
   if(idx===lastNow) return; lastNow = idx;
@@ -428,7 +488,7 @@ function armTimer(){
 function markLoaded(){
   if(hasVideo || !curFile) return;
   cv.width = video.videoWidth || 1280; cv.height = video.videoHeight || 720;
-  hasVideo = true; clearTimeout(loadTimer); updateButtons();
+  hasVideo = true; clearTimeout(loadTimer); audioCache = null; updateButtons(); renderList();
   vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+'）');
 }
 video.addEventListener('error', () => {
@@ -470,7 +530,7 @@ function updateCue(){
 }
 function startTiming(fromStart){
   if(!hasVideo||!lines.length) return;
-  if(fromStart){ lines.forEach(l=>{l.start=null;l.end=null;}); k=0; video.currentTime=0; }
+  if(fromStart){ lines.forEach(l=>{l.start=null;l.end=null;l.pin=false;}); k=0; video.currentTime=0; }
   else{ k=lines.findIndex(l=>l.start==null); if(k<0) k=lines.length; video.currentTime=Math.max(0,(lines[k-1]?.start??0)-1); }
   timing=true; renderList(); updateCue(); updateButtons();
   $('tStatus').textContent='對時間中…聽到開口就按';
@@ -479,7 +539,7 @@ function startTiming(fromStart){
 function stopTiming(msg){ timing=false; video.pause(); updateButtons(); persist(); renderList(); $('tStatus').textContent=msg||'已暫停，按「接著對」可以繼續。'; }
 function markStart(){
   if(!timing||k>=lines.length) return;
-  lines[k].start=+video.currentTime.toFixed(2); lines[k].end=null;
+  lines[k].start=+video.currentTime.toFixed(2); lines[k].end=null; lines[k].pin=true;
   if(k>0 && lines[k-1].end!=null && lines[k-1].end>lines[k].start) lines[k-1].end=null;
   k++; persist(); updateCue(); renderList();
   if(k>=lines.length) $('tStatus').textContent='最後一句標好了，唱完按 Enter，或直接到「輸出」。';
@@ -514,6 +574,8 @@ function updateButtons(){
   $('tGo').disabled=!ok||timing; $('tResume').disabled=!ok||timing; $('tStop').disabled=!timing;
   $('tStart').disabled=$('tEnd').disabled=$('tBack').disabled=!timing;
   $('recBtn').disabled=!hasVideo||!timed().length||!!rec;
+  $('aLocal').disabled=$('aGemini').disabled=!ok||aligning||timing;
+  $('shiftMinus').disabled=$('shiftPlus').disabled=!timed().length;
 }
 
 /* ---------- meta ---------- */
@@ -592,7 +654,7 @@ $('recBtn').onclick=async()=>{
 $('recCancel').onclick=()=>{ if(rec){ rec._cancel=true; rec.stop(); video.pause(); } };
 $('saveBtn').onclick=()=>{ if(recBlob) offer((meta.title||videoName)+'_KTV.'+recExt, recBlob, $('recStatus')); };
 $('expBtn').onclick=()=>{
-  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end]), meta, size },null,1);
+  const data=JSON.stringify({ app:'ktv-studio', text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0]), meta, size },null,1);
   offer((meta.title||videoName)+'_時間檔.json', data, $('recStatus'));
 };
 $('impFile').onchange=e=>{
@@ -603,7 +665,238 @@ $('impFile').onchange=e=>{
 };
 
 /* ---------- boot ---------- */
-restore(); syncMetaInputs(); updateCue(); updateButtons();
+/* ---------- auto alignment ---------- */
+let audioCache = null;
+const tick = () => new Promise(r=>setTimeout(r,30));
+function aStatus(m){ $('aStatus').textContent=m; }
+async function getAudio(){
+  if(audioCache) return audioCache;
+  ensureAudio();
+  const buf = await curFile.arrayBuffer();
+  let decoded;
+  try{
+    decoded = await new Promise((res,rej)=>{ const p=(actx||new (window.AudioContext||window.webkitAudioContext)()).decodeAudioData(buf,res,rej); if(p&&p.catch) p.catch(rej); });
+  }catch(e){ throw new Error('decode'); }
+  const SR = 16000, len = Math.ceil(decoded.duration*SR);
+  const render = async (filter) => {
+    const oc = new OfflineAudioContext(1,len,SR);
+    const src = oc.createBufferSource(); src.buffer = decoded;
+    let node = src;
+    if(filter){
+      const hp = oc.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=220;
+      const lp = oc.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=3500;
+      src.connect(hp); hp.connect(lp); node = lp;
+    }
+    node.connect(oc.destination); src.start();
+    const out = await oc.startRendering();
+    return out.getChannelData(0);
+  };
+  const mono = await render(false);
+  const vocal = await render(true);
+  audioCache = { mono, vocal, SR, duration: decoded.duration };
+  return audioCache;
+}
+function expectedDur(l, rate){ const c = l.text.replace(/[\s　,，。.!！?？、]/g,'').length || 1; return Math.max(1.2, c*rate) + 0.3; }
+function localAlign(a){
+  const { vocal, SR, duration } = a, hop = Math.round(SR*0.02), F = Math.floor(vocal.length/hop);
+  const e = new Float32Array(F);
+  for(let f=0; f<F; f++){ let s=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=vocal[o+i]; s+=v*v; } e[f]=Math.log10(Math.sqrt(s/hop)+1e-5); }
+  const P = new Float64Array(F+1); for(let f=0; f<F; f++) P[f+1]=P[f]+e[f];
+  const mean=(a0,b0)=>{ a0=Math.max(0,a0); b0=Math.min(F,b0); return b0>a0 ? (P[b0]-P[a0])/(b0-a0) : 0; };
+  const o = new Float32Array(F);
+  for(let f=30; f<F-5; f++) o[f]=Math.max(0, mean(f,f+6) - mean(f-30,f));
+  let cands=[];
+  for(let f=1; f<F-1; f++){
+    if(o[f]<=0) continue;
+    let peak=true; for(let d=-12; d<=12; d++){ if(d && o[f+d]>o[f]){ peak=false; break; } }
+    if(peak) cands.push({ t:f*0.02, s:o[f] });
+  }
+  const N = lines.length;
+  cands.sort((x,y)=>y.s-x.s); cands = cands.slice(0, Math.min(400, Math.max(N*7, 60)));
+  const mx = cands.length ? cands[0].s : 1;
+  cands.forEach(c=>c.s/=mx);
+  const pins = lines.map(l=> l.pin && l.start!=null ? l.start : null);
+  pins.forEach(pt=>{ if(pt!=null) cands.push({ t:pt, s:1, fixed:true }); });
+  if(cands.length < N+2){ for(let i=0;i<N+2;i++) cands.push({ t: duration*(i+0.5)/(N+2), s:0 }); }
+  cands.sort((x,y)=>x.t-y.t);
+  const M = cands.length, T = cands.map(c=>c.t), S = cands.map(c=>c.s);
+  const pen = (d,E) => { const r=d/E; return r<1 ? 4*Math.log(r)**2 : 0.5*Math.log(r); };
+  let best=null;
+  for(let rate=0.30; rate<=0.85; rate+=0.05){
+    const E = lines.map(l=>expectedDur(l,rate));
+    const okAt = (i,j) => pins[i]==null || Math.abs(T[j]-pins[i])<0.011;
+    let prev = Float64Array.from(S, (v,j)=> okAt(0,j) ? v : -1e9);
+    const back = [];
+    for(let i=1;i<N;i++){
+      const cur = new Float64Array(M).fill(-1e9), bk = new Int32Array(M).fill(-1);
+      for(let j=0;j<M;j++){
+        if(!okAt(i,j)) continue;
+        let bv=-1e9, bj=-1;
+        for(let jp=j-1; jp>=0; jp--){
+          const d=T[j]-T[jp];
+          if(d < (pins[i]!=null||pins[i-1]!=null ? 0.2 : 0.35*E[i-1])) continue;
+          if(d > 6*E[i-1]+25) break;
+          if(prev[jp] <= -1e8) continue;
+          const v = prev[jp] - pen(d,E[i-1]);
+          if(v>bv){ bv=v; bj=jp; }
+        }
+        if(bj>=0){ cur[j]=bv+S[j]; bk[j]=bj; }
+      }
+      back.push(bk); prev=cur;
+    }
+    let bj=-1, bv=-1e9;
+    for(let j=0;j<M;j++){ const v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(v>bv){ bv=v; bj=j; } }
+    if(bj<0) continue;
+    if(!best || bv>best.score){
+      const idx=[bj]; for(let i=N-2;i>=0;i--) idx.unshift(back[i][idx[0]]);
+      best={ score:bv, starts: idx.map(j=>T[j]), E };
+    }
+  }
+  if(!best) return null;
+  return best.starts.map((st,i)=>{
+    const nx = best.starts[i+1], E = best.E[i];
+    const end = (nx!=null && nx-st > E*1.8+1.5) ? +(st+E*1.15).toFixed(2) : null;
+    return { start:+st.toFixed(2), end };
+  });
+}
+function applyTimes(arr, label){
+  let last=-1;
+  lines.forEach((l,i)=>{
+    if(l.pin && l.start!=null){ last = l.start; return; }
+    const a = arr[i]; if(!a || a.start==null || isNaN(a.start)){ l.start=null; l.end=null; return; }
+    let st = Math.max(0, Math.min(+a.start, (video.duration||1e9)-0.5));
+    if(st <= last) st = +(last+0.4).toFixed(2);
+    l.start = +st.toFixed(2);
+    l.end = (a.end!=null && !isNaN(a.end) && +a.end > l.start+0.3) ? +(+a.end).toFixed(2) : null;
+    last = l.start;
+  });
+  // fill gaps by interpolation
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].start!=null) continue;
+    let j=i; while(j<lines.length && lines[j].start==null) j++;
+    const a0 = i>0 ? lines[i-1].start : 0, b0 = j<lines.length ? lines[j].start : (video.duration||a0+4*(j-i+1));
+    for(let k2=i;k2<j;k2++) lines[k2].start = +(a0 + (b0-a0)*(k2-i+1)/(j-i+1)).toFixed(2);
+  }
+  persist(); renderList(); updateButtons();
+  const kept = lines.filter(l=>l.pin).length;
+  aStatus(`${label}完成！${kept?`已保留你調過的 ${kept} 句。`:''}按播放確認，有偏差再用下面的 📍 或 −／＋ 微調。`);
+}
+async function runAlign(kind){
+  if(aligning) return;
+  if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
+  if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
+  if(kind==='gemini' && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
+  if(lines.some(l=>l.start!=null && !l.pin)){
+    const b=$(kind==='gemini'?'aGemini':'aLocal');
+    if(b.dataset.armed!=='1'){ b.dataset.armed='1'; aStatus('再按一次會重新對時間（亮黃燈、你調過的句子會保留）。'); setTimeout(()=>{ b.dataset.armed=''; },5000); return; }
+    b.dataset.armed='';
+  }
+  aligning=true; updateButtons(); video.pause();
+  try{
+    aStatus('讀取影片聲音中…'); await tick();
+    const a = await getAudio();
+    if(kind==='local'){
+      aStatus('分析歌聲中…'); await tick();
+      const r = localAlign(a);
+      if(!r) throw new Error('local');
+      applyTimes(r,'快速自動對時間');
+    }else{
+      const r = await geminiAlign(a);
+      applyTimes(r.times, `AI 精準對時間（由 ${r.model} 分析）`);
+    }
+  }catch(err){
+    const m = err && err.message;
+    aStatus(m==='decode' ? '讀不到這支影片的聲音，請改用電腦版 Chrome，或先把影片轉成 MP4。'
+      : m==='local' ? '這段聲音分析不出歌聲，請改用「AI 精準對時間」或自己邊聽邊按。'
+      : m && m.startsWith('msg:') ? m.slice(4)
+      : '分析沒有成功，請再試一次。');
+  }finally{ aligning=false; updateButtons(); }
+}
+$('aLocal').onclick=()=>runAlign('local');
+$('aGemini').onclick=()=>runAlign('gemini');
+$('shiftMinus').onclick=()=>shiftAll(-0.2);
+$('shiftPlus').onclick=()=>shiftAll(0.2);
+function shiftAll(d){ lines.forEach(l=>{ if(l.start!=null) l.start=Math.max(0,+(l.start+d).toFixed(2)); if(l.end!=null) l.end=Math.max(0,+(l.end+d).toFixed(2)); }); persist(); renderList(); }
+
+/* ---------- Gemini ---------- */
+const GKEY='abrakai-ktv-gemini-key', GMODELS='abrakai-ktv-gemini-models';
+function getKey(){ try{ return localStorage.getItem(GKEY)||''; }catch(e){ return ''; } }
+function showKeyState(){ const k=getKey(); $('keyState').textContent = k ? '已設定 ••••'+k.slice(-4) : '尚未設定'; $('keyState').className = k ? 'ok' : 'hint'; }
+$('keySave').onclick=()=>{ const v=$('keyIn').value.trim(); if(!v){ aStatus('請先貼上金鑰。'); return; } try{ localStorage.setItem(GKEY,v); localStorage.removeItem(GMODELS); }catch(e){} $('keyIn').value=''; showKeyState(); $('keyBox').open=false; aStatus('金鑰已儲存，可以按「AI 精準對時間」了。'); };
+$('keyDel').onclick=()=>{ try{ localStorage.removeItem(GKEY); localStorage.removeItem(GMODELS); }catch(e){} showKeyState(); aStatus('金鑰已從這台裝置刪除。'); };
+const GBASE='https://generativelanguage.googleapis.com/v1beta/';
+async function gModels(key){
+  try{ const c=JSON.parse(localStorage.getItem(GMODELS)||'null'); if(c && Date.now()-c.at < 7*864e5 && c.list.length) return c.list; }catch(e){}
+  let r; try{ r = await fetch(GBASE+'models?pageSize=200',{ headers:{'x-goog-api-key':key} }); }catch(e){ throw new Error('msg:暫時連不上 Gemini，請確認網路後再試一次。'); }
+  if(r.status===400||r.status===401||r.status===403) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+  if(!r.ok) throw new Error('msg:暫時連不上 Gemini，請稍後再試一次。');
+  const d = await r.json();
+  const ver = n => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||0);
+  const all = (d.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''))
+    .filter(n=>/^gemini-/.test(n) && /flash/.test(n) && !/image|tts|live|audio|embed|thinking|learnlm|-exp/.test(n));
+  const rank = n => (/lite/.test(n)?2:0) + (/preview/.test(n)?1:0);
+  all.sort((a,b)=> rank(a)-rank(b) || ver(b)-ver(a) || a.length-b.length);
+  const list = all.slice(0,6);
+  if(!list.length) list.push('gemini-2.5-flash');
+  try{ localStorage.setItem(GMODELS, JSON.stringify({ at:Date.now(), list })); }catch(e){}
+  return list;
+}
+function wavB64(pcm, SR){
+  const n=pcm.length, buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,SR,true); v.setUint32(28,SR*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
+  let peak=0; for(let i=0;i<n;i++){ const a=Math.abs(pcm[i]); if(a>peak) peak=a; }
+  const g2 = peak>0 ? Math.min(4, 0.95/peak) : 1;
+  for(let i=0;i<n;i++){ const s=Math.max(-1,Math.min(1,pcm[i]*g2)); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7fff, true); }
+  const bytes=new Uint8Array(buf); let bin=''; const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin);
+}
+async function geminiAlign(a){
+  const key=getKey();
+  aStatus('準備 AI 模型中…'); await tick();
+  const models = await gModels(key);
+  aStatus('整理聲音檔中…'); await tick();
+  let pcm = a.mono, SR = a.SR;
+  if(pcm.length/SR > 600) throw new Error('msg:影片超過 10 分鐘，請先剪短再試。');
+  const b64 = wavB64(pcm, SR);
+  const lyricList = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}`).join('\n');
+  const prompt = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
+下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
+請仔細聽音檔，找出每一句「開始唱第一個字」的時間 start，以及「唱完最後一個字」的時間 end，單位是秒，精確到小數點後一位。
+時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。
+
+${lyricList}`;
+  const body = { contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:b64 } }, { text:prompt } ] }],
+    generationConfig:{ temperature:0, responseMimeType:'application/json',
+      responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, required:['i','start','end'] } } } };
+  let quota=0;
+  for(const model of models){
+    aStatus(`AI 正在聽歌對時間（${model}），大約要 30 秒到 2 分鐘…`);
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),240000);
+    let r;
+    try{ r = await fetch(`${GBASE}models/${model}:generateContent`,{ method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key}, body:JSON.stringify(body), signal:ctl.signal }); }
+    catch(e){ clearTimeout(to); continue; }
+    clearTimeout(to);
+    if(r.status===401||r.status===403) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+    if(r.status===429){ quota++; continue; }
+    if(r.status===400){ const t=await r.text(); if(/API_KEY_INVALID|API key not valid/i.test(t)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); continue; }
+    if(r.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
+    if(!r.ok) continue;
+    const d = await r.json();
+    const txt = ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    let arr; try{ arr = JSON.parse(txt); }catch(e){ continue; }
+    if(!Array.isArray(arr) || !arr.length) continue;
+    const times = lines.map(()=>null);
+    arr.forEach(x=>{ const i=(x.i|0)-1; if(i>=0 && i<lines.length && times[i]==null) times[i]={ start:+x.start, end:+x.end }; });
+    return { times, model };
+  }
+  if(quota) throw new Error('msg:你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
+  throw new Error('msg:AI 暫時忙碌中，請稍後再按一次。');
+}
+
+restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
 (document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
 })();
