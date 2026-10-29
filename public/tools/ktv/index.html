@@ -228,7 +228,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.3</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 1.4</p>
     </aside>
   </div>
 </div>
@@ -870,26 +870,60 @@ ${lyricList}`;
     generationConfig:{ temperature:0, responseMimeType:'application/json',
       responseSchema:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, required:['i','start','end'] } } } };
   let quota=0;
+  const backup = lines.map(l=>({ start:l.start, end:l.end }));
+  const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; } }); renderList(); };
   for(const model of models){
-    aStatus(`AI 正在聽歌對時間（${model}），大約要 30 秒到 2 分鐘…`);
-    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),240000);
+    aStatus(`上傳聲音給 AI（${(b64.length/1048576*0.75).toFixed(1)} MB）…`);
+    const ctl=new AbortController(); let to=setTimeout(()=>ctl.abort(),240000);
     let r;
-    try{ r = await fetch(`${GBASE}models/${model}:generateContent`,{ method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key}, body:JSON.stringify(body), signal:ctl.signal }); }
+    try{ r = await fetch(`${GBASE}models/${model}:streamGenerateContent?alt=sse`,{ method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key}, body:JSON.stringify(body), signal:ctl.signal }); }
     catch(e){ clearTimeout(to); continue; }
-    clearTimeout(to);
-    if(r.status===401||r.status===403) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-    if(r.status===429){ quota++; continue; }
-    if(r.status===400){ const t=await r.text(); if(/API_KEY_INVALID|API key not valid/i.test(t)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); continue; }
-    if(r.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
-    if(!r.ok) continue;
-    const d = await r.json();
-    const txt = ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
-    let arr; try{ arr = JSON.parse(txt); }catch(e){ continue; }
-    if(!Array.isArray(arr) || !arr.length) continue;
+    if(r.status===401||r.status===403){ clearTimeout(to); throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); }
+    if(r.status===429){ clearTimeout(to); quota++; continue; }
+    if(r.status===400){ clearTimeout(to); const t=await r.text(); if(/API_KEY_INVALID|API key not valid/i.test(t)) throw new Error('msg:你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。'); continue; }
+    if(r.status===404){ clearTimeout(to); try{ localStorage.removeItem(GMODELS); }catch(e){} continue; }
+    if(!r.ok || !r.body){ clearTimeout(to); continue; }
+    // clear lines that AI will fill, so progress is visible
+    lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; } }); renderList();
+    aStatus(`AI 正在聽歌，馬上開始一句一句對時間（${model}）…`);
     const times = lines.map(()=>null);
-    arr.forEach(x=>{ const i=(x.i|0)-1; if(i>=0 && i<lines.length && times[i]==null) times[i]={ start:+x.start, end:+x.end }; });
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let sse='', acc='', got=0, seen=0, lastAt=-1;
+    try{
+      for(;;){
+        const { value, done } = await reader.read();
+        if(done) break;
+        sse += dec.decode(value, { stream:true });
+        let cut;
+        while((cut = sse.indexOf('\n\n')) >= 0){
+          const block = sse.slice(0,cut); sse = sse.slice(cut+2);
+          const dl = block.split('\n').filter(x=>x.startsWith('data:')).map(x=>x.slice(5).trim()).join('');
+          if(!dl) continue;
+          try{ const d=JSON.parse(dl); acc += ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join(''); }catch(e){}
+        }
+        const objs = acc.match(/\{[^{}]*\}/g) || [];
+        for(; seen<objs.length; seen++){
+          let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; }
+          const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) continue;
+          times[i]={ start:+x.start, end:+x.end }; got++;
+          const l=lines[i];
+          if(!l.pin){ l.start=+(+x.start).toFixed(2); l.end=null; }
+          lastAt=i;
+        }
+        if(lastAt>=0){
+          clearTimeout(to); to=setTimeout(()=>ctl.abort(),120000);
+          renderList(); lastNow=-2; highlightRow(lastAt);
+          if(lines[lastAt].start!=null){ try{ video.currentTime=lines[lastAt].start+0.3; }catch(e){} }
+          aStatus(`AI 對時間中：第 ${got} / ${lines.length} 句「${lines[lastAt].text}」`);
+          lastAt=-1;
+        }
+      }
+    }catch(e){ clearTimeout(to); if(!got){ restoreBackup(); continue; } }
+    clearTimeout(to);
+    if(!got){ restoreBackup(); continue; }
     return { times, model };
   }
+  restoreBackup();
   if(quota) throw new Error('msg:你的 Gemini 額度今天可能用完了，明天會自動重置。也可以先用「快速自動對時間」。');
   throw new Error('msg:AI 暫時忙碌中，請稍後再按一次。');
 }
