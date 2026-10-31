@@ -10,7 +10,7 @@
   const sameRoute = href => routeKey(path) === routeKey(href);
   const groups = [
     ['/classroom/', 'AI 小教室', [['課程總覽','/classroom/'],['書籍轉網站','/classroom/book-to-flipbook/'],['Mini Me','/classroom/mini-me/'],['奇幻角色創作','/classroom/fantasy-creation'],['思緒整理','/classroom/ai-thinking.html'],['決策思考','/classroom/ai-decision.html']]],
-    ['/tools/', '免費工具', [['工具總覽','/tools/'],['Co-Space','/tools/co-space/']]],
+    ['/tools/', '工具中心', [['工具總覽','/tools/'],['Co-Space','/tools/co-space/']]],
     ['/products/', '產品介紹', [['產品總覽','/products/']]],
     ['/works/', '作品案例', [['作品總覽','/works/'],['股市小幫手','/works/abrakai-stock-helper/'],['孫子兵法','/classroom/book-to-flipbook/demo/']]],
     ['/real-estate/', '房產專區', [['房產專區','/real-estate/'],['房產安心查','/real-estate/property-tools/'],['房產稅務專題','/real-estate/gift-tax-planning/']]]

@@ -74,7 +74,7 @@ const lesson = qs('#featured-book-to-flipbook-lesson');
 if (lesson) {
     lesson.innerHTML = `
     <div class="home-mini-me-copy">
-      <span class="home-mini-me-badge">AI 小教室・免費教學</span>
+      <span class="home-mini-me-badge">AI 小教室・實作教學</span>
       <h3>一本書，變成會翻頁的網站</h3>
       <p>用六段 Prompt 完成素材盤點、書刊重點整理、八頁導讀、單一 HTML、互動升級與發布檢查。內含 65 分鐘教學流程（可調整為 60～70 分鐘），以及《孫子兵法》互動範例。</p>
       <div class="home-mini-me-actions">
