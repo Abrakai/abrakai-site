@@ -147,7 +147,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 2.7</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 2.8</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -318,7 +318,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.7</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.8</p>
     </aside>
   </div>
 </div>
@@ -993,7 +993,7 @@ $('clearAll').onclick=()=>{
   persist(); renderList(); updateButtons(); aStatus('已清除所有時間，可以重新按自動對時間。');
 };
 let cancelReq=false;
-$('aCancel').onclick=()=>{ cancelReq=true; if(curXhr) curXhr.abort(); };
+$('aCancel').onclick=()=>{ cancelReq=true; [...curXhrs].forEach(c=>c.abort()); };
 $('aGemini').onclick=()=>runAlign('gemini');
 $('aRefine').onclick=()=>runAlign('refine');
 $('shiftMinus').onclick=()=>shiftAll(-0.2);
@@ -1036,13 +1036,18 @@ function nextPacificMidnight(){
   return Date.now() + ((24-h)*3600 - m*60 - sec)*1000;
 }
 const hhmm = t => new Date(t).toLocaleTimeString('zh-TW',{ hour:'2-digit', minute:'2-digit', hour12:false });
+const GSPD='abrakai-ktv-gemini-speed';
+function spdAll(){ try{ return JSON.parse(localStorage.getItem(GSPD)||'{}'); }catch(e){ return {}; } }
+function spdRec(m, sec){ const a=spdAll(), x=a[m]||{ n:0, avg:0 }; x.avg = x.n ? x.avg*0.6 + sec*0.4 : sec; x.n=Math.min(x.n+1,20); a[m]=x; try{ localStorage.setItem(GSPD, JSON.stringify(a)); }catch(e){} }
 function orderModels(list, first){
   let pref=''; try{ pref=localStorage.getItem(GPREF)||''; }catch(e){}
   let arr=[...list];
   const lift = m => { if(m && arr.includes(m)){ arr=[m, ...arr.filter(x=>x!==m)]; } };
   lift(first); lift(pref);
   const rank = m => ({ ok:0, min:1, day:9 })[qState(m).s];
-  return arr.filter(m=>qState(m).s!=='day').sort((a,b)=>rank(a)-rank(b));
+  const sp=spdAll(), pinned=[pref,first].filter(Boolean);
+  const speed = m => pinned.includes(m) ? -1 : (sp[m] ? sp[m].avg : 60);
+  return arr.filter(m=>qState(m).s!=='day').sort((a,b)=>rank(a)-rank(b) || speed(a)-speed(b));
 }
 function renderModels(){
   const box=$('modelPanel'); if(!box) return;
@@ -1061,7 +1066,7 @@ function renderModels(){
     const note = st.s==='ok' ? '可以用' : st.s==='min' ? `這一分鐘的次數用完，${hhmm(st.until)} 後恢復` : `今天的額度用完，約 ${hhmm(st.until)} 重置`;
     li.innerHTML=`<span>${light}</span><b></b><small></small>`;
     li.querySelector('b').textContent=m + (m===last?'（最近使用）':'');
-    li.querySelector('small').textContent=note;
+    const sp=spdAll()[m]; li.querySelector('small').textContent=note+(sp?`．平均約 ${Math.round(sp.avg)} 秒回覆`:'');
     ul.append(li);
   });
   box.append(ul);
@@ -1080,7 +1085,7 @@ function wavB64(pcm, SR){
   for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
   return btoa(bin);
 }
-let curXhr=null;
+const curXhrs=new Set();
 function sseText(raw){
   let acc='';
   raw.split(/\r?\n/).forEach(line=>{ if(!line.startsWith('data:')) return; try{ const d=JSON.parse(line.slice(5).trim()); acc += ((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join(''); }catch(e){} });
@@ -1089,26 +1094,26 @@ function sseText(raw){
 function xhrStream(url, key, payload, h){
   return new Promise((resolve,reject)=>{
     const x = new XMLHttpRequest();
-    let phase='up', last=Date.now(), began=Date.now(), reason='', len=0, settled=false;
+    let phase='up', last=Date.now(), began=Date.now(), reason='', len=0, settled=false, sawUp=false;
     const hardLimit = (h.hardLimit||360000);
-    const fin = (ok, val) => { if(settled) return; settled=true; clearInterval(dog); document.removeEventListener('visibilitychange', onVis); if(curXhr===ctl) curXhr=null; (ok?resolve:reject)(val); };
+    const fin = (ok, val) => { if(settled) return; settled=true; clearInterval(dog); document.removeEventListener('visibilitychange', onVis); curXhrs.delete(ctl); (ok?resolve:reject)(val); };
     const kill = r => { reason=r; try{ x.abort(); }catch(e){} fin(false, new Error(r)); };
     const check = () => {
       if(settled) return;
       const now=Date.now(), idle=now-last;
       if(now-began > hardLimit) kill('stall-wait');
-      else if(phase==='up' && idle>60000) kill('stall-up');
+      else if(phase==='up' && idle>60000){ if(sawUp) kill('stall-up'); else { phase='wait'; last=now; h.onWait(); } }
       else if(phase==='wait' && idle>(h.waitLimit||200000)) kill('stall-wait');
       else if(phase==='stream' && idle>90000) kill('stall-wait');
     };
     const dog = setInterval(check, 1000);
     const onVis = () => { if(!document.hidden) check(); };
     document.addEventListener('visibilitychange', onVis);
-    const ctl = { abort: () => kill('cancel') }; curXhr = ctl;
+    const ctl = { abort: () => kill('cancel') }; curXhrs.add(ctl); if(h.onCtl) h.onCtl(ctl);
     x.open('POST', url);
     x.setRequestHeader('content-type','application/json');
     x.setRequestHeader('x-goog-api-key', key);
-    x.upload.onprogress = e => { last=Date.now(); if(e.lengthComputable) h.onUp(e.loaded/e.total); };
+    x.upload.onprogress = e => { if(e.loaded>0) sawUp=true; last=Date.now(); if(e.lengthComputable) h.onUp(e.loaded/e.total); };
     x.upload.onload = () => { phase='wait'; last=Date.now(); h.onWait(); };
     x.onprogress = () => { if(settled) return; if(x.responseText.length!==len){ len=x.responseText.length; last=Date.now(); phase='stream'; if(x.status===200) h.onText(x.responseText); } };
     x.onload = () => { if(settled) return; if(x.status===200) h.onText(x.responseText); fin(true, { status:x.status, text:x.responseText }); };
@@ -1122,58 +1127,99 @@ function xhrStream(url, key, payload, h){
 function wavClip(a, t0, t1){ const SR=a.SR; return wavB64(a.mono.subarray(Math.max(0,Math.floor(t0*SR)), Math.min(a.mono.length, Math.ceil(t1*SR))), SR); }
 function gErr(m){ return new Error('msg:'+m); }
 // one Gemini call with model fallback; onObj gets each complete JSON object as it streams in
-async function gRun(o){
-  let quota=0, slow=false;
-  for(const model of o.models){
-    if(o.dead && o.dead.has(model)) continue;
-    if(qState(model).s==='day'){ if(o.dead) o.dead.add(model); continue; }
-    let minuteWaits=0;
-    let gen = { temperature:0, responseMimeType:'application/json', responseSchema:o.schema, maxOutputTokens:16384 };
-    if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
-    else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
-    for(let attempt=0; attempt<6; attempt++){
-      const payload = JSON.stringify({ contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:o.b64 } }, { text:o.prompt } ] }], generationConfig:gen });
-      let seen=0, got=0, res;
-      try{
-        res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, o.key, payload, {
-          waitLimit:o.waitLimit, hardLimit:o.hardLimit,
-          onUp: f => o.onUp && o.onUp(f, model),
-          onWait: () => o.onWait && o.onWait(model),
-          onText: raw => {
-            const acc = sseText(raw);
-            const objs = acc.match(/\{[^{}]*\}/g) || [];
-            for(; seen<objs.length; seen++){ let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; } if(o.onObj(x)) got++; }
-            if(!got && acc.length && o.onBytes) o.onBytes(acc.length);
-          }
-        });
-      }catch(err){
-        const why = err && err.message;
-        if(why==='cancel') throw gErr('已取消。');
-        if(why==='stall-up') throw gErr('上傳停住了，請確認網路（建議連 Wi-Fi）後再按一次。');
-        if(got) return { model, got };
-        slow = slow || why==='stall-wait';
-        break;
-      }
-      if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
-      if(res.status===200 && got){ try{ localStorage.setItem(GLAST, model); }catch(e){} renderModels(); return { model, got }; }
-      if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) throw gErr('你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
-      if(res.status===429){
-        let perDay=/PerDay/i.test(res.text), delay=30;
-        try{ const d=JSON.parse(res.text); const det=(d.error&&d.error.details)||[];
-          det.forEach(x=>{ if(x.retryDelay) delay=parseFloat(x.retryDelay)||delay; (x.violations||[]).forEach(v=>{ if(/PerDay/i.test(v.quotaId||'')) perDay=true; }); }); }catch(e){}
-        if(!perDay && delay<=65 && minuteWaits<3){
-          minuteWaits++;
-          for(let sec=Math.ceil(delay)+1; sec>0; sec--){ if(o.onQuotaWait) o.onQuotaWait(model, sec); await new Promise(r=>setTimeout(r,1000)); if(o.cancelled && o.cancelled()) throw gErr('已取消。'); }
-          continue;
+// try one model; gate(model) decides whether this model's results are accepted (for racing two models)
+async function tryModel(model, o, gate, ctls){
+  let minuteWaits=0;
+  let gen = { temperature:0, responseMimeType:'application/json', responseSchema:o.schema, maxOutputTokens:16384 };
+  if(/2\.5-flash/.test(model)) gen.thinkingConfig = { thinkingBudget:0 };
+  else if(/gemini-3/.test(model)) gen.thinkingConfig = { thinkingLevel:'low' };
+  for(let attempt=0; attempt<6; attempt++){
+    const payload = JSON.stringify({ contents:[{ role:'user', parts:[ { inline_data:{ mime_type:'audio/wav', data:o.b64 } }, { text:o.prompt } ] }], generationConfig:gen });
+    let seen=0, got=0, res; const t0=Date.now(); let first=0;
+    try{
+      res = await xhrStream(`${GBASE}models/${model}:streamGenerateContent?alt=sse`, o.key, payload, {
+        waitLimit:o.waitLimit, hardLimit:o.hardLimit, onCtl:c=>ctls&&ctls.add(c),
+        onUp: f => gate(model,true) && o.onUp && o.onUp(f, model),
+        onWait: () => gate(model,true) && o.onWait && o.onWait(model),
+        onText: raw => {
+          const acc = sseText(raw);
+          const objs = acc.match(/\{[^{}]*\}/g) || [];
+          for(; seen<objs.length; seen++){ let x; try{ x=JSON.parse(objs[seen]); }catch(e){ continue; } if(!gate(model)) return; if(o.onObj(x)){ got++; if(!first){ first=Date.now(); spdRec(model,(first-t0)/1000); } } }
+          if(!got && acc.length && o.onBytes && gate(model,true)) o.onBytes(acc.length, model);
         }
-        if(perDay) qSet(model,'day',nextPacificMidnight()); else qSet(model,'min',Date.now()+delay*1000);
-        quota++; if(o.dead) o.dead.add(model);
-      }
-      if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} }
-      break;
+      });
+    }catch(err){
+      const why = err && err.message;
+      if(why==='cancel') return { ok:false, kind:'cancel' };
+      if(why==='stall-up') return { ok:false, kind:'stall-up' };
+      if(got) return { ok:true, model, got };
+      if(why==='stall-wait') spdRec(model, (o.waitLimit||200000)/1000);
+      return { ok:false, kind: why==='stall-wait' ? 'slow' : 'other' };
     }
+    if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
+    if(res.status===200 && got){ try{ localStorage.setItem(GLAST, model); }catch(e){} renderModels(); return { ok:true, model, got }; }
+    if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) return { ok:false, kind:'key' };
+    if(res.status===429){
+      let perDay=/PerDay/i.test(res.text), delay=30, known=false;
+      try{ const d=JSON.parse(res.text); const det=(d.error&&d.error.details)||[];
+        det.forEach(x=>{ if(x.retryDelay){ delay=parseFloat(x.retryDelay)||delay; known=true; } (x.violations||[]).forEach(v=>{ if(/PerDay/i.test(v.quotaId||'')) perDay=true; }); }); }catch(e){}
+      if(!perDay && delay<=65 && minuteWaits<(known?3:1)){
+        minuteWaits++;
+        for(let sec=Math.ceil(delay)+1; sec>0; sec--){ if(gate(model,true) && o.onQuotaWait) o.onQuotaWait(model, sec); await new Promise(r=>setTimeout(r,1000)); if(o.cancelled && o.cancelled()) return { ok:false, kind:'cancel' }; }
+        continue;
+      }
+      if(perDay) qSet(model,'day',nextPacificMidnight()); else qSet(model,'min',Date.now()+delay*1000);
+      if(o.dead) o.dead.add(model);
+      return { ok:false, kind:'quota' };
+    }
+    if(res.status===404){ try{ localStorage.removeItem(GMODELS); }catch(e){} }
+    return { ok:false, kind:'other' };
   }
-  if(quota || !o.models.length || (o.dead && o.models.every(m=>o.dead.has(m)))) throw gErr('QUOTA');
+  return { ok:false, kind:'other' };
+}
+// run with model fallback; with o.hedgeAfter, a second model starts in parallel if the first is slow, and the faster one wins
+async function gRun(o){
+  const queue = o.models.filter(m=>!(o.dead&&o.dead.has(m)) && qState(m).s!=='day');
+  if(!queue.length) throw gErr('QUOTA');
+  let quota=0, slow=false;
+  const fail = r => {
+    if(r.kind==='cancel') throw gErr('已取消。');
+    if(r.kind==='stall-up') throw gErr('上傳停住了，請確認網路（建議連 Wi-Fi）後再按一次。');
+    if(r.kind==='key') throw gErr('你的 Gemini 金鑰可能失效了，請到「Gemini 金鑰設定」重新貼上。');
+    if(r.kind==='quota') quota++; if(r.kind==='slow') slow=true;
+  };
+  while(queue.length){
+    const m1 = queue.shift(); const raceStart=Date.now();
+    let winner=null, statusOwner=m1, m2=null;
+    const gate = (m, statusOnly) => statusOnly ? (winner ? winner===m : statusOwner===m) : (winner ? winner===m : (winner=m, statusOwner=m, true));
+    const ctl1=new Set(), ctl2=new Set();
+    const p1 = tryModel(m1, o, gate, ctl1).then(r=>({ r, m:m1 }));
+    let racers=[p1], hedgeTimer=null;
+    if(o.hedgeAfter && queue.length){
+      racers.push(new Promise(res=>{ hedgeTimer=setTimeout(()=>{
+        if(winner){ res(null); return; }
+        m2 = queue.shift(); statusOwner=m2;
+        if(o.onHedge) o.onHedge(m1, m2);
+        tryModel(m2, o, gate, ctl2).then(r=>res({ r, m:m2 }));
+      }, o.hedgeAfter); }));
+    }
+    let done=null;
+    const pending=[...racers];
+    while(pending.length){
+      const x = await Promise.race(pending.map((p,idx)=>p.then(v=>({ v, idx }))));
+      pending.splice(x.idx,1);
+      if(!x.v) continue;
+      if(x.v.r.ok){ done=x.v; break; }
+      if(x.v.r.kind==='cancel' || x.v.r.kind==='key' || x.v.r.kind==='stall-up'){ clearTimeout(hedgeTimer); [...ctl1,...ctl2].forEach(c=>c.abort()); fail(x.v.r); }
+      fail(x.v.r);
+      if(x.v.m===m1 && hedgeTimer && !m2){ clearTimeout(hedgeTimer); pending.length=0; }  // first failed before hedge: go on sequentially
+      if(winner===x.v.m) winner=null;
+      statusOwner = x.v.m===m1 ? (m2||statusOwner) : m1;
+    }
+    clearTimeout(hedgeTimer);
+    if(done){ const other = done.m===m1 ? ctl2 : ctl1; if(other.size){ const loser = done.m===m1 ? m2 : m1; if(loser) spdRec(loser, (Date.now()-raceStart)/1000 + 30); } [...other].forEach(c=>c.abort()); return { model:done.m, got:done.r.got }; }
+  }
+  if(quota) throw gErr('QUOTA');
   if(slow) throw gErr('這次 AI 回應太久了，請再按一次試試。');
   throw gErr('AI 暫時忙碌中，請稍後再按一次。');
 }
@@ -1197,7 +1243,8 @@ ${list1}`;
   const times = lines.map(()=>null);
   let cleared=false, got=0, r1;
   try{
-    r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, cancelled:()=>cancelReq,
+    r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, hedgeAfter:75000, cancelled:()=>cancelReq,
+      onHedge:(m1,m2)=>aStatus(`第 1 步：${m1} 比較慢，同時請 ${m2} 一起聽，哪個先好就用哪個…`),
       onQuotaWait:(m,sec)=>aStatus(`第 1 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續…`),
       schema: OBJ({ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, ['i','start','end']),
       onUp: (f,m) => aStatus(`第 1 步：上傳聲音給 AI ${Math.round(f*100)}%（${MB} MB，${m}）`),
