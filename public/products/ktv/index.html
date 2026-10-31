@@ -124,6 +124,18 @@
 .kp-dbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-top:14px}
 .kp-legend{display:flex;gap:6px 12px;align-items:center;font-size:14px;font-weight:800;color:var(--k-muted)}
 .kp-legend i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.kp-sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin:8px 0 28px}
+.kp-sec{background:#fff;border:1px solid var(--k-line);border-radius:16px;padding:16px 18px}
+.kp-sec h3{margin:0 0 10px;font-size:16px;color:#a3165a;letter-spacing:.06em}
+.kp-sec ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.kp-sec li{display:flex;gap:10px;align-items:center;font-size:16px;line-height:1.5}
+.kp-sec .r,.kp-tag{display:inline-grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;color:#fff;font-size:13px;font-weight:900;vertical-align:middle}
+.r.f,.kp-tag.f{background:var(--k-f)}.r.m,.kp-tag.m{background:var(--k-m)}.r.c,.kp-tag.c{background:#22b46a}
+.kp-try2{background:#f2faff;border:1px solid var(--k-line);border-radius:18px;padding:22px}
+.kp-try2 h3{margin:0 0 10px;font-size:19px}
+.kp-try2 ol{margin:0 0 16px;padding-left:22px;color:var(--k-muted);line-height:1.9}
+.kp-dls{display:flex;flex-wrap:wrap;gap:10px}
+.kp-btn.ghost{border:1.5px solid var(--k-line);color:var(--k-ink);background:#fff}
 .kp-faq{display:grid;gap:12px;max-width:860px}
 .kp-faq details{background:#fff;border:1px solid var(--k-line);border-radius:14px;padding:16px 20px}
 .kp-faq summary{font-weight:900;cursor:pointer;font-size:16px}
@@ -191,16 +203,96 @@
 <section class="kp-section-alt" id="demo"><div class="wrap">
   <span class="kick">DEMO</span>
   <h2>示範影片：《停在有你的地方》男女對唱 KTV</h2>
-  <p class="lead">阿布拉.凱 工作室原創示範曲。一首完整的男女對唱情歌：女聲、男聲輪流唱，副歌一起合唱，字幕跟著歌聲一個字一個字亮起來。這支影片就是用 AbraKai KTV字幕機製作的。</p>
+  <p class="lead">阿布拉.凱 工作室原創示範曲。一首完整的男女對唱情歌：女聲、男聲輪流唱，副歌一起合唱，字幕跟著歌聲一個字一個字亮起來。這支 1080p 高畫質影片，就是用 AbraKai KTV字幕機製作的。</p>
   <div class="kp-demo">
-    <video class="kp-video" controls playsinline preload="metadata" poster="/products/ktv/media/stay-ktv-poster.jpg" width="1280" height="720">
-      <source src="/products/ktv/media/stay-ktv-demo-v3.mp4" type="video/mp4">
+    <video class="kp-video" controls playsinline preload="metadata" poster="/products/ktv/media/stay-ktv-poster-1080.jpg" width="1920" height="1080">
+      <source src="/products/ktv/media/stay-ktv-1080.mp4" type="video/mp4">
       你的瀏覽器無法播放這支影片。
     </video>
     <div class="kp-dbar"><span class="kp-legend"><i style="background:var(--k-f)"></i>女聲 <i style="background:var(--k-m)"></i>男聲 <i style="background:var(--k-c)"></i>合唱</span></div>
     <p class="kp-note">《停在有你的地方》阿布拉.凱 工作室原創示範曲．© 阿布拉.凱 工作室 版權所有</p>
   </div>
-  <div class="kp-cta" style="margin-top:24px"><a class="kp-btn pri" href="/tools/ktv/">用我的影片來做 →</a></div>
+</div></section>
+
+<section id="sample"><div class="wrap">
+  <span class="kick">SAMPLE</span>
+  <h2>歌詞與演唱分配</h2>
+  <p class="lead">每一句標出由誰演唱：<b class="kp-tag f">女</b> 女聲、<b class="kp-tag m">男</b> 男聲、<b class="kp-tag c">合</b> 合唱。貼進字幕機時，用 ⦅女⦆ ⦅男⦆ ⦅合⦆ 標在換人唱的那一句前面就可以。</p>
+<div class="kp-sheet">
+<div class="kp-sec"><h3>主歌 A</h3><ol>
+<li><b class="r f">女</b><span>霓虹閃爍的街頭</span></li>
+<li><b class="r f">女</b><span>我看著人來人往</span></li>
+<li><b class="r f">女</b><span>心裡全都是你的模樣</span></li>
+<li><b class="r f">女</b><span>風吹過這座城市</span></li>
+<li><b class="r f">女</b><span>帶走了一些喧嘩</span></li>
+<li><b class="r f">女</b><span>卻帶不走我對你的思念</span></li>
+</ol></div>
+<div class="kp-sec"><h3>副歌</h3><ol>
+<li><b class="r c">合</b><span>夜空中我想著你</span></li>
+<li><b class="r c">合</b><span>你是否也抬頭看著星星</span></li>
+<li><b class="r f">女</b><span>這城市的燈太擁擠</span></li>
+<li><b class="r c">合</b><span>我只想停在有你的地方</span></li>
+<li><b class="r c">合</b><span>就在這裡我想你</span></li>
+<li><b class="r c">合</b><span>每一顆星都是我的心</span></li>
+</ol></div>
+<div class="kp-sec"><h3>主歌 B</h3><ol>
+<li><b class="r m">男</b><span>耳機裡播著那首歌</span></li>
+<li><b class="r m">男</b><span>是我們共同的記憶</span></li>
+<li><b class="r m">男</b><span>閉上眼就能感覺到你</span></li>
+<li><b class="r m">男</b><span>距離阻擋不了這份愛</span></li>
+<li><b class="r m">男</b><span>反而讓它更加堅定</span></li>
+<li><b class="r m">男</b><span>我知道你也在等著我</span></li>
+</ol></div>
+<div class="kp-sec"><h3>副歌</h3><ol>
+<li><b class="r c">合</b><span>夜空中我想著你</span></li>
+<li><b class="r c">合</b><span>你是否也抬頭看著星星</span></li>
+<li><b class="r f">女</b><span>這城市的燈太擁擠</span></li>
+<li><b class="r c">合</b><span>我只想停在有你的地方</span></li>
+<li><b class="r c">合</b><span>就在這裡我想你</span></li>
+<li><b class="r c">合</b><span>每一顆星都是我的心</span></li>
+</ol></div>
+<div class="kp-sec"><h3>橋段</h3><ol>
+<li><b class="r f">女</b><span>不管未來有多少的風雨</span></li>
+<li><b class="r f">女</b><span>我都會緊緊牽著你的手</span></li>
+<li><b class="r f">女</b><span>因為你是我唯一的方向</span></li>
+<li><b class="r c">合</b><span>在繁華世界裡不迷失</span></li>
+<li><b class="r c">合</b><span>這份愛會一直延續下去</span></li>
+<li><b class="r c">合</b><span>直到時間的盡頭</span></li>
+</ol></div>
+<div class="kp-sec"><h3>副歌</h3><ol>
+<li><b class="r c">合</b><span>夜空中我想著你</span></li>
+<li><b class="r c">合</b><span>你是否也抬頭看著星星</span></li>
+<li><b class="r f">女</b><span>這城市的燈太擁擠</span></li>
+<li><b class="r c">合</b><span>我只想停在有你的地方</span></li>
+<li><b class="r c">合</b><span>就在這裡我想你</span></li>
+<li><b class="r c">合</b><span>每一顆星都是我的心</span></li>
+</ol></div>
+<div class="kp-sec"><h3>尾聲</h3><ol>
+<li><b class="r m">男</b><span>夜空中</span></li>
+<li><b class="r f">女</b><span>我想著你</span></li>
+<li><b class="r m">男</b><span>我就在這裡 想著你</span></li>
+<li><b class="r f">女</b><span>每一顆星 都是我的心</span></li>
+<li><b class="r f">女</b><span>願</span></li>
+<li><b class="r c">合</b><span>不離</span></li>
+</ol></div>
+</div>
+  <div class="kp-try2">
+    <h3>動手做做看：用這首歌試一次</h3>
+    <ol>
+      <li>下載「無字幕版影片」和「歌詞檔」。</li>
+      <li>打開 AbraKai KTV字幕機，選擇剛下載的影片，把歌詞檔的內容整段貼上。</li>
+      <li>按「自動對時間」，播放確認，再用時間軸微調。</li>
+      <li>想對照我們的成品，可以按「開啟專案檔」載入完成版的時間檔。</li>
+    </ol>
+    <div class="kp-dls">
+      <a class="kp-btn pri" href="/products/ktv/media/stay-raw-1080.mp4" download="停在有你的地方_無字幕版.mp4">⬇ 無字幕版影片（1080p）</a>
+      <a class="kp-btn ghost" href="/products/ktv/media/stay-lyrics.txt" download="停在有你的地方_歌詞.txt">⬇ 歌詞檔</a>
+      <a class="kp-btn ghost" href="/products/ktv/media/stay-project.json" download="停在有你的地方_專案檔.json">⬇ 完成版專案檔</a>
+      <a class="kp-btn ghost" href="/products/ktv/media/stay-ktv-1080.mp4" download="停在有你的地方_KTV.mp4">⬇ KTV 完成版影片</a>
+    </div>
+    <p class="kp-note">示範曲素材僅供體驗 AbraKai KTV字幕機使用，© 阿布拉.凱 工作室 版權所有。</p>
+    <div class="kp-cta" style="margin-top:18px"><a class="kp-btn pri" href="/tools/ktv/">打開字幕機 →</a></div>
+  </div>
 </div></section>
 
 <section><div class="wrap">
