@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 3.3</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 3.4</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -189,7 +189,7 @@ body{margin:0}
       <p class="status" id="vStatus"></p>
       <div class="tlwrap" id="tlWrap" hidden>
         <div class="tlhead">
-          <b>時間軸微調</b>
+          <b>時間軸微調</b><span class="hint">紫色＝人聲大小，黃線＝音高（分離人聲後出現）</span>
           <span class="hint" id="tlSel">點字或整句來選取。拖方塊兩側的白色把手可以拉長、縮短；拖中間是整個移動；拖空白處前後捲動。</span>
         </div>
         <canvas id="tl" height="170"></canvas>
@@ -356,7 +356,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.3</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.4</p>
     </aside>
   </div>
 </div>
@@ -1711,6 +1711,7 @@ ${list2}`;
           const fixedStart = l.pin || l.anchor!=null || (keep!=null && Math.abs(cs[0]-keep) > 1.5);
           if(!fixedStart) l.start=+cs[0].toFixed(2);
           const ch=buildChars(l, cs, x.end!=null ? +x.end+t0 : null);
+          if(ch){ l.chars=ch; snapChars(a, l); }
           if(!ch) return false;
           l.chars=ch;
           if(fixedStart && keep!=null) shiftLine(l, keep-ch[0][0]);
@@ -1811,6 +1812,76 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keyup', e=>{ if(cm && e.code==='Space'){ e.preventDefault(); cbUp(); } }, true);
 
 /* ---------- automatic per-character estimate ---------- */
+/* ---------- syllable features on the separated voice: pitch (semitones), loudness, and "new note" novelty ---------- */
+function voxFeatures(a){
+  if(!a.sep) return null;
+  if(a.sep.feat) return a.sep.feat;
+  const x=a.sep.vox, SR=a.SR, ds=2, sr=SR/ds, n=Math.floor(x.length/ds);
+  const y=new Float32Array(n); for(let i=0;i<n;i++) y[i]=(x[i*ds]+x[i*ds+1])/2;
+  const NW=512, hop=Math.round(sr*0.01), F=Math.max(0,Math.floor((n-NW)/hop)), fft=makeFFT(NW);
+  const re=new Float32Array(NW), im=new Float32Array(NW), w=new Float32Array(NW);
+  for(let i=0;i<NW;i++) w[i]=0.5-0.5*Math.cos(2*Math.PI*i/NW);
+  const st=new Float32Array(F).fill(NaN), en=new Float32Array(F), lagMin=Math.floor(sr/900), lagMax=Math.ceil(sr/75);
+  for(let f=0;f<F;f++){
+    const o=f*hop; let q=0;
+    for(let i=0;i<NW;i++){ const v=y[o+i]; re[i]=v*w[i]; im[i]=0; if(i>=NW/2-hop/2 && i<NW/2+hop/2) q+=v*v; }
+    en[f]=10*Math.log10(q/hop+1e-10);
+    fft(re,im);
+    for(let i=0;i<NW;i++){ re[i]=re[i]*re[i]+im[i]*im[i]; im[i]=0; }
+    fft(re,im); // power spectrum is symmetric: forward FFT gives autocorrelation (scaled)
+    const r0=re[0]; if(r0<=1e-9) continue;
+    let bl=-1, bv=0;
+    for(let L=lagMin; L<=lagMax && L<NW/2; L++){ const v=re[L]/r0; if(v>bv && v>=re[L-1]/r0 && v>=re[L+1]/r0){ bv=v; bl=L; } }
+    if(bl>0 && bv>0.45){ const a0=re[bl-1], b0=re[bl], c0=re[bl+1], den=a0-2*b0+c0; const lag=bl+(den? 0.5*(a0-c0)/den : 0); st[f]=12*Math.log2((sr/lag)/55); }
+  }
+  // pitch novelty: change between medians before/after; onset: loudness rise; voicing start
+  const med=(f0,f1)=>{ const v=[]; for(let f=Math.max(0,f0); f<Math.min(F,f1); f++) if(!isNaN(st[f])) v.push(st[f]); if(v.length<2) return NaN; v.sort((p,q)=>p-q); return v[v.length>>1]; };
+  const nov=new Float32Array(F);
+  for(let f=6; f<F-6; f++){
+    const b=med(f-6,f), c=med(f,f+6); let jump = (!isNaN(b)&&!isNaN(c)) ? Math.min(3, Math.abs(c-b))/3 : 0;
+    if(jump<0.25) jump=0;  // smooth glides inside one note are not a new syllable
+    let eb=0, ea=0; for(let d=1;d<=6;d++) eb+=en[f-d]; for(let d=0;d<4;d++) ea+=en[f+d];
+    const rise=Math.max(0, ea/4-eb/6); const onset=Math.min(1, rise/8);
+    const voiceStart = (isNaN(st[f-2])&&isNaN(st[f-1]) && !isNaN(st[f]) && !isNaN(st[f+1])) ? 0.5 : 0;
+    nov[f]=0.7*jump + 0.8*onset + voiceStart;
+  }
+  return (a.sep.feat={ st, en, nov, F });
+}
+// split one line into its characters: each new syllable starts where pitch or loudness changes; glides inside a note are kept together
+function splitLine(feat, ws, we, C){
+  const f0=Math.max(1,Math.round(ws*100)), f1=Math.min(feat.F-1, Math.round(we*100));
+  const L=f1-f0; if(C<=1 || L < C*6) return null;
+  const nov=feat.nov, avg=L/C, minD=6, maxD=Math.min(L, Math.round(avg*5)+20);
+  // dp[k][x]: best score with char k starting at frame f0+x
+  let prev=new Float64Array(L+1).fill(-1e9); prev[0]=0;
+  const back=[];
+  for(let k=1;k<C;k++){
+    const cur=new Float64Array(L+1).fill(-1e9), bk=new Int32Array(L+1).fill(-1);
+    for(let x=k*minD; x<=L-(C-k)*minD; x++){
+      const sc=nov[f0+x]; let bv=-1e9, bx=-1;
+      for(let p=Math.max((k-1)*minD, x-maxD); p<=x-minD; p++){ if(prev[p]<=-1e8) continue; const d=x-p, pr=0.12*Math.log(d/avg)**2; const v=prev[p]-pr; if(v>bv){ bv=v; bx=p; } }
+      if(bx>=0){ cur[x]=bv+sc; bk[x]=bx; }
+    }
+    back.push(bk); prev=cur;
+  }
+  let bx=-1, bv=-1e9;
+  for(let x=(C-1)*minD; x<=L-minD; x++){ if(prev[x]<=-1e8) continue; const v=prev[x]-0.12*Math.log((L-x)/avg)**2; if(v>bv){ bv=v; bx=x; } }
+  if(bx<0) return null;
+  const xs=[bx]; for(let k=C-2;k>=1;k--) xs.unshift(back[k][xs[0]]);
+  return [ws, ...xs.map(x=>(f0+x)/100)];
+}
+// nudge AI-given syllable starts onto the nearest clear pitch/loudness change (±0.15 s)
+function snapChars(a, l){
+  const feat=voxFeatures(a); if(!feat || !l.chars) return;
+  const c=l.chars;
+  for(let k=1;k<c.length;k++){
+    const t=c[k][0], f=Math.round(t*100); let bf=-1, bs=0.35;
+    for(let g=f-15; g<=f+15; g++){ if(g<1||g>=feat.F) continue; const v=feat.nov[g]-Math.abs(g-f)*0.01; if(v>bs){ bs=v; bf=g; } }
+    if(bf<0) continue; const nt=bf/100;
+    if(nt<=c[k-1][0]+0.06 || (k+1<c.length && nt>=c[k+1][0]-0.06)) continue;
+    c[k][0]=+nt.toFixed(3); c[k-1][1]=+Math.max(c[k-1][0]+0.05, nt-0.02).toFixed(3);
+  }
+}
 function estimateChars(a){
     const { vocal, SR } = a, hop=Math.round(SR*0.01), F=Math.floor(vocal.length/hop);
     const e=new Float32Array(F);
@@ -1818,6 +1889,7 @@ function estimateChars(a){
     const P=new Float64Array(F+1); for(let f=0;f<F;f++) P[f+1]=P[f]+e[f];
     const mean=(x,y)=>{ x=Math.max(0,x); y=Math.min(F,y); return y>x?(P[y]-P[x])/(y-x):0; };
     const on=new Float32Array(F); for(let f=12;f<F-4;f++) on[f]=Math.max(0, mean(f,f+4)-mean(f-12,f));
+    const feat=voxFeatures(a);
     const T=timed(); let done=0;
     T.forEach((li,j)=>{
       const l=lines[li]; if(l.pin && l.chars) return;
@@ -1826,13 +1898,17 @@ function estimateChars(a){
       const guess = l.start + Math.max(1.2, C*0.55);
       const ws=l.start, we = l.end!=null ? l.end : (nx!=null ? Math.min(nx-0.1, ws+C*0.5+0.8) : guess);
       const f0=Math.round((ws+0.12)/0.01), f1=Math.round((we-0.08)/0.01);
+      let starts=null;
+      if(feat) starts=splitLine(feat, ws, we, C);
+      if(!starts){
       let pk=[];
       for(let f=f0; f<f1; f++){ if(on[f]<=0) continue; let ok=true; for(let d=-6; d<=6; d++){ if(d && on[f+d]>on[f]){ ok=false; break; } } if(ok) pk.push({ f, s:on[f] }); }
       pk.sort((x,y)=>y.s-x.s);
       const pick=[];
       for(const c of pk){ if(pick.length>=C-1) break; if(pick.every(q=>Math.abs(q-c.f)>=10)) pick.push(c.f); }
       pick.sort((x,y)=>x-y);
-      let starts=[ws, ...pick.map(f=>f*0.01)];
+      starts=[ws, ...pick.map(f=>f*0.01)];
+      }
       if(starts.length<C){ starts=[]; for(let k=0;k<C;k++) starts.push(ws+(we-ws)*k/C); }
       const lastEnd = l.end!=null ? l.end : Math.min(Math.max(starts[C-1]+0.25, we-0.1), starts[C-1]+1.8);
       l.chars = starts.map((st,k)=>[+st.toFixed(2), +(k<C-1 ? Math.max(st+0.05, starts[k+1]-0.02) : lastEnd).toFixed(2)]);
@@ -1979,7 +2055,7 @@ function buildPeaks(){
   const x=audioCache.vocal||audioCache.mono, SR=audioCache.SR, hop=Math.round(SR*0.01), n=Math.floor(x.length/hop);
   const r=new Float32Array(n);
   for(let i=0;i<n;i++){ let q=0; const o=i*hop; for(let j=0;j<hop;j++){ const v=x[o+j]; q+=v*v; } r[i]=Math.log10(Math.sqrt(q/hop)+1e-5); }
-  const sorted=Float32Array.from(r).sort(), lo=sorted[Math.floor(n*0.15)], hi=sorted[Math.floor(n*0.995)]||lo+1;
+  const sorted=Float32Array.from(r).sort(), lo=sorted[Math.floor(n*(audioCache.sep?0.4:0.15))], hi=sorted[Math.floor(n*0.995)]||lo+1;
   peaks=new Float32Array(n);
   for(let i=0;i<n;i++) peaks[i]=Math.max(0,Math.min(1,(r[i]-lo)/(hi-lo||1)));
 }
@@ -2010,9 +2086,18 @@ function drawTL(){
   // waveform
   const [w0,w1]=TL.wave, mid=(w0+w1)/2, amp=(w1-w0)/2;
   if(peaks){
-    tg.fillStyle='rgba(122,92,180,.75)';
+    tg.fillStyle= audioCache && audioCache.sep ? 'rgba(122,92,180,.45)' : 'rgba(122,92,180,.75)';
     for(let x=0;x<W;x++){ const a=Math.floor((v.t0+x*v.sp)*100), b=Math.max(a+1,Math.floor((v.t0+(x+1)*v.sp)*100)); let m=0; for(let i=Math.max(0,a);i<Math.min(peaks.length,b);i++) if(peaks[i]>m) m=peaks[i]; const h=m*amp; tg.fillRect(x,mid-h,1,h*2||1); }
   } else { tg.fillStyle='rgba(169,156,187,.6)'; tg.font='12px sans-serif'; tg.fillText('按下方「顯示聲音波形」就能看到歌聲的位置',W/2,mid+4); }
+  const feat = audioCache && audioCache.sep && audioCache.sep.feat;
+  if(feat){
+    const fa=Math.max(0,Math.floor(v.t0*100)), fb=Math.min(feat.F,Math.ceil((v.t0+tlWin)*100)); const vals=[];
+    for(let f=fa; f<fb; f++){ const q=feat.st[f]; if(!isNaN(q)) vals.push(q); }
+    vals.sort((p,q)=>p-q); let lo=vals.length?vals[Math.floor(vals.length*0.05)]:0, hi=vals.length?vals[Math.floor(vals.length*0.95)]:0;
+    if(hi>lo){ const pad=1; lo-=pad; hi+=pad; tg.strokeStyle='#ffc93c'; tg.lineWidth=2; tg.beginPath(); let on=false;
+      for(let f=fa; f<fb; f++){ const q=feat.st[f]; const x=X(f/100); if(isNaN(q)){ on=false; continue; } const y=Math.max(w0,Math.min(w1, w1-(q-lo)/(hi-lo)*(w1-w0))); if(!on){ tg.moveTo(x,y); on=true; } else tg.lineTo(x,y); }
+      tg.stroke(); }
+  }
   // lines + chars
   tg.textAlign='center'; tg.textBaseline='middle';
   lines.forEach((l,i)=>{
