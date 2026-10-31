@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 3.4</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 3.5</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -356,7 +356,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.4</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.5</p>
     </aside>
   </div>
 </div>
@@ -1701,9 +1701,9 @@ ${list2}`;
       await gRun({ models:order, dead, key, b64:wavClip(a,t0,t1), prompt:prompt2, waitLimit:90000, hardLimit:150000,
         schema: OBJ({ i:{type:'INTEGER'}, end:{type:'NUMBER'}, c:{ type:'ARRAY', items:{type:'NUMBER'} } }, ['i','end','c']),
         cancelled:()=>cancelReq,
-        onQuotaWait:(m,sec)=>aStatus(`第 2 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續（第 ${g+1} / ${groups.length} 段）…`),
-        onUp: (f,m) => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
-        onWait: m => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 段（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        onQuotaWait:(m,sec)=>aStatus(`第 2 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續（第 ${g+1} / ${groups.length} 批，每批 6 句）…`),
+        onUp: (f,m) => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 批，每批 6 句（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
+        onWait: m => aStatus(`第 2 步：${m} 逐字精修 第 ${g+1} / ${groups.length} 批，每批 6 句（第 ${G[0]+1}～${G[G.length-1]+1} 句）…`),
         onObj: x => {
           const i=(x.i|0)-1; if(!G.includes(i) || !Array.isArray(x.c) || !x.c.length) return false;
           const l=lines[i], keep=l.start;
