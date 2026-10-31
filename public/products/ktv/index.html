@@ -109,6 +109,20 @@
 .kp-play{justify-self:start;font:inherit;font-weight:900;font-size:16px;padding:12px 22px;border-radius:999px;border:0;cursor:pointer;color:#fff;background:linear-gradient(90deg,var(--k-f),#ff7ab8)}
 .kp-try .kp-screen{aspect-ratio:16/9}
 .kp-note{font-size:13px;color:var(--k-muted);margin:10px 0 0;line-height:1.7}
+.kp-demo{max-width:900px;margin:0 auto}
+.kp-dscreen .kp-mark{position:absolute;top:12px;right:14px;font-size:clamp(9px,1.3vw,12px);font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.55)}
+.kp-title{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:8px;color:#fff;transition:opacity .6s;pointer-events:none}
+.kp-title b{font-size:clamp(22px,4vw,40px);text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.kp-title span{font-size:clamp(12px,1.7vw,16px);color:#ffd3e6;font-weight:800}
+.kp-dl{position:absolute;left:5%;right:5%;display:flex;align-items:center;gap:0;font-weight:900;font-size:clamp(18px,3.4vw,34px);white-space:nowrap;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7));transition:opacity .3s}
+.kp-dl.top{bottom:19%}.kp-dl.bot{bottom:6%;justify-content:flex-end}
+.kp-dl .bd{margin-right:.45em;display:inline-grid;place-items:center;width:1.35em;height:1.35em;border-radius:50%;font-size:.55em;color:#fff;flex:none}
+.kp-dl .ch{color:transparent;-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,var(--c) var(--p,0%),#fff var(--p,0%))}
+.kp-dl .sp{display:inline-block;width:.45em}
+.kp-bigplay{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;border:0;cursor:pointer;font-size:28px;color:#fff;background:linear-gradient(135deg,var(--k-f),var(--k-d));box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.kp-dbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-top:14px}
+.kp-legend{display:flex;gap:6px 12px;align-items:center;font-size:14px;font-weight:800;color:var(--k-muted)}
+.kp-legend i{display:inline-block;width:10px;height:10px;border-radius:50%}
 .kp-faq{display:grid;gap:12px;max-width:860px}
 .kp-faq details{background:#fff;border:1px solid var(--k-line);border-radius:14px;padding:16px 20px}
 .kp-faq summary{font-weight:900;cursor:pointer;font-size:16px}
@@ -131,13 +145,13 @@
     <h1>AbraKai <em>KTV字幕機</em></h1>
     <span class="by">By 阿布拉.凱 工作室</span>
     <p>把自己的演出影片，變成一字一字亮起來的 KTV 影片。<br>選影片、貼歌詞，系統自動找出每一句、每一個字，男女合唱自動分色，最後直接錄成影片帶走。</p>
-    <div class="kp-cta"><a class="kp-btn pri" href="/tools/ktv/">立即開始製作 →</a><a class="kp-btn sec" href="#try">先玩玩看效果</a></div>
+    <div class="kp-cta"><a class="kp-btn pri" href="/tools/ktv/">立即開始製作 →</a><a class="kp-btn sec" href="#demo">看示範影片</a></div>
     <div class="kp-badges"><span>搶先體驗中</span><span>免安裝、開網頁就能用</span><span>影片不上傳</span></div>
   </div>
   <div class="kp-screen" role="img" aria-label="KTV 字幕機效果示意：舞台畫面下方，歌詞一字一字變色">
     <div class="stage-light"></div><div class="people"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="kp-lyric l1"><b style="background:var(--k-f)">女</b><span class="kp-wipe" id="heroA" data-t="今晚換阮來唱歌" style="--c:var(--k-f)">今晚換阮來唱歌</span></div>
-    <div class="kp-lyric l2"><b style="background:var(--k-m)">男</b><span class="kp-wipe" id="heroB" data-t="一字一字跟著亮" style="--c:var(--k-m)">一字一字跟著亮</span></div>
+    <div class="kp-lyric l1"><b style="background:var(--k-f)">女</b><span class="kp-wipe" id="heroA" data-t="街燈下 你說會等我" style="--c:var(--k-f)">街燈下 你說會等我</span></div>
+    <div class="kp-lyric l2"><b style="background:var(--k-m)">男</b><span class="kp-wipe" id="heroB" data-t="我把思念 寫成一首歌" style="--c:var(--k-m)">我把思念 寫成一首歌</span></div>
   </div>
 </div></section>
 
@@ -173,35 +187,23 @@
   </div>
 </div></section>
 
-<section class="kp-section-alt" id="try"><div class="wrap">
-  <span class="kick">TRY IT</span>
-  <h2>先玩玩看：打一句你的歌詞</h2>
-  <p class="lead">輸入一句話、選誰來唱，按下播放，看看字幕一個字一個字亮起來的樣子。</p>
-  <div class="kp-try">
-    <div class="kp-form">
-      <label>你的歌詞（一句）<input id="tryText" maxlength="18" value="今晚換阮來唱歌" autocomplete="off"></label>
-      <div><div style="font-weight:800;font-size:14px;margin-bottom:6px">誰來唱</div>
-        <div class="kp-role" id="tryRole">
-          <button type="button" data-r="女" style="--rc:var(--k-f)" aria-pressed="true">女聲</button>
-          <button type="button" data-r="男" style="--rc:var(--k-m)" aria-pressed="false">男聲</button>
-          <button type="button" data-r="合" style="--rc:var(--k-d)" aria-pressed="false">合唱</button>
-        </div></div>
-      <div class="kp-speed" id="trySpeed">節奏
-        <button type="button" data-s="0.32" aria-pressed="false">快歌</button>
-        <button type="button" data-s="0.5" aria-pressed="true">一般</button>
-        <button type="button" data-s="0.8" aria-pressed="false">慢歌</button>
-      </div>
-      <button type="button" class="kp-play" id="tryPlay">▶ 播放看看</button>
+<section class="kp-section-alt" id="demo"><div class="wrap">
+  <span class="kick">DEMO</span>
+  <h2>看看示範：男女對唱的 KTV 字幕</h2>
+  <p class="lead">阿布拉.凱 工作室原創抒情示範曲《街燈下的約定》。女聲、男聲輪流唱，最後一起合唱，看字幕怎麼跟著每一個音變色。</p>
+  <div class="kp-demo">
+    <div class="kp-screen kp-dscreen" id="dScreen">
+      <div class="stage-light"></div><div class="people"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="kp-mark">AbraKai KTV字幕機・示範</div>
+      <div class="kp-title" id="dTitle"><b>《街燈下的約定》</b><span>原創示範曲｜詞曲 阿布拉.凱 工作室</span></div>
+      <div class="kp-dl top" id="dTop"></div>
+      <div class="kp-dl bot" id="dBot"></div>
+      <button type="button" class="kp-bigplay" id="dPlay" aria-label="播放示範">▶</button>
     </div>
-    <div>
-      <div class="kp-screen" aria-live="polite">
-        <div class="stage-light"></div><div class="people"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="kp-lyric l1"><b id="tryBadge" style="background:var(--k-f)">女</b><span class="kp-wipe" id="tryLine" data-t="今晚換阮來唱歌" style="--c:var(--k-f)">今晚換阮來唱歌</span></div>
-      </div>
-      <p class="kp-note">這裡是效果示範，字會平均變色。實際使用時，字幕機會依照影片裡的歌聲，自動判斷每個字唱多長。</p>
-    </div>
+    <div class="kp-dbar"><button type="button" class="kp-play" id="dPlay2">▶ 播放示範（有聲音）</button><span class="kp-legend"><i style="background:var(--k-f)"></i>女聲 <i style="background:var(--k-m)"></i>男聲 <i style="background:var(--k-d)"></i>合唱</span></div>
+    <p class="kp-note">示範曲旋律以電子樂器演奏。實際使用時，字幕機會依照你影片裡的歌聲，自動找出每一句、每一個字的時間。<br>© 阿布拉.凱 工作室《街燈下的約定》原創示範曲</p>
   </div>
-  <div class="kp-cta" style="margin-top:28px"><a class="kp-btn pri" href="/tools/ktv/">用我的影片來做 →</a></div>
+  <div class="kp-cta" style="margin-top:24px"><a class="kp-btn pri" href="/tools/ktv/">用我的影片來做 →</a></div>
 </div></section>
 
 <section><div class="wrap">
@@ -240,16 +242,49 @@
   var A=document.getElementById('heroA'), B=document.getElementById('heroB');
   function loop(){ B.style.setProperty('--p','0%'); wipe(A,0.42,function(){ setTimeout(function(){ wipe(B,0.42,function(){ setTimeout(function(){ A.style.setProperty('--p','0%'); loop(); },1400); }); },300); }); }
   if(reduce){ A.style.setProperty('--p','100%'); B.style.setProperty('--p','45%'); } else loop();
-  // try-it
-  var txt=document.getElementById('tryText'), line=document.getElementById('tryLine'), badge=document.getElementById('tryBadge');
-  var role='女', speed=0.5, cancel=null;
-  function render(){ var s=(txt.value||'').trim()||'今晚換阮來唱歌'; line.textContent=s; line.dataset.t=s; line.style.setProperty('--c',COL[role]); badge.textContent=role; badge.style.background=COL[role]; line.style.setProperty('--p','0%'); }
-  function group(id,attr,fn){ var g=document.getElementById(id); g.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed',x===b?'true':'false'); }); fn(b.dataset[attr]); if(cancel) cancel(); render(); }); }
-  group('tryRole','r',function(v){ role=v; });
-  group('trySpeed','s',function(v){ speed=+v; });
-  txt.addEventListener('input',function(){ if(cancel) cancel(); render(); });
-  document.getElementById('tryPlay').addEventListener('click',function(){ if(cancel) cancel(); render(); cancel=wipe(line,speed); });
-  render();
+  // original demo song: notes in beats (72 BPM); each lyric character = one note
+  var BEAT=60/72, SONG=[
+    {r:'女',pos:'top',show:0,hide:15,start:4,n:[['街',69,1],['燈',72,1],['下',74,2],[' ',0,.5],['你',72,.5],['說',69,.5],['會',67,.5],['等',69,1],['我',65,3]]},
+    {r:'男',pos:'bot',show:0,hide:27,start:16,n:[['我',60,.5],['把',62,.5],['思',65,1],['念',64,2],[' ',0,.5],['寫',62,.5],['成',60,.5],['一',57,.5],['首',58,1],['歌',57,3]]},
+    {r:'合',pos:'top',show:15,hide:41,start:28,n:[['這',69,.5],['份',70,.5],['愛',72,2],[' ',0,.5],['是',74,.5],['唱',72,.5],['不',70,.5],['完',69,1],['的',67,1],['歌',65,4]]}
+  ];
+  var CH=[[0,4,41,0],[4,6,41,0],[6,8,46,0],[8,10,41,0],[10,12,50,1],[12,14,46,0],[14,16,48,0],[16,18,41,0],[18,20,48,0],[20,22,50,1],[22,23,46,0],[23,26,41,0],[26,28,48,0],[28,32,41,0],[32,34,50,1],[34,35,48,0],[35,41,41,0]];
+  var END=42;
+  SONG.forEach(function(L){ var b=L.start; L.ev=L.n.map(function(x){ var e={c:x[0],m:x[1],b:b,d:x[2]}; b+=x[2]; return e; }); });
+  var top=document.getElementById('dTop'), bot=document.getElementById('dBot'), title=document.getElementById('dTitle'), big=document.getElementById('dPlay'), btn=document.getElementById('dPlay2');
+  function build(el,L){ el.innerHTML=''; var bd=document.createElement('span'); bd.className='bd'; bd.textContent=L.r; bd.style.background=COL[L.r]; el.appendChild(bd);
+    L.ev.forEach(function(e){ var s=document.createElement('span'); if(e.c===' '){ s.className='sp'; } else { s.className='ch'; s.textContent=e.c; s.style.setProperty('--c',COL[L.r]); } e.el=s; el.appendChild(s); }); el.dataset.line=SONG.indexOf(L); }
+  function paint(beat){
+    title.style.opacity = beat<3.2 ? 1 : 0;
+    [['top',top],['bot',bot]].forEach(function(pp){ var L=null; SONG.forEach(function(x){ if(x.pos===pp[0] && beat>=x.show && beat<x.hide) L=x; });
+      var el=pp[1]; if(!L){ el.style.opacity=0; return; } el.style.opacity=1; if(el.dataset.line!=String(SONG.indexOf(L))) build(el,L);
+      L.ev.forEach(function(e){ if(!e.el || e.c===' ') return; var k=Math.max(0,Math.min(1,(beat-e.b)/e.d)); e.el.style.setProperty('--p',(k*100).toFixed(1)+'%'); }); });
+  }
+  paint(0); build(top,SONG[0]); build(bot,SONG[1]); paint(0);
+  var ac=null, raf=0, t0=0, playing=false, nodes=[];
+  function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+  function tone(out,m,t,d,type,vol,vib){ var o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.value=mtof(m);
+    if(vib){ var l=ac.createOscillator(), lg=ac.createGain(); l.frequency.value=5.2; lg.gain.setValueAtTime(0,t); lg.gain.linearRampToValueAtTime(mtof(m)*0.006,t+Math.min(d,0.5)); l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t+d+0.3); nodes.push(l); }
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.03);
+    if(vib){ g.gain.setValueAtTime(vol,t+Math.max(0.04,d-0.08)); g.gain.linearRampToValueAtTime(0,t+d+0.12); } else g.gain.exponentialRampToValueAtTime(0.0008,t+d);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t+d+0.3); nodes.push(o); }
+  function play(){
+    stop(); try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ac=null; }
+    var now = ac ? (ac.resume(), ac.currentTime+0.15) : 0; t0=now;
+    if(ac){ var comp=ac.createDynamicsCompressor(), mg=ac.createGain(); mg.gain.value=0.9; comp.connect(mg); mg.connect(ac.destination);
+      CH.forEach(function(c){ var root=c[2], tri=c[3]?[0,3,7]:[0,4,7]; tone(comp,root-12,now+c[0]*BEAT,(c[1]-c[0])*BEAT+0.4,'sine',0.22,false);
+        for(var b=c[0]; b<c[1]; b+=0.5){ var k=Math.round((b-c[0])*2)%4, iv=[0,1,2,1][k]; tone(comp,root+12+tri[iv],now+b*BEAT,BEAT*1.6,'triangle',0.045,false); } });
+      SONG.forEach(function(L){ L.ev.forEach(function(e){ if(!e.m) return; var t=now+e.b*BEAT, d=e.d*BEAT*0.96;
+        if(L.r==='合'){ tone(comp,e.m,t,d,'triangle',0.12,true); tone(comp,e.m-12,t,d,'triangle',0.10,true); }
+        else tone(comp,e.m,t,d,'triangle',0.15,true); }); }); }
+    playing=true; big.hidden=true; btn.textContent='■ 停止';
+    var startPerf=performance.now();
+    (function loop(){ if(!playing) return; var sec = ac ? ac.currentTime-t0 : (performance.now()-startPerf)/1000; var beat=sec/BEAT; paint(beat); if(beat>=END){ finish(); return; } raf=requestAnimationFrame(loop); })();
+  }
+  function stop(){ playing=false; cancelAnimationFrame(raf); nodes.forEach(function(n){ try{ n.stop(); }catch(e){} }); nodes=[]; }
+  function finish(){ stop(); big.hidden=false; big.textContent='↻'; btn.textContent='▶ 再播一次'; title.style.opacity=1; }
+  function toggle(){ if(playing){ finish(); } else play(); }
+  big.addEventListener('click',toggle); btn.addEventListener('click',toggle);
 })();
 </script>
 <aside id="ak-disclaimer" role="note" aria-label="使用聲明" style="box-sizing:border-box;max-width:1120px;margin:28px auto 0;padding:16px 16px 32px;font-size:12.5px;line-height:1.8;opacity:.8;border-top:1px solid rgba(127,127,127,.35);text-align:left"><strong>使用聲明</strong>　本產品由阿布拉.凱 工作室開發，僅提供工具與功能服務。使用者透過本產品處理、製作或發布之內容，其著作權、肖像權及其他相關權利，應由使用者自行確認已取得合法授權；所生之任何爭議或法律責任，概由使用者自行負責，與本工作室無關。</aside>
