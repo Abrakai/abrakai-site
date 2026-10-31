@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.1</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.2</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -364,7 +364,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.1</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.2</p>
     </aside>
   </div>
 </div>
@@ -1129,6 +1129,60 @@ async function ensureSep(a, onp){
   return a.sep;
 }
 // guess which line opens each sung section: split lines by lyric weight in proportion to sung time, at paragraph starts
+function regMismatch(feat, role, t0, t1){
+  if(!feat || !feat.split || (role!=='女' && role!=='男')) return 0;
+  const mid=(feat.loC+feat.hiC)/2; let n=0, bad=0;
+  for(let f=Math.max(0,Math.round(t0*100)); f<Math.min(feat.F,Math.round(t1*100)); f+=5){ const r=feat.reg[f]; if(isNaN(r)) continue; n++; if(role==='女' ? r<mid-1 : r>mid+1) bad++; }
+  return n>=4 ? bad/n : 0;
+}
+// repeated lyric blocks (e.g. a chorus sung 2-3 times) share one melody: match the melody, then give every repeat the same timing
+function repeatFix(a, res){
+  const feat=a.sep ? voxFeatures(a) : null; if(!feat) return res;
+  const N=lines.length, used=new Uint8Array(N), groups=[];
+  for(let L=Math.floor(N/2); L>=3; L--){
+    for(let i=0;i+L<=N;i++){
+      if(used[i]) continue; const occ=[i];
+      for(let j=i+L;j+L<=N;j++){ let ok=true; for(let k=0;k<L;k++){ if(used[j+k] || lines[i+k].text!==lines[j+k].text){ ok=false; break; } } if(ok){ occ.push(j); j+=L-1; } }
+      if(occ.length>1){ occ.slice(1).forEach(o=>{ for(let k=0;k<L;k++) used[o+k]=1; }); groups.push({ occ, L }); }
+    }
+  }
+  const st=feat.st, dips=a.sep.dips||[];
+  const dipAt = t => { let b=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.25){ const v=dp.d/16-dt; if(v>b) b=v; } }); return b; };
+  const snapDip = t => { let bt=t, b=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.25){ const v=dp.d/16-dt; if(v>b){ b=v; bt=dp.t; } } }); return bt; };
+  const out=res.map(x=>x?Object.assign({},x):x);
+  groups.forEach(({occ,L})=>{
+    const s0=occ[0]; if(!out[s0] || !out[s0+L-1]) return;
+    const a0=Math.round(out[s0].start*100), a1=Math.round((out[s0+L-1].start+3)*100), n=a1-a0; if(n<200) return;
+    const delta=[0];
+    for(let r=1;r<occ.length;r++){
+      if(!out[occ[r]]) return;
+      const g=out[occ[r]].start-out[s0].start; let best=-1e9, bd=g;
+      for(let d=g-6; d<=g+6; d+=0.02){
+        const off=Math.round(d*100), diffs=[];
+        for(let f=a0; f<a1; f+=3){ const p=st[f], q=st[f+off]; if(!isNaN(p)&&!isNaN(q)) diffs.push(p-q); }
+        if(diffs.length<n/12) continue; diffs.sort((x,y)=>x-y); const m=diffs[diffs.length>>1];
+        let e=0; diffs.forEach(x=>{ e+=Math.min(3,Math.abs(x-m)); }); const sc=-e/diffs.length + diffs.length/(n/3)*0.5;
+        if(sc>best){ best=sc; bd=d; }
+      }
+      delta.push(bd);
+    }
+    // pick the occurrence whose whole timing is best supported by breath breaks in every repeat, then copy it to the others
+    let bestR=0, bestSc=-1;
+    occ.forEach((o,r)=>{ let sc=0; for(let k=0;k<L;k++){ if(!out[o+k]) continue; const c=out[o+k].start-delta[r]; delta.forEach(d=>{ sc+=dipAt(c+d); }); } if(sc>bestSc){ bestSc=sc; bestR=r; } });
+    const fixedK = new Map(); occ.forEach((o,r)=>{ for(let k=0;k<L;k++) if(out[o+k] && (lines[o+k].pin||lines[o+k].anchor!=null)) fixedK.set(k, out[o+k].start-delta[r]); });
+    for(let k=0;k<L;k++){
+      const src=out[occ[bestR]+k]; if(!src) continue;
+      const c = fixedK.has(k) ? fixedK.get(k) : src.start-delta[bestR];
+      occ.forEach((o,r)=>{ if(!out[o+k] || lines[o+k].pin || lines[o+k].anchor!=null) return; const nt=snapDip(c+delta[r]); const d=nt-out[o+k].start; out[o+k]=Object.assign({},out[o+k],{ start:nt, end:out[o+k].end!=null?out[o+k].end+d:null }); });
+    }
+  });
+  // keep order sane
+  for(let pass=0; pass<3; pass++){ let bad=false;
+    for(let i=1;i<N;i++){ if(out[i]&&out[i-1]&&out[i].start<=out[i-1].start+0.3){ bad=true; if(res[i] && res[i].start>out[i-1].start+0.3) out[i]=Object.assign({},res[i]); else if(res[i-1] && (i<2||!out[i-2]||res[i-1].start>out[i-2].start+0.3) && res[i-1].start<out[i].start-0.3) out[i-1]=Object.assign({},res[i-1]); } }
+    if(!bad) break; }
+  for(let i=1;i<N;i++){ if(out[i]&&out[i-1]&&out[i].start<=out[i-1].start+0.3) return res; }
+  return out;
+}
 function sectionAnchors(a){
   const out={}; if(!a.sep || !a.sep.sections.length || !lines.length) return out;
   const secs=a.sep.sections, tot=secs.reduce((s,x)=>s+(x[1]-x[0]),0);
@@ -1248,7 +1302,8 @@ function localAlign(a, prior, fixedAt){
     });
   }
   const secMode = act && secKeys.length;
-  const pen = (d,E,t0) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : (secMode ? 2*Math.log(r)**2 : 0.5*Math.log(r))) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0); };
+  const feat = a.sep ? voxFeatures(a) : null;
+  const pen = (d,E,t0,li) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : (secMode ? 2*Math.log(r)**2 : 0.5*Math.log(r))) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0) + 0; };
   let best=null;
   const factors = secMode ? [0.85,0.9,0.95,1,1.05,1.1,1.15] : [0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85];
   for(const rate of factors){
@@ -1268,7 +1323,7 @@ function localAlign(a, prior, fixedAt){
           if(d > 6*E[i-1]+25) break;
           if(prev[jp] <= -1e8) continue;
           const dEff = (secMode && secEndAt[i-1]!=null) ? Math.max(0.3, secEndAt[i-1]-T[jp]) : d;
-          const v = prev[jp] - pen(dEff,E[i-1],T[jp]);
+          const v = prev[jp] - pen(dEff,E[i-1],T[jp],i-1);
           if(v>bv){ bv=v; bj=jp; }
         }
         if(bj>=0){ cur[j]=bv+S[j]-pc(i,j); bk[j]=bj; }
@@ -1277,7 +1332,7 @@ function localAlign(a, prior, fixedAt){
     }
     let bj=-1, bv=-1e9;
     const lastSing = act && a.sep.segs.length ? a.sep.segs[a.sep.segs.length-1][1] : null;
-    for(let j=0;j<M;j++){ let v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(secMode && secEndAt[N-1]!=null) v-=pen(Math.max(0.3,secEndAt[N-1]-T[j]),E[N-1],T[j]); else if(lastSing!=null){ const gap=lastSing-(T[j]+E[N-1]); if(gap>2) v-=0.5*gap; } if(v>bv){ bv=v; bj=j; } }
+    for(let j=0;j<M;j++){ let v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(secMode && secEndAt[N-1]!=null) v-=pen(Math.max(0.3,secEndAt[N-1]-T[j]),E[N-1],T[j],N-1); else if(lastSing!=null){ const gap=lastSing-(T[j]+E[N-1]); if(gap>2) v-=0.5*gap; } if(v>bv){ bv=v; bj=j; } }
     if(bj<0) continue;
     if(!best || bv>best.score){
       const idx=[bj]; for(let i=N-2;i>=0;i--) idx.unshift(back[i][idx[0]]);
@@ -1352,8 +1407,9 @@ async function runAlign(kind){
     }
     if(kind==='local'){
       aStatus('分析歌聲中…'); await tick();
-      const r = localAlign(a);
+      let r = localAlign(a);
       if(!r) throw new Error('local');
+      r = repeatFix(a, r);
       applyTimes(r,'快速自動對時間');
       aStatus('依照「一個音一個字」推估每個字…'); await tick();
       estimateChars(a); persist(); renderList();
@@ -1372,13 +1428,13 @@ async function runAlign(kind){
       aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
       aStatus('系統先對時間…'); await tick();
-      const rl = localAlign(a);
+      let rl = localAlign(a); if(rl) rl = repeatFix(a, rl);
       if(rl){ applyTimes(rl,''); estimateChars(a); persist(); renderList(); }
       let r;
       try{ r = await geminiAlign(a); }
       catch(err){ const m=err&&err.message; aStatus(`系統對時間已完成；AI 檢查這次沒有成功：${m&&m.startsWith('msg:')?m.slice(4):'請稍後再試一次。'}`); return; }
       if(meta.bpm && meta.autoSnap) snapAll(true);
-      aStatus(`AI 輔助對時間完成（${r.model}）：${r.corrected ? `AI 修正了 ${r.corrected} 句的位置` : 'AI 檢查後，系統排的位置都不需要修正'}${r.refined?`，逐字精修 ${r.refined} 句`:''}。${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
+      aStatus(`AI 輔助對時間完成（${r.model}）：${r.corrected ? `採用 AI 修正 ${r.corrected} 句` : 'AI 檢查後，系統排的位置不需要修正'}${r.rejected ? `（另有 ${r.rejected} 句 AI 的建議和歌聲對不上，沒有採用）` : ''}${r.refined?`，逐字精修 ${r.refined} 句`:''}。${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
     }
   }catch(err){
     const m = err && err.message;
@@ -1645,7 +1701,7 @@ async function geminiAlign(a){
 ${sepHint(a)}${anchorHint()}${beatHint()}
 ${list1}`;
   const draft = lines.map(l=>l.start!=null ? { start:l.start, end:l.end } : null);
-  const corr = {}; let ncorr=0, r1;
+  const corr = {}; let ncorr=0, rejected=0, r1;
   try{
     r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, hedgeAfter:75000, cancelled:()=>cancelReq, allowEmpty:true,
       onHedge:(m1,m2)=>aStatus(`AI 檢查：${m1} 比較慢，同時請 ${m2} 一起聽，哪個先好就用哪個…`),
@@ -1658,6 +1714,11 @@ ${list1}`;
         const i=(x.i|0)-1; if(i<0 || i>=lines.length || corr[i] || x.start==null || !isFinite(+x.start)) return false;
         const d0 = draft[i] ? Math.abs(+x.start - draft[i].start) : 99;
         if(d0 < 0.6) return true;               // same as the draft: nothing to change
+        if(a.sep){
+          // only accept a correction the singing itself supports: someone starts singing there, in the right voice
+          const feat=voxFeatures(a); let near=false; (a.sep.dips||[]).forEach(dp=>{ if(dp.d>=9 && Math.abs(dp.t-(+x.start))<=0.5) near=true; });
+          if(!near){ rejected++; return true; }
+        }
         corr[i]={ start:+x.start, end:+x.end }; ncorr++;
         aStatus(`AI 檢查：第 ${i+1} 句「${lines[i].text}」要調整（${draft[i]?fmt(draft[i].start):'—'} → ${fmt(+x.start)}）`);
         return true;
@@ -1674,12 +1735,13 @@ ${list1}`;
       const fx = lines.map((l,i)=>{ if(!corr[i]) return null; let bt=corr[i].start, bs=0; (a.sep.dips||[]).forEach(dp=>{ const dt=Math.abs(dp.t-corr[i].start); if(dt<=0.6){ const sc=dp.d/16-dt; if(sc>bs){ bs=sc; bt=dp.t; } } }); return bt; });
       const r = localAlign(a, prior, fx);
       if(r) fixed = fixed.map((x,i)=>{ if(!x||!r[i]||lines[i].pin||lines[i].anchor!=null) return x; const d=r[i].start-x.start; return Object.assign({},x,{ start:r[i].start, end:x.end!=null?x.end+d:x.end }); });
+      fixed = repeatFix(a, fixed);
     }
     applyTimes(fixed, '');
     estimateChars(a); persist(); renderList();
   }
   const r2 = $('aiFine').checked ? await refineChars(a, key, orderModels(models, r1.model), false) : { refined:0, stopped:'' };
-  return { times:null, model:r1.model, corrected:ncorr, refined:r2.refined, stopped:r2.stopped };
+  return { times:null, model:r1.model, corrected:ncorr, rejected, refined:r2.refined, stopped:r2.stopped };
 }
 // phase 2: refine every character, a few lines at a time with a short clip
 async function refineChars(a, key, order, onlyMissing, only){
@@ -1852,7 +1914,13 @@ function voxFeatures(a){
     const voiceStart = (isNaN(st[f-2])&&isNaN(st[f-1]) && !isNaN(st[f]) && !isNaN(st[f+1])) ? 0.5 : 0;
     nov[f]=0.7*jump + 0.8*onset + voiceStart;
   }
-  return (a.sep.feat={ st, en, nov, F });
+  // voice register (who is singing): 1-second median pitch, then split into high / low groups if the song has both
+  const reg=new Float32Array(F).fill(NaN);
+  for(let f=0; f<F; f+=5){ const v=[]; for(let g=Math.max(0,f-50); g<Math.min(F,f+50); g+=2) if(!isNaN(st[g])) v.push(st[g]); if(v.length>=12){ v.sort((p,q)=>p-q); const m=v[v.length>>1]; for(let g=f; g<Math.min(F,f+5); g++) reg[g]=m; } }
+  const rv=[]; for(let f=0; f<F; f+=5) if(!isNaN(reg[f])) rv.push(reg[f]); rv.sort((p,q)=>p-q);
+  let lo=rv[Math.floor(rv.length*0.1)]||0, hi=rv[Math.floor(rv.length*0.9)]||0;
+  for(let it=0; it<10 && rv.length; it++){ let sl=0,nl=0,sh=0,nh=0; const mid=(lo+hi)/2; rv.forEach(x=>{ if(x<mid){ sl+=x; nl++; } else { sh+=x; nh++; } }); if(nl) lo=sl/nl; if(nh) hi=sh/nh; }
+  return (a.sep.feat={ st, en, nov, F, reg, loC:lo, hiC:hi, split: hi-lo>=4 });
 }
 // split one line into its characters: each new syllable starts where pitch or loudness changes; glides inside a note are kept together
 function splitLine(feat, ws, we, C){
@@ -2182,6 +2250,18 @@ tl.addEventListener('pointermove', e=>{
   }
   l.pin=true; tlDirty=true;
 });
+// after the user moves a line's start, the lines around it re-flow to follow (the moved line stays put)
+function reflow(from){
+  const a=audioCache; if(!a || !a.sep || from==null) return false;
+  // everything up to the edited line stays where it is; only the lines after it (until the next line you adjusted) follow
+  const fx=lines.map((l,j)=> j<=from && l.start!=null ? l.start : null);
+  const r=localAlign(a, null, fx); if(!r) return false;
+  let changed=0;
+  const secStarts=Object.keys(sectionAnchors(a)).map(Number);
+  for(let j=from+1;j<lines.length;j++){ const l=lines[j]; if(l.pin || l.anchor!=null || secStarts.includes(j)) break; if(!r[j]) continue; if(Math.abs((l.start??-9)-r[j].start)>0.05) changed++; l.start=r[j].start; l.end=r[j].end; l.chars=null; l.ref=false; }
+  if(changed) estimateChars(a);
+  return changed>0;
+}
 const tlUp = e => {
   if(!tlDrag) return;
   const d=tlDrag; tlDrag=null; tl.classList.remove('dragging');
@@ -2190,7 +2270,7 @@ const tlUp = e => {
     else { tlSelc={ i:d.i, k:null }; video.currentTime=Math.max(0, lines[d.i].start); }
     selInfo();
   } else if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; selInfo(); } else if(d.type==='line'){ tlSelc={ i:d.i, k:null }; selInfo(); }
-  if(tlDirty){ tlDirty=false; persist(); renderList(); }
+  if(tlDirty){ tlDirty=false; let rf=false; if(d.moved && (d.type==='line' || (d.type==='char' && d.k===0 && d.mode!=='end'))) rf=reflow(d.i); persist(); renderList(); if(rf) aStatus('後面的句子已依你調整的這一句重新排列（不滿意可按 ↶ 復原）。'); }
   if(d.wasPlaying && d.type==='pan') playVideo();
 };
 tl.addEventListener('pointerup', tlUp); tl.addEventListener('pointercancel', tlUp);
@@ -2239,11 +2319,12 @@ $('tlPin').onclick=()=>{
   const now=+video.currentTime.toFixed(3);
   if(tlSelc.k==null || tlSelc.k===0){ shiftLine(l, now-l.start); }
   else { const c=l.chars, k=tlSelc.k, P=c[k-1], N=k<c.length-1?c[k+1]:null; const ns=Math.min(c[k][1]-0.05, Math.max(P[0]+0.05, now)); P[1]=+(ns-0.02).toFixed(3); c[k][0]=ns; }
-  l.pin=true; persist(); renderList(); selInfo();
+  l.pin=true; const rf=(tlSelc.k==null||tlSelc.k===0) ? reflow(i) : false; persist(); renderList(); selInfo(); if(rf) aStatus('後面的句子已依你調整的這一句重新排列（不滿意可按 ↶ 復原）。');
 };
 $('tlUndo').onclick=histUndo; $('tlRedo').onclick=histRedo;
 $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
 $('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
+if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), repeatFix:(...x)=>repeatFix(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
 restore(); lastSnap=ser(); histBtns(); renderParas(); pjInfo();
