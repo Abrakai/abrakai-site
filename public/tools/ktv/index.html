@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.2</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.3</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -364,7 +364,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.2</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.3</p>
     </aside>
   </div>
 </div>
@@ -1183,6 +1183,37 @@ function repeatFix(a, res){
   for(let i=1;i<N;i++){ if(out[i]&&out[i-1]&&out[i].start<=out[i-1].start+0.3) return res; }
   return out;
 }
+// where the singer changes (女↔男) the pitch register jumps; those lines are pinned to the jump
+function roleShiftAt(feat, t, sign){
+  const med=(t0,t1)=>{ const v=[]; for(let f=Math.max(0,Math.round(t0*100)); f<Math.min(feat.F,Math.round(t1*100)); f+=2){ const q=feat.st[f]; if(!isNaN(q)) v.push(q); } if(v.length<8) return NaN; v.sort((p,q)=>p-q); return v[v.length>>1]; };
+  const b=med(t-1.2,t), c=med(t+0.05,t+1.25); if(isNaN(b)||isNaN(c)) return 0;
+  return sign*(c-b);
+}
+function roleAnchors(a, draft){
+  const feat=a.sep ? voxFeatures(a) : null; const out={}; if(!feat) return out;
+  for(let i=1;i<lines.length;i++){
+    const p=lines[i-1].role, q=lines[i].role; if(!draft[i] || p===q || !((p==='女'&&q==='男')||(p==='男'&&q==='女'))) continue;
+    const sign = q==='男' ? -1 : 1, t0=draft[i].start;
+    const ts=[], ss=[]; let mx=5;
+    for(let t=t0-2.5; t<=t0+2.5; t+=0.05){ const sc=roleShiftAt(feat,t,sign); ts.push(t); ss.push(sc); if(sc>mx) mx=sc; }
+    if(mx<=5) continue;
+    // centre of the strongest stretch of the jump
+    let bi=ss.indexOf(mx), lo=bi, hi=bi; while(lo>0 && ss[lo-1]>=0.85*mx) lo--; while(hi<ss.length-1 && ss[hi+1]>=0.85*mx) hi++;
+    const bt=(ts[lo]+ts[hi])/2;
+    let st=bt, sd=0; (a.sep.dips||[]).forEach(dp=>{ const dt=dp.t-bt; if(dt>=-0.15 && dt<=0.35){ const v=dp.d/16-Math.abs(dt); if(v>sd){ sd=v; st=dp.t; } } });
+    out[i]=+st.toFixed(2);
+  }
+  return out;
+}
+// system timing: sections → lines → singer changes → repeats
+function systemAlign(a){
+  let r=localAlign(a); if(!r) return null;
+  const ra=roleAnchors(a, r);
+  if(Object.keys(ra).some(i=>Math.abs(ra[i]-r[i].start)>0.3)){ const fx=lines.map((l,i)=> ra[i]!=null ? ra[i] : null); const r2=localAlign(a, null, fx); if(r2) r=r2; }
+  r=repeatFix(a, r);
+  a.sep && (a.sep.roleA=roleAnchors(a, r));
+  return r;
+}
 function sectionAnchors(a){
   const out={}; if(!a.sep || !a.sep.sections.length || !lines.length) return out;
   const secs=a.sep.sections, tot=secs.reduce((s,x)=>s+(x[1]-x[0]),0);
@@ -1407,9 +1438,8 @@ async function runAlign(kind){
     }
     if(kind==='local'){
       aStatus('分析歌聲中…'); await tick();
-      let r = localAlign(a);
+      let r = systemAlign(a);
       if(!r) throw new Error('local');
-      r = repeatFix(a, r);
       applyTimes(r,'快速自動對時間');
       aStatus('依照「一個音一個字」推估每個字…'); await tick();
       estimateChars(a); persist(); renderList();
@@ -1428,7 +1458,7 @@ async function runAlign(kind){
       aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
       aStatus('系統先對時間…'); await tick();
-      let rl = localAlign(a); if(rl) rl = repeatFix(a, rl);
+      let rl = systemAlign(a);
       if(rl){ applyTimes(rl,''); estimateChars(a); persist(); renderList(); }
       let r;
       try{ r = await geminiAlign(a); }
@@ -1716,8 +1746,11 @@ ${list1}`;
         if(d0 < 0.6) return true;               // same as the draft: nothing to change
         if(a.sep){
           // only accept a correction the singing itself supports: someone starts singing there, in the right voice
-          const feat=voxFeatures(a); let near=false; (a.sep.dips||[]).forEach(dp=>{ if(dp.d>=9 && Math.abs(dp.t-(+x.start))<=0.5) near=true; });
-          if(!near){ rejected++; return true; }
+          let near=false; (a.sep.dips||[]).forEach(dp=>{ if(dp.d>=12 && Math.abs(dp.t-(+x.start))<=0.35) near=true; });
+          const ra=a.sep.roleA||{};
+          // a singer change heard in the voice wins over the AI; so does the neighbour of a singer change
+          const conflict = (ra[i]!=null && Math.abs(ra[i]-(+x.start))>0.5) || (ra[i+1]!=null && +x.start > ra[i+1]-1.2) || (ra[i-1]!=null && +x.start < ra[i-1]+1.0);
+          if(!near || conflict){ rejected++; return true; }
         }
         corr[i]={ start:+x.start, end:+x.end }; ncorr++;
         aStatus(`AI 檢查：第 ${i+1} 句「${lines[i].text}」要調整（${draft[i]?fmt(draft[i].start):'—'} → ${fmt(+x.start)}）`);
@@ -1732,7 +1765,8 @@ ${list1}`;
     let fixed = draft.map((x,i)=> corr[i] ? corr[i] : x);
     if(a.sep){
       // AI's corrections become fixed points (nudged onto the nearest breath break), the rest re-flow around them
-      const fx = lines.map((l,i)=>{ if(!corr[i]) return null; let bt=corr[i].start, bs=0; (a.sep.dips||[]).forEach(dp=>{ const dt=Math.abs(dp.t-corr[i].start); if(dt<=0.6){ const sc=dp.d/16-dt; if(sc>bs){ bs=sc; bt=dp.t; } } }); return bt; });
+      const ra=a.sep.roleA||{};
+      const fx = lines.map((l,i)=>{ if(ra[i]!=null) return ra[i]; if(!corr[i]) return null; let bt=corr[i].start, bs=0; (a.sep.dips||[]).forEach(dp=>{ const dt=Math.abs(dp.t-corr[i].start); if(dt<=0.6){ const sc=dp.d/16-dt; if(sc>bs){ bs=sc; bt=dp.t; } } }); return bt; });
       const r = localAlign(a, prior, fx);
       if(r) fixed = fixed.map((x,i)=>{ if(!x||!r[i]||lines[i].pin||lines[i].anchor!=null) return x; const d=r[i].start-x.start; return Object.assign({},x,{ start:r[i].start, end:x.end!=null?x.end+d:x.end }); });
       fixed = repeatFix(a, fixed);
