@@ -147,7 +147,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 2.8</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 2.9</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -166,14 +166,17 @@ body{margin:0}
       <div class="tlwrap" id="tlWrap" hidden>
         <div class="tlhead">
           <b>時間軸微調</b>
-          <span class="hint" id="tlSel">拖每個字的方塊就能調整；拖左右邊緣改開始或結束，拖空白處前後移動。</span>
+          <span class="hint" id="tlSel">點字或整句來選取。拖方塊兩側的白色把手可以拉長、縮短；拖中間是整個移動；拖空白處前後捲動。</span>
         </div>
         <canvas id="tl" height="170"></canvas>
         <div class="bar tlbar">
           <button id="tlWave">🌊 顯示聲音波形</button>
           <button id="tlZoomIn" aria-label="放大時間軸">🔍＋</button><button id="tlZoomOut" aria-label="縮小時間軸">🔍－</button>
-          <button id="tlL" disabled>◀ 提早 0.05 秒</button><button id="tlR" disabled>延後 0.05 秒 ▶</button>
+          <button id="tlUndo" disabled title="Ctrl＋Z">↶ 復原</button><button id="tlRedo" disabled title="Ctrl＋Shift＋Z">↷ 重做</button>
+          <button id="tlL" disabled>◀ 提早</button><button id="tlR" disabled>延後 ▶</button>
+          <button id="tlShort" disabled>縮短</button><button id="tlLong" disabled>拉長</button>
           <button id="tlPlayLine" disabled>▶ 播這一句</button>
+          <button id="tlAI" disabled>✨ AI 重新精修這一句</button>
         </div>
       </div>
     </section>
@@ -318,7 +321,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.8</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 2.9</p>
     </aside>
   </div>
 </div>
@@ -342,7 +345,25 @@ let rec = null, recBlob = null, recExt = 'mp4';
 
 /* ---------- storage ---------- */
 const KEY = 'abrakai-ktv-v1';
+const ser = () => JSON.stringify(lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0]));
+let undoS=[], redoS=[], lastSnap=null, histHold=0, histBase=null;
+function histBegin(){ if(!histHold) histBase=lastSnap; histHold++; }
+function histEnd(){ histHold=Math.max(0,histHold-1); if(!histHold && histBase!=null && histBase!==lastSnap){ undoS.push(histBase); if(undoS.length>60) undoS.shift(); redoS=[]; } if(!histHold) histBase=null; histBtns(); }
+function histTrack(){
+  const cur=ser();
+  if(lastSnap!=null && cur!==lastSnap && !histHold){ undoS.push(lastSnap); if(undoS.length>60) undoS.shift(); redoS=[]; }
+  lastSnap=cur; histBtns();
+}
+function histApply(state){
+  const arr=JSON.parse(state); if(arr.length!==lines.length) return;
+  lines.forEach((l,i)=>{ const t=arr[i]; l.start=t[0]; l.end=t[1]; l.pin=!!t[2]; l.chars=t[3]?t[3].map(c=>c.slice()):null; l.ref=!!t[4]; });
+  lastSnap=state; persist(); renderList(); updateButtons(); if(typeof selInfo==='function') selInfo();
+}
+function histUndo(){ if(!undoS.length||aligning) return; redoS.push(ser()); histApply(undoS.pop()); aStatus('已復原上一步。'); }
+function histRedo(){ if(!redoS.length||aligning) return; undoS.push(ser()); histApply(redoS.pop()); aStatus('已重做。'); }
+function histBtns(){ const u=$('tlUndo'), r=$('tlRedo'); if(u){ u.disabled=!undoS.length; r.disabled=!redoS.length; } }
 function persist(){
+  histTrack();
   try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0]), meta, size })); }catch(e){}
 }
 function restore(){
@@ -375,7 +396,7 @@ function parse(times){
     if(times && times[i]){ l.start = times[i][0] ?? null; l.end = times[i][1] ?? null; l.pin = !!times[i][2]; l.chars = times[i][3] || null; l.ref = !!times[i][4]; }
     else if(old[i] && old[i].text === l.text && old[i].role === l.role){ l.start = old[i].start; l.end = old[i].end; l.pin = old[i].pin; l.chars = old[i].chars; l.ref = old[i].ref; }
   });
-  lines = out;
+  lines = out; undoS=[]; redoS=[]; lastSnap=null;
   if(title && !times) meta.title = title;
   if(artist && !times) meta.artist = artist;
   if(times === undefined){ if(title) meta.title = title; if(artist) meta.artist = artist; }
@@ -945,13 +966,14 @@ async function runAlign(kind){
   if(aligning) return;
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!lines.length){ aStatus('請先到「貼歌詞」貼上歌詞。'); return; }
-  if((kind==='gemini'||kind==='refine') && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
+  if((kind==='gemini'||kind==='refine'||kind==='one') && !getKey()){ $('keyBox').open=true; aStatus('請先設定 Gemini 金鑰（約 3 分鐘，有免費額度）。'); $('keyIn').focus(); return; }
   cancelReq=false;
   if(kind!=='local') $('aCancel').hidden=false;
   const awayWarn=()=>{ if(document.hidden && aligning) aBase='請保持這個畫面開著，離開畫面或螢幕關閉時 AI 會中斷。'+aBase.replace(/^請保持這個畫面開著.*?中斷。/,''); };
   document.addEventListener('visibilitychange', awayWarn);
   const pinnedBefore = lines.filter(l=>l.pin).length;
-  if(kind!=='refine' && !$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
+  if(kind!=='refine' && kind!=='one' && !$('keepPins').checked) lines.forEach(l=>{ l.pin=false; });
+  histBegin();
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
@@ -965,6 +987,13 @@ async function runAlign(kind){
       estimateChars(a); persist(); renderList();
       if(meta.bpm && meta.autoSnap) snapAll(true);
       aStatus(`快速自動對時間完成（含每個字的拍點${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！按播放確認，不準的句子按 🎵 逐字對拍修正。`);
+    }else if(kind==='one'){
+      const i=tlSelc.i, keep=lines[i].start; lines[i].pin=false;
+      const models = await gModels(getKey());
+      const r = await refineChars(a, getKey(), orderModels(models), false, [i]);
+      if(!r.refined){ lines[i].pin=true; if(lines[i].start==null) lines[i].start=keep; }
+      persist(); renderList(); selInfo();
+      aStatus(r.refined ? `第 ${i+1} 句已由 AI 重新精修。不滿意可以按「↶ 復原」。` : (r.stopped || '這一句這次沒有精修成功，請再試一次。'));
     }else if(kind==='refine'){
       const models = await gModels(getKey());
       const r = await refineChars(a, getKey(), orderModels(models), true);
@@ -980,7 +1009,7 @@ async function runAlign(kind){
       : m==='local' ? '這段聲音分析不出歌聲，請改用「AI 精準對時間」或自己邊聽邊按。'
       : m && m.startsWith('msg:') ? m.slice(4)
       : '分析沒有成功，請再試一次。');
-  }finally{ document.removeEventListener('visibilitychange', awayWarn); $('aCancel').hidden=true; aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
+  }finally{ document.removeEventListener('visibilitychange', awayWarn); $('aCancel').hidden=true; aligning=false; histEnd(); aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 }
 $('aLocal').onclick=()=>runAlign('local');
 try{ $('keepPins').checked = localStorage.getItem(KEY+'-keep')==='1'; }catch(e){}
@@ -1271,8 +1300,8 @@ ${list1}`;
   return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
 }
 // phase 2: refine every character, a few lines at a time with a short clip
-async function refineChars(a, key, order, onlyMissing){
-  const T = timed().filter(i=>!(lines[i].pin && lines[i].chars) && !(onlyMissing && lines[i].ref));
+async function refineChars(a, key, order, onlyMissing, only){
+  const T = only ? only.filter(i=>lines[i].start!=null) : timed().filter(i=>!(lines[i].pin && lines[i].chars) && !(onlyMissing && lines[i].ref));
   const groups=[]; for(let k=0;k<T.length;k+=6) groups.push(T.slice(k,k+6));
   const dead = new Set();
   let refined=0, stopped='';
@@ -1393,6 +1422,13 @@ document.addEventListener('keydown', e=>{
   if(e.code==='Space'){ e.preventDefault(); e.stopImmediatePropagation(); if(!e.repeat) cbDown(); }
   else if(e.key==='Backspace'||e.key==='ArrowLeft'){ e.preventDefault(); e.stopImmediatePropagation(); $('cbBack').click(); }
 }, true);
+document.addEventListener('keydown', e=>{
+  if(e.target.matches('input,textarea,select')) return;
+  const mod=e.ctrlKey||e.metaKey; if(!mod) return;
+  const k=e.key.toLowerCase();
+  if(k==='z' && !e.shiftKey){ e.preventDefault(); histUndo(); }
+  else if((k==='z' && e.shiftKey) || k==='y'){ e.preventDefault(); histRedo(); }
+});
 document.addEventListener('keyup', e=>{ if(cm && e.code==='Space'){ e.preventDefault(); cbUp(); } }, true);
 
 /* ---------- automatic per-character estimate ---------- */
@@ -1429,6 +1465,7 @@ $('autoChars').onclick = async () => {
   if(aligning) return;
   if(!hasVideo||!curFile){ aStatus('請先選影片。'); return; }
   if(!timed().length){ aStatus('請先用上面的自動對時間，把每一句的開頭對好。'); return; }
+  histBegin();
   aligning=true; aStart=Date.now(); aTimer=setInterval(paintA,1000); updateButtons(); video.pause();
   try{
     aStatus('讀取影片聲音中…'); await tick();
@@ -1439,7 +1476,7 @@ $('autoChars').onclick = async () => {
     aStatus(`已推估 ${done} 句的每個字。按播放看看，不準的句子按 🎵 逐字對拍修正。`);
   }catch(err){
     aStatus(err && err.message==='decode' ? '讀不到這支影片的聲音，請改用電腦版 Chrome，或先把影片轉成 MP4。' : '推估沒有成功，請再試一次。');
-  }finally{ aligning=false; aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
+  }finally{ aligning=false; histEnd(); aStart=0; clearInterval(aTimer); paintA(); updateButtons(); }
 };
 
 /* ---------- beat settings (pro mode) ---------- */
@@ -1614,13 +1651,16 @@ function drawTL(){
       tg.fillStyle=col; tg.globalAlpha=l.chars?.85:.35; tg.fillRect(a,TL.chr[0],Math.max(2,b-a),TL.chr[1]-TL.chr[0]); tg.globalAlpha=1;
       tg.strokeStyle= sel ? '#ffc93c' : 'rgba(18,13,25,.9)'; tg.lineWidth= sel?3:1; tg.strokeRect(a+.5,TL.chr[0]+.5,Math.max(2,b-a)-1,TL.chr[1]-TL.chr[0]-1);
       if(b-a>10){ tg.fillStyle='#fff'; tg.font=`bold ${Math.min(20,Math.max(11,(b-a)*.7))}px "Noto Sans TC",sans-serif`; tg.fillText(l.text[U[k]]||'', (a+b)/2, (TL.chr[0]+TL.chr[1])/2+1); }
+      if(l.chars && (b-a>=18 || sel)){ tg.fillStyle= sel ? '#ffc93c' : 'rgba(255,255,255,.75)'; const gh=18, gy=(TL.chr[0]+TL.chr[1])/2-gh/2; tg.fillRect(a+2,gy,3,gh); tg.fillRect(b-5,gy,3,gh); }
     });
+    { const lsel = tlSelc && tlSelc.i===i && tlSelc.k==null; tg.fillStyle = lsel ? '#ffc93c' : 'rgba(255,255,255,.7)'; tg.fillRect(x0+1,TL.line[0]+3,3,TL.line[1]-TL.line[0]-6); tg.fillRect(x1-4,TL.line[0]+3,3,TL.line[1]-TL.line[0]-6);
+      if(lsel){ tg.strokeStyle='#ffc93c'; tg.lineWidth=2; tg.strokeRect(x0+1,TL.line[0]+1,Math.max(2,x1-x0)-2,TL.line[1]-TL.line[0]-2); } }
   });
   // playhead
   tg.fillStyle='#ffc93c'; tg.fillRect(W/2-1,0,2,H);
 }
 function tlHit(x,y){
-  const v=tlView(), t=v.t0+x*v.sp, tol=8*v.sp;
+  const v=tlView(), t=v.t0+x*v.sp, tol=11*v.sp;
   if(y>=TL.chr[0]-4){
     for(let i=0;i<lines.length;i++){ const l=lines[i]; if(l.start==null) continue; const e=lineEndOf(i); if(t<l.start-tol||t>e+tol) continue;
       ensureChars(i); const c=lines[i].chars; if(!c) continue;
@@ -1628,7 +1668,7 @@ function tlHit(x,y){
         const nearS=Math.abs(t-c[k][0])<=tol, nearE=Math.abs(t-c[k][1])<=tol;
         return { type:'char', i, k, mode: nearS&&!nearE?'start': nearE&&!nearS?'end':'move' }; } } }
   } else if(y>=TL.line[0]-4 && y<=TL.line[1]+4){
-    for(let i=0;i<lines.length;i++){ const l=lines[i]; if(l.start==null) continue; if(t>=l.start && t<=lineEndOf(i)) return { type:'line', i }; }
+    for(let i=0;i<lines.length;i++){ const l=lines[i]; if(l.start==null) continue; const e=lineEndOf(i); if(t>=l.start-tol && t<=e+tol){ const nS=Math.abs(t-l.start)<=tol, nE=Math.abs(t-e)<=tol; return { type:'line', i, mode: nS&&!nE?'lstart': nE&&!nS?'lend':'move' }; } }
   }
   return { type:'pan' };
 }
@@ -1638,18 +1678,24 @@ tl.addEventListener('pointerdown', e=>{
   const r=tl.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
   const h=tlHit(x,y);
   tlDrag=Object.assign(h,{ x0:x, moved:false, wasPlaying:!video.paused, vt:video.currentTime, sp:tlView().sp });
-  if(h.type!=='pan'){ const l=lines[h.i]; tlDrag.orig=snap(l); if(h.type==='char'){ const c=l.chars; tlDrag.prev=h.k>0?c[h.k-1].slice():null; tlDrag.next=h.k<c.length-1?c[h.k+1].slice():null; } }
+  if(h.type!=='pan'){ ensureChars(h.i); const l=lines[h.i]; tlDrag.orig=snap(l); tlDrag.oend=lineEndOf(h.i); if(h.type==='char'){ const c=l.chars; tlDrag.prev=h.k>0?c[h.k-1].slice():null; tlDrag.next=h.k<c.length-1?c[h.k+1].slice():null; } }
   video.pause(); tl.setPointerCapture(e.pointerId); tl.classList.add('dragging'); e.preventDefault();
 });
 tl.addEventListener('pointermove', e=>{
-  if(!tlDrag) return;
+  if(!tlDrag){ if(e.pointerType==='mouse' && hasVideo){ const r=tl.getBoundingClientRect(), h=tlHit(e.clientX-r.left, e.clientY-r.top); tl.style.cursor = (h.mode==='start'||h.mode==='end'||h.mode==='lstart'||h.mode==='lend') ? 'ew-resize' : h.type==='pan' ? 'grab' : 'move'; } return; }
   const r=tl.getBoundingClientRect(), x=e.clientX-r.left, dx=x-tlDrag.x0;
   if(Math.abs(dx)>3) tlDrag.moved=true;
   if(!tlDrag.moved) return;
   const dt=dx*tlDrag.sp;
   if(tlDrag.type==='pan'){ video.currentTime=Math.max(0,Math.min(video.duration||1e9, tlDrag.vt-dt)); return; }
   const l=lines[tlDrag.i], o=tlDrag.orig;
-  if(tlDrag.type==='line'){
+  if(tlDrag.type==='line' && tlDrag.mode!=='move' && o.chars){
+    const os=o.start, oe=tlDrag.oend, C=o.chars.length, minLen=Math.max(0.3, C*0.08);
+    let ns=os, ne=oe;
+    if(tlDrag.mode==='lstart') ns=Math.min(oe-minLen, os+dt); else ne=Math.max(os+minLen, oe+dt);
+    const f=v=>+(ns+(v-os)*(ne-ns)/(oe-os)).toFixed(3);
+    l.chars=o.chars.map(c=>[f(c[0]), f(c[1])]); l.start=l.chars[0][0]; l.end=l.chars[C-1][1];
+  } else if(tlDrag.type==='line'){
     l.start=+(o.start+dt).toFixed(3); l.end=o.end!=null?+(o.end+dt).toFixed(3):null; l.chars=o.chars?o.chars.map(c=>[+(c[0]+dt).toFixed(3),+(c[1]+dt).toFixed(3)]):null;
   } else {
     const k=tlDrag.k, c=l.chars, oc=o.chars[k], P=tlDrag.prev, N=tlDrag.next;
@@ -1670,32 +1716,59 @@ const tlUp = e => {
   const d=tlDrag; tlDrag=null; tl.classList.remove('dragging');
   if(!d.moved && d.type!=='pan'){
     if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; video.currentTime=Math.max(0, lines[d.i].chars[d.k][0]); }
-    else { tlSelc=null; video.currentTime=Math.max(0, lines[d.i].start); }
+    else { tlSelc={ i:d.i, k:null }; video.currentTime=Math.max(0, lines[d.i].start); }
     selInfo();
-  } else if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; selInfo(); }
+  } else if(d.type==='char'){ tlSelc={ i:d.i, k:d.k }; selInfo(); } else if(d.type==='line'){ tlSelc={ i:d.i, k:null }; selInfo(); }
   if(tlDirty){ tlDirty=false; persist(); renderList(); }
   if(d.wasPlaying && d.type==='pan') playVideo();
 };
 tl.addEventListener('pointerup', tlUp); tl.addEventListener('pointercancel', tlUp);
 function selInfo(){
-  const ok=!!tlSelc && lines[tlSelc.i] && lines[tlSelc.i].chars;
-  $('tlL').disabled=$('tlR').disabled=$('tlPlayLine').disabled=!ok;
-  if(ok){ const l=lines[tlSelc.i], U=unitsOf(l.text), c=l.chars[tlSelc.k]; $('tlSel').textContent=`已選：第 ${tlSelc.i+1} 句的「${l.text[U[tlSelc.k]]||''}」 ${fmt(c[0])}～${fmt(c[1])}（${(c[1]-c[0]).toFixed(2)} 秒）`; }
+  const l = tlSelc && lines[tlSelc.i];
+  const ok = !!(l && l.start!=null && (tlSelc.k==null || l.chars));
+  ['tlL','tlR','tlShort','tlLong','tlPlayLine','tlAI'].forEach(id=>$(id).disabled=!ok);
+  if(!ok) return;
+  if(tlSelc.k==null){
+    const e=lineEndOf(tlSelc.i);
+    $('tlSel').textContent=`已選：第 ${tlSelc.i+1} 句「${l.text}」 ${fmt(l.start)}～${fmt(e)}（${(e-l.start).toFixed(2)} 秒）．提早／延後＝整句移動 0.1 秒，縮短／拉長＝整句長度 ±5%`;
+  } else {
+    const U=unitsOf(l.text), c=l.chars[tlSelc.k];
+    $('tlSel').textContent=`已選：第 ${tlSelc.i+1} 句的「${l.text[U[tlSelc.k]]||''}」 ${fmt(c[0])}～${fmt(c[1])}（${(c[1]-c[0]).toFixed(2)} 秒）．提早／延後＝開始時間，縮短／拉長＝結束時間（每次 0.05 秒）`;
+  }
 }
-function nudgeSel(d){
-  if(!tlSelc) return; const l=lines[tlSelc.i], c=l.chars, k=tlSelc.k; if(!c) return;
-  const P=k>0?c[k-1]:null, N=k<c.length-1?c[k+1]:null;
-  const ns=Math.min(c[k][1]-0.05, Math.max(P?P[0]+0.05:0, c[k][0]+d));
-  if(P && P[1]>=c[k][0]-0.06) P[1]=+(ns-0.02).toFixed(3);
-  c[k][0]=+ns.toFixed(3); l.start=c[0][0]; l.pin=true;
-  video.currentTime=Math.max(0,ns); persist(); renderList(); selInfo();
+function editSel(kind, d){
+  if(!tlSelc) return; const i=tlSelc.i, l=lines[i]; if(!l || l.start==null) return;
+  ensureChars(i); const c=l.chars; if(!c) return;
+  if(tlSelc.k==null){
+    if(kind==='move'){ shiftLine(l, d*2); }
+    else { const os=c[0][0], oe=c[c.length-1][1], ne=Math.max(os+Math.max(0.3,c.length*0.08), os+(oe-os)*(1+d*1)); const f=v=>+(os+(v-os)*(ne-os)/(oe-os)).toFixed(3); l.chars=c.map(x=>[f(x[0]),f(x[1])]); l.end=l.end!=null?l.chars[l.chars.length-1][1]:l.end; }
+    video.currentTime=Math.max(0,l.start);
+  } else {
+    const k=tlSelc.k, P=k>0?c[k-1]:null, N=k<c.length-1?c[k+1]:null;
+    if(kind==='move'){
+      const ns=Math.min(c[k][1]-0.05, Math.max(P?P[0]+0.05:0, c[k][0]+d));
+      if(P && P[1]>=c[k][0]-0.06) P[1]=+(ns-0.02).toFixed(3);
+      c[k][0]=+ns.toFixed(3); video.currentTime=Math.max(0,ns);
+    } else {
+      const ne=Math.max(c[k][0]+0.05, Math.min(N?N[1]-0.07:1e9, c[k][1]+d));
+      if(N && N[0]<=c[k][1]+0.06) N[0]=+(ne+0.02).toFixed(3);
+      c[k][1]=+ne.toFixed(3); if(!N && l.end!=null) l.end=c[k][1];
+      video.currentTime=Math.max(0,c[k][0]);
+    }
+    l.start=c[0][0];
+  }
+  l.pin=true; persist(); renderList(); selInfo();
 }
-$('tlL').onclick=()=>nudgeSel(-0.05);
-$('tlR').onclick=()=>nudgeSel(0.05);
+$('tlL').onclick=()=>editSel('move',-0.05);
+$('tlR').onclick=()=>editSel('move',0.05);
+$('tlShort').onclick=()=>editSel('len',-0.05);
+$('tlLong').onclick=()=>editSel('len',0.05);
+$('tlUndo').onclick=histUndo; $('tlRedo').onclick=histRedo;
 $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
+$('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
-restore(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
+restore(); lastSnap=ser(); histBtns(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
 (document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
 })();
