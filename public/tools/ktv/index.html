@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.0</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.1</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -364,7 +364,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.0</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.1</p>
     </aside>
   </div>
 </div>
@@ -1201,7 +1201,7 @@ function autoFix(times, a){
   return w;
 }
 function expectedDur(l, rate){ const c = l.text.replace(/[\s　,，。.!！?？、]/g,'').length || 1; return Math.max(1.2, c*rate) + 0.3; }
-function localAlign(a, prior){
+function localAlign(a, prior, fixedAt){
   const { vocal, SR, duration } = a, hop = Math.round(SR*0.02), F = Math.floor(vocal.length/hop);
   const e = new Float32Array(F);
   for(let f=0; f<F; f++){ let s=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=vocal[o+i]; s+=v*v; } e[f]=Math.log10(Math.sqrt(s/hop)+1e-5); }
@@ -1226,7 +1226,7 @@ function localAlign(a, prior){
     a.sep.segs.forEach(sg=>cands.push({ t:sg[0], s:1.5 }));
   }
   const secA = (act && !lines.some(l=>l.anchor!=null)) ? sectionAnchors(a) : {};
-  const pins = lines.map((l,i)=> l.anchor!=null ? l.anchor : (l.pin && l.start!=null ? l.start : (secA[i]!=null ? secA[i] : null)));
+  const pins = lines.map((l,i)=> l.anchor!=null ? l.anchor : (fixedAt && fixedAt[i]!=null ? fixedAt[i] : (l.pin && l.start!=null ? l.start : (secA[i]!=null ? secA[i] : null))));
   pins.forEach(pt=>{ if(pt!=null) cands.push({ t:pt, s:1, fixed:true }); });
   if(cands.length < N+2){ for(let i=0;i<N+2;i++) cands.push({ t: duration*(i+0.5)/(N+2), s:0 }); }
   cands.sort((x,y)=>x.t-y.t);
@@ -1371,9 +1371,14 @@ async function runAlign(kind){
       const r = await refineChars(a, getKey(), orderModels(models), true);
       aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
-      const r = await geminiAlign(a);
+      aStatus('系統先對時間…'); await tick();
+      const rl = localAlign(a);
+      if(rl){ applyTimes(rl,''); estimateChars(a); persist(); renderList(); }
+      let r;
+      try{ r = await geminiAlign(a); }
+      catch(err){ const m=err&&err.message; aStatus(`系統對時間已完成；AI 檢查這次沒有成功：${m&&m.startsWith('msg:')?m.slice(4):'請稍後再試一次。'}`); return; }
       if(meta.bpm && meta.autoSnap) snapAll(true);
-      aStatus(`AI 輔助對時間完成（${r.model}${r.refined?`，AI 逐字精修 ${r.refined} 句`:''}${meta.bpm&&meta.autoSnap?'，已對齊拍子':''}）！${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
+      aStatus(`AI 輔助對時間完成（${r.model}）：${r.corrected ? `AI 修正了 ${r.corrected} 句的位置` : 'AI 檢查後，系統排的位置都不需要修正'}${r.refined?`，逐字精修 ${r.refined} 句`:''}。${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
     }
   }catch(err){
     const m = err && err.message;
@@ -1558,7 +1563,7 @@ async function tryModel(model, o, gate, ctls){
       return { ok:false, kind: why==='stall-wait' ? 'slow' : 'other' };
     }
     if(res.status===400 && gen.thinkingConfig && /thinking/i.test(res.text)){ delete gen.thinkingConfig; continue; }
-    if(res.status===200 && got){ try{ localStorage.setItem(GLAST, model); }catch(e){} renderModels(); return { ok:true, model, got }; }
+    if(res.status===200 && (got || (o.allowEmpty && /\[\s*\]/.test(sseText(res.text))))){ try{ localStorage.setItem(GLAST, model); }catch(e){} renderModels(); return { ok:true, model, got }; }
     if(res.status===401||res.status===403||(res.status===400 && /API_KEY_INVALID|API key not valid/i.test(res.text))) return { ok:false, kind:'key' };
     if(res.status===429){
       let perDay=/PerDay/i.test(res.text), delay=30, known=false;
@@ -1632,50 +1637,49 @@ async function geminiAlign(a){
   if(a.duration > 600) throw gErr('影片超過 10 分鐘，請先剪短再試。');
   aStatus('整理聲音檔中…'); await tick();
   const b64 = wavB64(a.sep ? a.sep.vox : a.mono, a.SR), MB=(b64.length*0.75/1048576).toFixed(1);
-  const backup = lines.map(l=>({ start:l.start, end:l.end, chars:l.chars }));
-  const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; l.chars=backup[i].chars; } }); renderList(); };
-  // ---- phase 1: every line's start / end over the whole song
-  const list1 = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}`).join('\n');
-  const prompt1 = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
-下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
-請仔細聽音檔，找出每一句第一個字開始唱的時間 start，以及最後一個字唱完、聲音停下來的時間 end，單位是秒，精確到小數點後一位。時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。歌曲開頭的前奏、中間的間奏只有伴奏沒有人唱，不要把歌詞放在那裡。${a.sep?'這段聲音已經用程式把伴奏去掉，只留下人聲。':''}
+  // ---- AI reviews the system's draft and only returns lines that are clearly wrong
+  const list1 = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}（草稿：${l.start!=null?l.start.toFixed(1)+' 秒開始':'未定'}）`).join('\n');
+  const prompt1 = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌。${a.sep?'這段聲音已經用程式把伴奏去掉，只留下人聲。':''}
+下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合），括號裡是程式依照人聲停頓排好的「草稿」開始時間。重複的段落會再唱一次。
+請邊聽邊檢查草稿：只回傳「開始時間明顯不對」的句子（相差超過 1 秒，或對到別的句子），給出正確的 start（第一個字開始唱）和 end（最後一個字唱完），單位是秒，精確到小數點後一位。草稿正確的句子不要回傳；全部都正確就回傳空陣列 []。前奏、間奏沒有人唱，不會有歌詞。
 ${sepHint(a)}${anchorHint()}${beatHint()}
 ${list1}`;
-  const times = lines.map(()=>null);
-  let cleared=false, got=0, r1;
+  const draft = lines.map(l=>l.start!=null ? { start:l.start, end:l.end } : null);
+  const corr = {}; let ncorr=0, r1;
   try{
-    r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, hedgeAfter:75000, cancelled:()=>cancelReq,
-      onHedge:(m1,m2)=>aStatus(`第 1 步：${m1} 比較慢，同時請 ${m2} 一起聽，哪個先好就用哪個…`),
-      onQuotaWait:(m,sec)=>aStatus(`第 1 步：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續…`),
+    r1 = await gRun({ models:orderModels(models), key, b64, prompt:prompt1, waitLimit:200000, hedgeAfter:75000, cancelled:()=>cancelReq, allowEmpty:true,
+      onHedge:(m1,m2)=>aStatus(`AI 檢查：${m1} 比較慢，同時請 ${m2} 一起聽，哪個先好就用哪個…`),
+      onQuotaWait:(m,sec)=>aStatus(`AI 檢查：${m} 這一分鐘的次數用完了，${sec} 秒後自動繼續…`),
       schema: OBJ({ i:{type:'INTEGER'}, start:{type:'NUMBER'}, end:{type:'NUMBER'} }, ['i','start','end']),
-      onUp: (f,m) => aStatus(`第 1 步：上傳聲音給 AI ${Math.round(f*100)}%（${MB} MB，${m}）`),
-      onWait: m => aStatus(`第 1 步：${m} 正在聽整首歌、找每一句的位置，通常 30～90 秒…`),
-      onBytes: n => aStatus(`第 1 步：AI 回覆中…（已收到 ${n} 字）`),
+      onUp: (f,m) => aStatus(`AI 檢查：上傳人聲 ${Math.round(f*100)}%（${MB} MB，${m}）`),
+      onWait: m => aStatus(`AI 檢查：${m} 正在聽整首歌、核對系統排好的時間，通常 30～90 秒…`),
+      onBytes: n => aStatus(`AI 檢查：AI 回覆中…（已收到 ${n} 字）`),
       onObj: x => {
-        const i=(x.i|0)-1; if(i<0 || i>=lines.length || times[i] || x.start==null) return false;
-        if(!cleared){ cleared=true; lines.forEach(l=>{ if(!l.pin){ l.start=null; l.end=null; l.chars=null; } }); }
-        times[i]={ start:+x.start, end:+x.end }; got++;
-        if(!lines[i].pin){ lines[i].start=+(+x.start).toFixed(2); lines[i].end=null; }
-        renderList(); lastNow=-2; highlightRow(i);
-        try{ video.currentTime=(lines[i].start||0)+0.3; }catch(e){}
-        aStatus(`第 1 步：找到第 ${got} / ${lines.length} 句「${lines[i].text}」`);
+        const i=(x.i|0)-1; if(i<0 || i>=lines.length || corr[i] || x.start==null || !isFinite(+x.start)) return false;
+        const d0 = draft[i] ? Math.abs(+x.start - draft[i].start) : 99;
+        if(d0 < 0.6) return true;               // same as the draft: nothing to change
+        corr[i]={ start:+x.start, end:+x.end }; ncorr++;
+        aStatus(`AI 檢查：第 ${i+1} 句「${lines[i].text}」要調整（${draft[i]?fmt(draft[i].start):'—'} → ${fmt(+x.start)}）`);
         return true;
       } });
   }catch(err){
-    if(cleared) restoreBackup();
-    if(err.message==='msg:QUOTA') throw gErr(`你的 Gemini 模型今天的額度都用完了，約在 ${hhmm(nextPacificMidnight())} 重置。也可以先用「快速自動對時間」。`);
+    if(err.message==='msg:QUOTA') throw gErr(`你的 Gemini 模型今天的額度都用完了，約在 ${hhmm(nextPacificMidnight())} 重置。系統對好的時間已保留。`);
     throw err;
   }
-  let fixed = autoFix(warpToAnchors(times), a);
-  if(a.sep){
-    // combine: AI decides roughly where each line is, the singing's phrase breaks decide exactly where it starts
-    const r = localAlign(a, fixed.map(x=>x&&x.start!=null?x.start:null));
-    if(r) fixed = fixed.map((x,i)=>{ if(!x||!r[i]||lines[i].pin||lines[i].anchor!=null) return x; const d=r[i].start-x.start; return Object.assign({},x,{ start:r[i].start, end:x.end!=null?x.end+d:x.end }); });
+  if(ncorr){
+    const prior = draft.map((x,i)=> corr[i] ? corr[i].start : (x ? x.start : null));
+    let fixed = draft.map((x,i)=> corr[i] ? corr[i] : x);
+    if(a.sep){
+      // AI's corrections become fixed points (nudged onto the nearest breath break), the rest re-flow around them
+      const fx = lines.map((l,i)=>{ if(!corr[i]) return null; let bt=corr[i].start, bs=0; (a.sep.dips||[]).forEach(dp=>{ const dt=Math.abs(dp.t-corr[i].start); if(dt<=0.6){ const sc=dp.d/16-dt; if(sc>bs){ bs=sc; bt=dp.t; } } }); return bt; });
+      const r = localAlign(a, prior, fx);
+      if(r) fixed = fixed.map((x,i)=>{ if(!x||!r[i]||lines[i].pin||lines[i].anchor!=null) return x; const d=r[i].start-x.start; return Object.assign({},x,{ start:r[i].start, end:x.end!=null?x.end+d:x.end }); });
+    }
+    applyTimes(fixed, '');
+    estimateChars(a); persist(); renderList();
   }
-  applyTimes(fixed, '');
-  estimateChars(a); persist(); renderList();
   const r2 = $('aiFine').checked ? await refineChars(a, key, orderModels(models, r1.model), false) : { refined:0, stopped:'' };
-  return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
+  return { times:null, model:r1.model, corrected:ncorr, refined:r2.refined, stopped:r2.stopped };
 }
 // phase 2: refine every character, a few lines at a time with a short clip
 async function refineChars(a, key, order, onlyMissing, only){
