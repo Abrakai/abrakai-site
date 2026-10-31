@@ -160,7 +160,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.7</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.8</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -367,7 +367,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.7</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.8</p>
     </aside>
   </div>
 </div>
@@ -1164,7 +1164,7 @@ function analyzeMusic(m, fps, off){
   const bt=[]; for(let t=te; t>=0; t=Bk[t]) bt.unshift(t);
   if(bt.length<16) return null;
   const ibi=[]; for(let i=1;i<bt.length;i++) ibi.push(bt[i]-bt[i-1]); ibi.sort((x,y)=>x-y);
-  const bpm=60*fps/ibi[ibi.length>>1];
+  const mI=ibi[ibi.length>>1], steady=ibi.filter(x=>Math.abs(x-mI)<=mI*0.25), bpm=60*fps/(steady.reduce((p,q)=>p+q,0)/steady.length);
   // per-beat accent and chord change -> meter and downbeat
   const nb=bt.length, acc=new Float32Array(nb), ch=[], chg=new Float32Array(nb);
   for(let i=0;i<nb;i++){ let mx=0; for(let d=-2;d<=2;d++){ const g=bt[i]+d; if(g>=0&&g<F) mx=Math.max(mx, nl[g]+0.5*nf[g]); } acc[i]=mx;
@@ -1183,7 +1183,7 @@ function analyzeMusic(m, fps, off){
   const keys=[]; for(let r=0;r<12;r++){ keys.push({ r, mode:'maj', c:corr(MAJ,r) }); keys.push({ r, mode:'min', c:corr(MIN,r) }); }
   keys.sort((x,y)=>y.c-x.c);
   const grid=[]; beats.forEach((b,i)=>{ grid.push(b); if(i+1<beats.length) grid.push(+((b+beats[i+1])/2).toFixed(3)); });
-  return { bpm:+bpm.toFixed(1), meter:M, beats, bars, grid, key:keys[0], key2:keys[1] };
+  return { bpm:+bpm.toFixed(1), meter:M, beats, bars, grid, key:keys[0], key2:keys[1], keys:keys.slice(0,6) };
 }
 // nearest point on the half-beat grid (or t itself when there is no grid)
 function nearGrid(g, t){ if(!g || !g.length) return t; let lo=0, hi=g.length-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(g[m]<t) lo=m; else hi=m; } return Math.abs(g[lo]-t)<=Math.abs(g[hi]-t) ? g[lo] : g[hi]; }
@@ -1194,7 +1194,7 @@ function showSongInfo(mu){
   const el=$('songInfo'); if(!el) return;
   if(!mu){ el.hidden=true; el.textContent=''; return; }
   const rel = mu.key2 && mu.key2.mode!==mu.key.mode && (mu.key.c-mu.key2.c)<0.05 && ((mu.key.mode==='maj' && mu.key2.r===(mu.key.r+9)%12) || (mu.key.mode==='min' && mu.key2.r===(mu.key.r+3)%12));
-  el.innerHTML=`<b>🎼 歌曲資訊</b><span>速度 <b>♩＝${Math.round(mu.bpm)}</b>（每分鐘 ${Math.round(mu.bpm)} 拍）</span><span>拍號 <b>${mu.meter}/4</b>（以四分音符為一拍，每小節 ${mu.meter} 拍）</span><span>調性 <b>${keyName(mu.key)}</b>${rel?`（也可能是 ${keyName(mu.key2)}）`:''}</span><span class="hint">共 ${mu.bars.length} 小節，由伴奏自動推算，僅供參考</span>`;
+  el.innerHTML=`<b>🎼 歌曲資訊</b><span>速度 <b>♩＝${Math.round(mu.bpm)}</b>（每分鐘 ${Math.round(mu.bpm)} 拍）</span><span>拍號 <b>${mu.meter}/4</b>（以四分音符為一拍，每小節 ${mu.meter} 拍）</span><span>調性 <b>${keyName(mu.key)}</b>${mu.byEnd?'（依各段結尾音判斷）':rel?`（也可能是 ${keyName(mu.key2)}）`:''}</span><span class="hint">共 ${mu.bars.length} 小節，由伴奏自動推算，僅供參考</span>`;
   el.hidden=false;
 }
 // guess which line opens each sung section: split lines by lyric weight in proportion to sung time, at paragraph starts
@@ -1216,6 +1216,7 @@ function repeatFix(a, res){
     }
   }
   const st=feat.st, dips=a.sep.dips||[];
+  const byBeats = repeatBeats(a, res, groups, feat); if(byBeats) return byBeats;
   const dipAt = t => { let b=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.25){ const v=dp.d/16-dt; if(v>b) b=v; } }); return b; };
   const snapDip = t => { let bt=t, b=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.25){ const v=dp.d/16-dt; if(v>b){ b=v; bt=dp.t; } } }); return bt; };
   const out=res.map(x=>x?Object.assign({},x):x);
@@ -1252,6 +1253,41 @@ function repeatFix(a, res){
   for(let i=1;i<N;i++){ if(out[i]&&out[i-1]&&out[i].start<=out[i-1].start+0.3) return res; }
   return out;
 }
+// with a steady backing track, every repeat of a block sits on the same beats: pick, line by line, the beat
+// position (taken from any of the repeats) that is best supported by breaths and syllable onsets in ALL repeats
+function repeatBeats(a, res, groups, feat){
+  const B=a.sep.music && a.sep.music.beats; if(!B || B.length<16) return null;
+  const nB=B.length;
+  const toB=t=>{ if(t<=B[0]) return (t-B[0])/(B[1]-B[0]); if(t>=B[nB-1]) return nB-1+(t-B[nB-1])/(B[nB-1]-B[nB-2]); let lo=0, hi=nB-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(B[m]<=t) lo=m; else hi=m; } return lo+(t-B[lo])/(B[hi]-B[lo]); };
+  const toT=b=>{ const i=Math.max(0,Math.min(nB-2,Math.floor(b))); return B[i]+(b-i)*(B[i+1]-B[i]); };
+  const dips=a.sep.dips||[], nov=feat.nov;
+  const ev=t=>{ let v=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.25){ const q=dp.d/16-dt*2; if(q>v) v=q; } }); let n=0; for(let f=Math.round((t-0.1)*100); f<=Math.round((t+0.1)*100); f++) if(f>=0 && f<feat.F && nov[f]>n) n=nov[f]; return v+0.3*n; };
+  const snapDip=t=>{ let bt=t, b=0; dips.forEach(dp=>{ const dt=Math.abs(dp.t-t); if(dt<=0.2){ const v=dp.d/16-dt*2; if(v>b){ b=v; bt=dp.t; } } }); return bt; };
+  const out=res.map(x=>x?Object.assign({},x):x);
+  // every place the block is sung, including inside a bigger repeated block
+  const allOcc=(i0,L)=>{ const r=[]; for(let j=0;j+L<=lines.length;j++){ let ok=true; for(let k=0;k<L;k++){ if(lines[i0+k].text!==lines[j+k].text){ ok=false; break; } } if(ok){ r.push(j); j+=L-1; } } return r; };
+  groups.map(g=>({ L:g.L, occ:allOcc(g.occ[0], g.L) })).forEach(({occ,L})=>{
+    if(occ.length<2 || occ.some(o=>!out[o])) return;
+    // offset of each repeat (in beats) = median over its lines, so one wrong line can't drag the others
+    const base=occ.map(o=>{ const d=[]; for(let k=0;k<L;k++) if(out[o+k] && out[occ[0]+k]) d.push(toB(out[o+k].start)-toB(out[occ[0]+k].start)); d.sort((x,y)=>x-y); return toB(out[occ[0]].start)+(d.length?d[d.length>>1]:0); }), fixedOf=k=>occ.findIndex(o=>lines[o+k].pin || lines[o+k].anchor!=null);
+    const cand=[]; for(let k=0;k<L;k++){ const fr=fixedOf(k); const c=[]; occ.forEach((o,r)=>{ if(out[o+k] && (fr<0 || fr===r)) c.push(toB(out[o+k].start)-base[r]); }); cand.push(c.length?c:[null]); }
+    const E=v=> v==null ? 0 : occ.reduce((sum,o,r)=>sum+ev(toT(base[r]+v)),0);
+    let prev=cand[0].map(v=>({ s:E(v), b:-1 })); const bk=[prev];
+    for(let k=1;k<L;k++){
+      const cur=cand[k].map(v=>{ let bs=-1e9, bb=-1; cand[k-1].forEach((pv,j)=>{ if(prev[j].s>-1e8 && (v==null || pv==null || v>pv+0.75) && prev[j].s>bs){ bs=prev[j].s; bb=j; } }); return { s: bb>=0 ? bs+E(v) : -1e9, b:bb }; });
+      bk.push(cur); prev=cur;
+    }
+    let j=-1, bs=-1e9; prev.forEach((x,i)=>{ if(x.s>bs){ bs=x.s; j=i; } }); if(j<0) return;
+    const pick=new Array(L); for(let k=L-1;k>=0;k--){ pick[k]=cand[k][j]; j=bk[k][j].b; }
+    for(let k=1;k<L;k++){ if(pick[k]==null) continue;
+      occ.forEach((o,r)=>{ const l=lines[o+k]; if(!out[o+k] || l.pin || l.anchor!=null) return;
+        if(Math.abs(toB(out[o+k].start)-base[r]-pick[k])<0.6) return; // same place give or take a singer's timing: keep it
+        const nt=+snapDip(toT(base[r]+pick[k])).toFixed(2); const d=nt-out[o+k].start; if(Math.abs(d)<0.02) return; out[o+k]=Object.assign({},out[o+k],{ start:nt, end:out[o+k].end!=null?out[o+k].end+d:null }); });
+    }
+  });
+  for(let i=1;i<out.length;i++){ if(out[i]&&out[i-1]&&out[i].start<=out[i-1].start+0.3) return null; }
+  return out;
+}
 // where the singer changes (女↔男) the pitch register jumps; those lines are pinned to the jump
 function roleShiftAt(feat, t, sign){
   const med=(t0,t1)=>{ const v=[]; for(let f=Math.max(0,Math.round(t0*100)); f<Math.min(feat.F,Math.round(t1*100)); f+=2){ const q=feat.st[f]; if(!isNaN(q)) v.push(q); } if(v.length<8) return NaN; v.sort((p,q)=>p-q); return v[v.length>>1]; };
@@ -1286,12 +1322,24 @@ function markConfidence(a){
   return n;
 }
 // system timing: sections → lines → singer changes → repeats
+// songs end their phrases on the home note: use the last held note of each sung section to pick the key
+function refineKey(a){
+  const mu=a.sep && a.sep.music, feat=a.sep ? voxFeatures(a) : null; if(!mu || !feat || !mu.keys) return;
+  const votes=new Float64Array(12), secs=a.sep.sections||[];
+  secs.forEach((sc,i)=>{ const v=[]; for(let f=Math.max(0,Math.round((sc[1]-1.5)*100)); f<Math.min(feat.F,Math.round(sc[1]*100)); f++){ const q=feat.st[f]; if(!isNaN(q)) v.push(q); }
+    if(v.length<40) return; v.sort((x,y)=>x-y); const pc=((Math.round(v[v.length>>1])+9)%12+12)%12; votes[pc]+= i===secs.length-1 ? 2 : 1; });
+  let pc=-1, bv=0, tot=0; votes.forEach((x,i)=>{ tot+=x; if(x>bv){ bv=x; pc=i; } });
+  if(pc<0 || bv<tot*0.5) return;
+  const top=mu.keys[0], k=mu.keys.find(x=>x.r===pc && x.c>=top.c-0.45);
+  mu.endPc=pc; if(k && k!==top){ mu.key2=top; mu.key=k; mu.byEnd=true; }
+}
 function systemAlign(a){
   let r=localAlign(a); if(!r) return null;
   const ra=roleAnchors(a, r);
   if(Object.keys(ra).some(i=>Math.abs(ra[i]-r[i].start)>0.3)){ const fx=lines.map((l,i)=> ra[i]!=null ? ra[i] : null); const r2=localAlign(a, null, fx); if(r2) r=r2; }
   r=repeatFix(a, r);
   a.sep && (a.sep.roleA=roleAnchors(a, r));
+  if(a.sep && a.sep.music && !a.sep.music.keyDone){ try{ refineKey(a); }catch(e){} a.sep.music.keyDone=true; showSongInfo(a.sep.music); }
   return r;
 }
 function sectionAnchors(a){
@@ -2074,8 +2122,10 @@ function splitLine(feat, ws, we, C){
     back.push(bk); prev=cur;
   }
   let bx=-1, bv=-1e9;
+  // the last character of a line is usually the held note: about a third of the line
+  const lastRef=Math.max(avg, L*0.33);
   let lo=1e9, hi=-1e9;
-  for(let x=L-minD; x>=(C-1)*minD; x--){ const q= x+10<=L-25 ? st[x+10] : NaN; if(q==q){ if(q<lo) lo=q; if(q>hi) hi=q; } if(prev[x]<=-1e8) continue; const v=prev[x]-0.05*Math.log((L-x)/avg)**2 - glide(lo,hi); if(v>bv){ bv=v; bx=x; } }
+  for(let x=L-minD; x>=(C-1)*minD; x--){ const q= x+10<=L-25 ? st[x+10] : NaN; if(q==q){ if(q<lo) lo=q; if(q>hi) hi=q; } if(prev[x]<=-1e8) continue; const v=prev[x]-0.15*Math.log((L-x)/lastRef)**2 - glide(lo,hi); if(v>bv){ bv=v; bx=x; } }
   if(bx<0) return null;
   const xs=[bx]; for(let k=C-2;k>=1;k--) xs.unshift(back[k][xs[0]]);
   return [ws, ...xs.map(x=>(f0+x)/100)];
@@ -2484,7 +2534,7 @@ $('tlPin').onclick=()=>{
 $('tlUndo').onclick=histUndo; $('tlRedo').onclick=histRedo;
 $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
 $('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
-if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), analyzeMusic:(...x)=>analyzeMusic(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
+if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), systemAlign:(...x)=>systemAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), analyzeMusic:(...x)=>analyzeMusic(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
 restore(); lastSnap=ser(); histBtns(); renderParas(); pjInfo();
