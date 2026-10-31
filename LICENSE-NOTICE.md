@@ -7,3 +7,4 @@
 - `assets/vendor/fontawesome/`：Font Awesome Free（圖示 CC BY 4.0、字型 SIL OFL 1.1、程式 MIT），授權全文見 `assets/vendor/fontawesome/LICENSE.txt`。
 - `tools/ktv/models/spleeter-vocals.fp16.onnx`：Deezer Spleeter 2-stems 人聲模型（MIT License），ONNX 版本取自 k2-fsa/sherpa-onnx（Apache-2.0）。
 - KTV 字幕機於瀏覽器載入 onnxruntime-web（MIT License, Microsoft）。
+- `tools/ktv/models/zh-ctc/`：k2-fsa/sherpa-onnx `sherpa-onnx-zipformer-ctc-small-zh-int8-2025-07-16` 國語語音辨識模型（Apache-2.0，k2-fsa / icefall）；`lex.json` 內含該模型詞表、icefall byte-level BPE 編碼表（MIT，源自 fairseq）及 OpenCC 繁簡字對照表（Apache-2.0）。

@@ -161,7 +161,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 工具中心</span></div>
   <header>
     <h1>AbraKai <span>KTV字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.8</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 5.0</span>
     <span class="sub">By 阿布拉.凱 工作室．自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片．<a href="/products/ktv/">產品介紹</a></span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -226,7 +226,7 @@ body{margin:0}
       <div class="pane" data-pane="1" hidden>
         <section class="sec">
           <h3>自動對時間</h3>
-          <p class="hint">系統會先把伴奏去掉、只留人聲，再找出前奏和間奏、每一句的開口處，以及每個字換音的位置。</p>
+          <p class="hint">系統會先把伴奏去掉、只留人聲，再聽出每一句、每一個字唱在哪裡。國語歌會直接辨識歌詞來對時間；台語等其他歌曲則依照換氣、旋律和節拍來判斷。</p>
           <div class="aigrid">
             <button id="aLocal" disabled>⚡ 自動對時間<small>免金鑰，在你的裝置上分析</small></button>
             <button class="primary" id="aGemini" disabled>✨ AI 輔助對時間<small>使用你的 Gemini 金鑰，約用 1 次額度</small></button>
@@ -368,7 +368,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.8</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 5.0</p>
     </aside>
   </div>
 </div>
@@ -1141,6 +1141,121 @@ async function ensureSep(a, onp){
   a.vocal=vox; peaks=null;
   return a.sep;
 }
+/* ---------- lyric recognition: a small Mandarin speech model hears each sung character (runs in the browser) ---------- */
+const CTC_DIR='/tools/ktv/models/zh-ctc/', CTC_PARTS=['model.int8.onnx.part0','model.int8.onnx.part1','model.int8.onnx.part2'], CTC_KEY=CTC_DIR+'model-v1';
+let ctcSession=null, ctcLex=null;
+async function loadCtc(onp){
+  if(ctcSession) return;
+  await loadOrt(); ort.env.wasm.wasmPaths=ORT_URL; ort.env.wasm.numThreads=1;
+  if(!ctcLex){
+    const r=await fetch(CTC_DIR+'lex.json'); if(!r.ok) throw new Error('lex'); const j=await r.json();
+    const t2s=new Map(), cs=Array.from(j.t2s); for(let i=0;i+1<cs.length;i+=2) t2s.set(cs[i],cs[i+1]);
+    ctcLex={ tid:new Map(j.tokens.map((t,i)=>[t,i])), bchar:j.bchar.map(c=>String.fromCodePoint(c)), t2s, V:j.tokens.length };
+  }
+  let buf=null, cache=null;
+  try{ cache=await caches.open('abrakai-ktv-models'); const hit=await cache.match(CTC_KEY); if(hit) buf=await hit.arrayBuffer(); }catch(e){ cache=null; }
+  if(!buf){
+    const heads=await Promise.all(CTC_PARTS.map(n=>fetch(CTC_DIR+n,{method:'HEAD'}).then(r=>+r.headers.get('content-length')||21000000).catch(()=>21000000)));
+    const total=heads.reduce((p,q)=>p+q,0), chunks=[]; let got=0;
+    for(const n of CTC_PARTS){ const r=await fetch(CTC_DIR+n); if(!r.ok) throw new Error('model'); const rd=r.body.getReader(); for(;;){ const {value,done}=await rd.read(); if(done) break; chunks.push(value); got+=value.length; onp && onp(Math.min(1,got/total)); } }
+    const all=new Uint8Array(got); let o=0; chunks.forEach(c=>{ all.set(c,o); o+=c.length; });
+    buf=all.buffer;
+    try{ if(cache) await cache.put(CTC_KEY, new Response(all.slice(0),{ headers:{ 'content-type':'application/octet-stream' } })); }catch(e){}
+  }
+  ctcSession=await ort.InferenceSession.create(buf,{ executionProviders:['wasm'] });
+}
+// Kaldi-style 80-bin log-mel filterbank (25 ms window, 10 ms hop, povey window, no edge snipping)
+let fbankBank=null;
+function fbank80(x){
+  const N=x.length, sh=160, wl=400, nfft=512, nb=80, F=Math.floor((N+sh/2)/sh);
+  if(!fbankBank){
+    const mel=f=>1127*Math.log(1+f/700), lo=mel(20), hi=mel(16000/2-400), d=(hi-lo)/(nb+1), W=[];
+    for(let b=0;b<nb;b++){ const l=lo+b*d, c=l+d, r=c+d, w=new Float32Array(nfft/2);
+      for(let i=0;i<nfft/2;i++){ const m=mel(i*16000/nfft); if(m>l && m<r) w[i]= m<=c ? (m-l)/(c-l) : (r-m)/(r-c); } W.push(w); }
+    const win=new Float32Array(wl); for(let i=0;i<wl;i++) win[i]=Math.pow(0.5-0.5*Math.cos(2*Math.PI*i/(wl-1)),0.85);
+    fbankBank={ W, win, fft:makeFFT(nfft) };
+  }
+  const { W, win, fft }=fbankBank, out=new Float32Array(F*nb), re=new Float32Array(nfft), im=new Float32Array(nfft), fr=new Float32Array(wl), pw=new Float32Array(nfft/2);
+  for(let t=0;t<F;t++){
+    const s0=t*sh+sh/2-wl/2; let mean=0;
+    for(let i=0;i<wl;i++){ let k=s0+i; if(k<0) k=-k-1; else if(k>=N) k=2*N-1-k; k=Math.max(0,Math.min(N-1,k)); fr[i]=x[k]; mean+=fr[i]; }
+    mean/=wl; for(let i=0;i<wl;i++) fr[i]-=mean;
+    for(let i=wl-1;i>0;i--) fr[i]-=0.97*fr[i-1]; fr[0]-=0.97*fr[0];
+    re.fill(0); im.fill(0); for(let i=0;i<wl;i++) re[i]=fr[i]*win[i];
+    fft(re,im); for(let i=0;i<nfft/2;i++) pw[i]=re[i]*re[i]+im[i]*im[i];
+    for(let b=0;b<nb;b++){ const w=W[b]; let e=0; for(let i=0;i<nfft/2;i++) if(w[i]) e+=w[i]*pw[i]; out[t*nb+b]=Math.log(Math.max(e,1.1920929e-7)); }
+  }
+  return { F, data:out };
+}
+function ctcTok(c){
+  const s=ctcLex.t2s.get(c)||c; let e=''; for(const b of new TextEncoder().encode(s)) e+=ctcLex.bchar[b];
+  let id=ctcLex.tid.get(e); if(id==null) id=ctcLex.tid.get('▁'+e); if(id!=null) return [id];
+  const ea=Array.from(e), out=[]; let i=0;
+  while(i<ea.length){ let j=ea.length, f=-1; for(;j>i;j--){ const v=ctcLex.tid.get(ea.slice(i,j).join('')); if(v!=null){ f=v; break; } } if(f<0) return null; out.push(f); i=j; }
+  return out.length ? out : null;
+}
+// returns per-line character start times when the singing is understood well enough, otherwise null
+async function lyricAlign(a, onp){
+  if(!a.sep || !a.sep.vox) return null;
+  const U=lines.map(l=>unitsOf(l.text).map(i=>l.text[i])), all=U.flat();
+  if(!all.length || all.filter(c=>/\p{Script=Han}/u.test(c)).length/all.length<0.6) return null;
+  await loadCtc(f=>onp('下載歌詞辨識模型（約 60 MB，只需下載一次）',f));
+  const vox=a.sep.vox, SR=16000; let pk=0; for(let i=0;i<vox.length;i++){ const v=Math.abs(vox[i]); if(v>pk) pk=v; }
+  const g=pk>0 ? 0.95/pk : 1, CH=20*SR, nch=Math.ceil(vox.length/CH), parts=[], times=[];
+  for(let k=0;k<nch;k++){
+    onp('聽歌詞中',k/nch); await new Promise(r=>setTimeout(r,0));
+    const seg=new Float32Array(Math.min(CH,vox.length-k*CH)); for(let i=0;i<seg.length;i++) seg[i]=vox[k*CH+i]*g;
+    if(seg.length<SR*0.5) break;
+    const fb=fbank80(seg);
+    const r=await ctcSession.run({ x:new ort.Tensor('float32',fb.data,[1,fb.F,80]), x_lens:new ort.Tensor('int64',BigInt64Array.of(BigInt(fb.F)),[1]) });
+    const lp=r.log_probs, T=lp.dims[1], V=lp.dims[2], dt=seg.length/SR/T;
+    for(let t=0;t<T;t++){ parts.push(lp.data.subarray(t*V,(t+1)*V)); times.push(k*20+t*dt); }
+  }
+  const T=parts.length, V=ctcLex.V; if(T<10) return null;
+  // token sequence for the whole lyric (Chinese characters only; others are filled in afterwards)
+  const seq=[], own=[];
+  U.forEach((u,li)=>u.forEach((c,ci)=>{ if(!/\p{Script=Han}/u.test(c)) return; const tk=ctcTok(c); if(!tk) return; tk.forEach((id,q)=>{ seq.push(id); own.push(q===0 ? li*100000+ci : -1); }); }));
+  if(seq.length<4) return null;
+  const S=2*seq.length+1, lab=new Int32Array(S), skip=new Uint8Array(S);
+  for(let i=0;i<seq.length;i++) lab[2*i+1]=seq[i];
+  for(let s=2;s<S;s++) skip[s]= lab[s]!==0 && lab[s]!==lab[s-2] ? 1 : 0;
+  const NEG=-1e30, bp=new Uint8Array(T*S); let dp=new Float64Array(S).fill(NEG), nd=new Float64Array(S);
+  dp[0]=parts[0][0]; dp[1]=parts[0][lab[1]];
+  for(let t=1;t<T;t++){
+    if(t%400===0){ onp('對齊歌詞中',t/T); await new Promise(r=>setTimeout(r,0)); }
+    const row=parts[t];
+    for(let s=0;s<S;s++){ let b=dp[s], k=0; if(s>0 && dp[s-1]>b){ b=dp[s-1]; k=1; } if(skip[s] && dp[s-2]>b){ b=dp[s-2]; k=2; } nd[s]= b<=NEG/2 ? NEG : b+row[lab[s]]; bp[t*S+s]=k; }
+    const tmp=dp; dp=nd; nd=tmp;
+  }
+  let s = dp[S-1]>=dp[S-2] ? S-1 : S-2; const first=new Map();
+  for(let t=T-1;t>=0;t--){ if(s%2===1){ const o=own[(s-1)/2]; if(o>=0) first.set(o,times[t]); } s-=bp[t*S+s]; }
+  // how much of each line the model actually heard (greedy recognition inside the line's span)
+  const greedy=[]; let prev=-1;
+  for(let t=0;t<T;t++){ const row=parts[t]; let m=0; for(let v=1;v<V;v++) if(row[v]>row[m]) m=v; if(m!==prev && m>2) greedy.push([times[t],m]); prev=m; }
+  const starts=U.map((u,li)=>{
+    const st=u.map((c,ci)=>first.has(li*100000+ci) ? first.get(li*100000+ci) : null);
+    if(st.every(v=>v==null)) return null;
+    for(let i=0;i<st.length;i++) if(st[i]==null){ let p=i-1; while(p>=0 && st[p]==null) p--; let q=i+1; while(q<st.length && st[q]==null) q++;
+      st[i]= p>=0 && q<st.length ? st[p]+(st[q]-st[p])*(i-p)/(q-p) : p>=0 ? st[p]+0.15*(i-p) : st[q]-0.15*(q-i); }
+    for(let i=1;i<st.length;i++) if(st[i]<=st[i-1]+0.04) st[i]=st[i-1]+0.05;
+    return st;
+  });
+  let hits=0, n=0;
+  U.forEach((u,li)=>{ const st=starts[li]; if(!st) return; const nx=starts.slice(li+1).find(x=>x); const a0=st[0]-0.3, b0=nx ? nx[0] : 1e9;
+    const heard=new Set(greedy.filter(x=>x[0]>=a0 && x[0]<b0).map(x=>x[1]));
+    u.forEach(c=>{ if(!/\p{Script=Han}/u.test(c)) return; const tk=ctcTok(c); n++; if(tk && heard.has(tk[0])) hits++; }); });
+  const hit = n ? hits/n : 0;
+  if(hit<0.35) return null;
+  return { hit, res:starts.map(st=>st ? { start:+st[0].toFixed(2), end:null } : null), chars:starts };
+}
+// lyric recognition first; fall back to the singing-based system when the words can't be heard (e.g. Taiwanese)
+async function autoAlign(a, onp){
+  let lyr=null;
+  try{ lyr = await lyricAlign(a, onp); }catch(e){ lyr=null; }
+  if(lyr) return { r:lyr.res, lyr };
+  return { r:systemAlign(a), lyr:null };
+}
+function useLyr(lyr){ lines.forEach((l,i)=>{ l._lyr = lyr && lyr.chars[i] && l.start!=null && Math.abs(lyr.chars[i][0]-l.start)<0.05 ? lyr.chars[i] : null; }); }
 /* ---------- song info from the accompaniment: tempo, beats, bars, meter, key ---------- */
 function analyzeMusic(m, fps, off){
   const F=m.flux.length; if(F<fps*20) return null;
@@ -1569,14 +1684,15 @@ async function runAlign(kind){
     }
     if(kind==='local'){
       aStatus('分析歌聲中…'); await tick();
-      let r = systemAlign(a);
+      const al = await autoAlign(a, (m,f)=>aStatus(`${m} ${Math.round((f||0)*100)}%`));
+      let r = al.r;
       if(!r) throw new Error('local');
-      applyTimes(r,'快速自動對時間');
+      applyTimes(r,'快速自動對時間'); useLyr(al.lyr);
       aStatus('依照「一個音一個字」推估每個字…'); await tick();
       estimateChars(a); persist(); renderList();
       if(meta.bpm && meta.autoSnap) snapAll(true);
       const nw=markConfidence(a); renderList();
-      aStatus(`自動對時間完成${meta.bpm&&meta.autoSnap?'（已對齊拍子）':''}！${nw?`清單上標 ⚠ 的 ${nw} 句建議優先播放確認。`:'按播放確認，'}不準的地方用時間軸微調。`);
+      aStatus(`自動對時間完成${al.lyr?'（已依歌詞辨識對齊）':''}${meta.bpm&&meta.autoSnap?'（已對齊拍子）':''}！${nw?`清單上標 ⚠ 的 ${nw} 句建議優先播放確認。`:'按播放確認，'}不準的地方用時間軸微調。`);
     }else if(kind==='one'){
       const i=tlSelc.i, keep=lines[i].start; lines[i].pin=false;
       const models = await gModels(getKey());
@@ -1590,8 +1706,8 @@ async function runAlign(kind){
       aStatus(`補精修完成，這次精修了 ${r.refined} 句。${r.stopped?r.stopped+' ':''}按播放確認。`);
     }else{
       aStatus('系統先對時間…'); await tick();
-      let rl = systemAlign(a);
-      if(rl){ applyTimes(rl,''); estimateChars(a); persist(); renderList(); }
+      const al = await autoAlign(a, (m,f)=>aStatus(`${m} ${Math.round((f||0)*100)}%`)); let rl = al.r;
+      if(rl){ applyTimes(rl,''); useLyr(al.lyr); estimateChars(a); persist(); renderList(); }
       let r;
       try{ r = await geminiAlign(a); }
       catch(err){ const m=err&&err.message; aStatus(`系統對時間已完成；AI 檢查這次沒有成功：${m&&m.startsWith('msg:')?m.slice(4):'請稍後再試一次。'}`); return; }
@@ -2161,17 +2277,18 @@ function estimateChars(a){
       let voiceEnd=null;
       if(feat){
         // the line ends where the voice actually stops (before the breath), not where the next line begins
-        const lim = nx!=null ? nx-0.05 : (l.end!=null ? l.end+0.5 : ws+C*0.9+3);
+        const lim = nx!=null ? nx-0.05 : (l.end!=null ? l.end+0.5 : (l._lyr ? l._lyr[C-1]+8 : ws+C*0.9+3));
         const fa=Math.round(ws*100), fb=Math.min(feat.F-1, Math.round(lim*100));
         const ev=[]; for(let f=fa; f<fb; f++) ev.push(feat.en[f]); ev.sort((p,q)=>p-q);
         const ref = ev.length ? ev[Math.floor(ev.length*0.7)] : -60;
         let last=fa; for(let f=fa; f<fb; f++) if(feat.en[f] >= ref-12) last=f;
-        voiceEnd = Math.max(ws+0.3*C, Math.min(lim, last/100+0.08));
+        voiceEnd = Math.max(l._lyr ? l._lyr[C-1]+0.2 : ws+0.3*C, Math.min(lim, last/100+0.08));
         we = voiceEnd;
       }
       const f0=Math.round((ws+0.12)/0.01), f1=Math.round((we-0.08)/0.01);
       let starts=null;
-      if(feat) starts=splitLine(feat, ws, we, C);
+      if(l._lyr && l._lyr.length===C) starts=l._lyr.slice();
+      else if(feat) starts=splitLine(feat, ws, we, C);
       if(!starts){
       let pk=[];
       for(let f=f0; f<f1; f++){ if(on[f]<=0) continue; let ok=true; for(let d=-6; d<=6; d++){ if(d && on[f+d]>on[f]){ ok=false; break; } } if(ok) pk.push({ f, s:on[f] }); }
@@ -2535,7 +2652,7 @@ $('tlPin').onclick=()=>{
 $('tlUndo').onclick=histUndo; $('tlRedo').onclick=histRedo;
 $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
 $('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
-if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), systemAlign:(...x)=>systemAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), analyzeMusic:(...x)=>analyzeMusic(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
+if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), systemAlign:(...x)=>systemAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), lyricAlign:(...x)=>lyricAlign(...x), fbank80:(...x)=>fbank80(...x), analyzeMusic:(...x)=>analyzeMusic(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
 restore(); lastSnap=ser(); histBtns(); renderParas(); pjInfo();
