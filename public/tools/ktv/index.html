@@ -160,7 +160,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.6</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.7</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -193,7 +193,7 @@ body{margin:0}
       <div class="tlwrap" id="tlWrap" hidden>
         <div class="tlhead">
           <b>時間軸微調</b><span class="hint">紫色＝人聲大小，黃線＝音高，細直線＝拍點，金色直線與數字＝第幾小節（分離人聲後出現）</span>
-          <span class="hint" id="tlSel">點字或整句來選取。拖方塊兩側的白色把手可以拉長、縮短；拖中間是整個移動；拖空白處前後捲動。</span>
+          <span class="hint" id="tlSel">點字或整句來選取。拖方塊兩側的白色把手可以拉長、縮短；拖中間是整個移動；拖空白處前後捲動。開頭會自動吸附到最近的拍點（按住 Alt 可以不吸附）。</span>
         </div>
         <canvas id="tl" height="170"></canvas>
         <div class="bar tlbar">
@@ -367,7 +367,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.6</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.7</p>
     </aside>
   </div>
 </div>
@@ -1182,8 +1182,12 @@ function analyzeMusic(m, fps, off){
   const corr=(P,r)=>{ let mx=0,my=0; for(let k=0;k<12;k++){ mx+=prof[k]; my+=P[(k-r+12)%12]; } mx/=12; my/=12; let sxy=0,sx=0,sy=0; for(let k=0;k<12;k++){ const x=prof[k]-mx, y=P[(k-r+12)%12]-my; sxy+=x*y; sx+=x*x; sy+=y*y; } return sxy/Math.sqrt(sx*sy); };
   const keys=[]; for(let r=0;r<12;r++){ keys.push({ r, mode:'maj', c:corr(MAJ,r) }); keys.push({ r, mode:'min', c:corr(MIN,r) }); }
   keys.sort((x,y)=>y.c-x.c);
-  return { bpm:+bpm.toFixed(1), meter:M, beats, bars, key:keys[0], key2:keys[1] };
+  const grid=[]; beats.forEach((b,i)=>{ grid.push(b); if(i+1<beats.length) grid.push(+((b+beats[i+1])/2).toFixed(3)); });
+  return { bpm:+bpm.toFixed(1), meter:M, beats, bars, grid, key:keys[0], key2:keys[1] };
 }
+// nearest point on the half-beat grid (or t itself when there is no grid)
+function nearGrid(g, t){ if(!g || !g.length) return t; let lo=0, hi=g.length-1; while(hi-lo>1){ const m=(lo+hi)>>1; if(g[m]<t) lo=m; else hi=m; } return Math.abs(g[lo]-t)<=Math.abs(g[hi]-t) ? g[lo] : g[hi]; }
+function gridBonus(g, t, w, sd){ if(!g) return 0; const d=nearGrid(g,t)-t; return w*Math.exp(-0.5*(d/sd)**2); }
 const KEY_MAJ=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'], KEY_MIN=['C','C♯','D','E♭','E','F','F♯','G','G♯','A','B♭','B'];
 function keyName(k){ return k.mode==='maj' ? `${KEY_MAJ[k.r]} 大調` : `${KEY_MIN[k.r]} 小調`; }
 function showSongInfo(mu){
@@ -1385,6 +1389,8 @@ function localAlign(a, prior, fixedAt){
     cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]).map(c=>({ t:c.t, s:c.s*0.1 }));
     (a.sep.dips||[]).forEach(dp=>{ if(act[Math.min(act.length-1, Math.round(dp.t*100)+10)]) cands.push({ t:dp.t, s:Math.min(1.3, dp.d/15) }); });
     a.sep.segs.forEach(sg=>cands.push({ t:sg[0], s:1.5 }));
+    const gr = a.sep.music && a.sep.music.grid;
+    if(gr) cands.forEach(c=>{ c.s *= 1+gridBonus(gr, c.t, 0.2, 0.06); });
   }
   const secA = (act && !lines.some(l=>l.anchor!=null)) ? sectionAnchors(a) : {};
   const pins = lines.map((l,i)=> l.anchor!=null ? l.anchor : (fixedAt && fixedAt[i]!=null ? fixedAt[i] : (l.pin && l.start!=null ? l.start : (secA[i]!=null ? secA[i] : null))));
@@ -2375,19 +2381,23 @@ tl.addEventListener('pointermove', e=>{
   const r=tl.getBoundingClientRect(), x=e.clientX-r.left, dx=x-tlDrag.x0;
   if(Math.abs(dx)>3) tlDrag.moved=true;
   if(!tlDrag.moved) return;
-  const dt=dx*tlDrag.sp;
+  let dt=dx*tlDrag.sp;
+  const mu=audioCache && audioCache.sep && audioCache.sep.music, tol=Math.min(0.08, 8*tlDrag.sp);
+  const snapTo = t => { if(!mu || e.altKey) return t; const g=nearGrid(mu.grid, t); return Math.abs(g-t)<=tol ? g : t; };
   if(tlDrag.type==='pan'){ video.currentTime=Math.max(0,Math.min(video.duration||1e9, tlDrag.vt-dt)); return; }
   const l=lines[tlDrag.i], o=tlDrag.orig;
   if(tlDrag.type==='line' && tlDrag.mode!=='move' && o.chars){
     const os=o.start, oe=tlDrag.oend, C=o.chars.length, minLen=Math.max(0.3, C*0.08);
     let ns=os, ne=oe;
-    if(tlDrag.mode==='lstart') ns=Math.min(oe-minLen, os+dt); else ne=Math.max(os+minLen, oe+dt);
+    if(tlDrag.mode==='lstart') ns=Math.min(oe-minLen, snapTo(os+dt)); else ne=Math.max(os+minLen, oe+dt);
     const f=v=>+(ns+(v-os)*(ne-ns)/(oe-os)).toFixed(3);
     l.chars=o.chars.map(c=>[f(c[0]), f(c[1])]); l.start=l.chars[0][0]; l.end=l.chars[C-1][1];
   } else if(tlDrag.type==='line'){
+    dt=snapTo(o.start+dt)-o.start;
     l.start=+(o.start+dt).toFixed(3); l.end=o.end!=null?+(o.end+dt).toFixed(3):null; l.chars=o.chars?o.chars.map(c=>[+(c[0]+dt).toFixed(3),+(c[1]+dt).toFixed(3)]):null;
   } else {
     const k=tlDrag.k, c=l.chars, oc=o.chars[k], P=tlDrag.prev, N=tlDrag.next;
+    if(tlDrag.mode!=='end') dt=snapTo(oc[0]+dt)-oc[0];
     const pc = P && P[1] >= oc[0]-0.06, nc = N && N[0] <= oc[1]+0.06;
     let s0=oc[0], e0=oc[1];
     if(tlDrag.mode==='start'){ s0=Math.min(oc[1]-0.05, Math.max(P?P[0]+0.05:-1e9, oc[0]+dt)); }
