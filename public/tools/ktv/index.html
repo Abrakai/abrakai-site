@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.3</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.4</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -364,7 +364,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.3</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.4</p>
     </aside>
   </div>
 </div>
@@ -486,7 +486,7 @@ function renderList(){
     const tx = document.createElement('span'); tx.className = 'txt'; tx.textContent = l.text; tx.title = '跳到這一句';
     tx.onclick = () => { if(hasVideo && l.start!=null){ if(typeof tlSelc!=='undefined'){ tlSelc={ i, k:null }; selInfo(); } video.currentTime = Math.max(0,l.start-1); playVideo(); } };
     const t = document.createElement('span'); t.className = 't';
-    const val = document.createElement('span'); val.textContent = fmt(l.start);
+    const val = document.createElement('span'); val.textContent = (l.warn?'⚠ ':'')+fmt(l.start); if(l.warn){ val.title='這一句的開頭在歌聲裡找不到明確的開口點，建議播放確認'; val.style.color='var(--gold)'; }
     const mus = document.createElement('button'); mus.className='pin'; mus.textContent='🎵'; mus.title='逐字對拍'; mus.setAttribute('aria-label','逐字對拍這一句');
     mus.disabled = !hasVideo; if(l.chars && l.pin) mus.classList.add('on');
     mus.onclick = () => openChar(i);
@@ -1205,6 +1205,17 @@ function roleAnchors(a, draft){
   }
   return out;
 }
+// mark lines whose start has no clear evidence in the singing, so the user knows where to look
+function markConfidence(a){
+  if(!a || !a.sep) { lines.forEach(l=>l.warn=false); return 0; }
+  const ra=a.sep.roleA||{}, sa=sectionAnchors(a); let n=0;
+  lines.forEach((l,i)=>{
+    l.warn=false; if(l.start==null || l.pin || l.anchor!=null || ra[i]!=null || sa[i]!=null) return;
+    let d=0; (a.sep.dips||[]).forEach(dp=>{ const dt=dp.t-l.start; if(dt>=-0.6 && dt<=0.25 && dp.d>d) d=dp.d; });
+    if(d<10){ l.warn=true; n++; }
+  });
+  return n;
+}
 // system timing: sections → lines → singer changes → repeats
 function systemAlign(a){
   let r=localAlign(a); if(!r) return null;
@@ -1306,7 +1317,7 @@ function localAlign(a, prior, fixedAt){
   cands.forEach(c=>c.s/=mx);
   const act = a.sep ? a.sep.act : null;
   if(act){
-    cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]).map(c=>({ t:c.t, s:c.s*0.25 }));
+    cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]).map(c=>({ t:c.t, s:c.s*0.1 }));
     (a.sep.dips||[]).forEach(dp=>{ if(act[Math.min(act.length-1, Math.round(dp.t*100)+10)]) cands.push({ t:dp.t, s:Math.min(1.3, dp.d/15) }); });
     a.sep.segs.forEach(sg=>cands.push({ t:sg[0], s:1.5 }));
   }
@@ -1334,7 +1345,7 @@ function localAlign(a, prior, fixedAt){
   }
   const secMode = act && secKeys.length;
   const feat = a.sep ? voxFeatures(a) : null;
-  const pen = (d,E,t0,li) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : (secMode ? 2*Math.log(r)**2 : 0.5*Math.log(r))) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0) + 0; };
+  const pen = (d,E,t0,li) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : (secMode ? 0.8*Math.log(r)**2 : 0.5*Math.log(r))) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0) + 0; };
   let best=null;
   const factors = secMode ? [0.85,0.9,0.95,1,1.05,1.1,1.15] : [0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85];
   for(const rate of factors){
@@ -1444,7 +1455,8 @@ async function runAlign(kind){
       aStatus('依照「一個音一個字」推估每個字…'); await tick();
       estimateChars(a); persist(); renderList();
       if(meta.bpm && meta.autoSnap) snapAll(true);
-      aStatus(`自動對時間完成${meta.bpm&&meta.autoSnap?'（已對齊拍子）':''}！按播放確認，不準的地方用時間軸微調。`);
+      const nw=markConfidence(a); renderList();
+      aStatus(`自動對時間完成${meta.bpm&&meta.autoSnap?'（已對齊拍子）':''}！${nw?`清單上標 ⚠ 的 ${nw} 句建議優先播放確認。`:'按播放確認，'}不準的地方用時間軸微調。`);
     }else if(kind==='one'){
       const i=tlSelc.i, keep=lines[i].start; lines[i].pin=false;
       const models = await gModels(getKey());
@@ -1464,7 +1476,8 @@ async function runAlign(kind){
       try{ r = await geminiAlign(a); }
       catch(err){ const m=err&&err.message; aStatus(`系統對時間已完成；AI 檢查這次沒有成功：${m&&m.startsWith('msg:')?m.slice(4):'請稍後再試一次。'}`); return; }
       if(meta.bpm && meta.autoSnap) snapAll(true);
-      aStatus(`AI 輔助對時間完成（${r.model}）：${r.corrected ? `採用 AI 修正 ${r.corrected} 句` : 'AI 檢查後，系統排的位置不需要修正'}${r.rejected ? `（另有 ${r.rejected} 句 AI 的建議和歌聲對不上，沒有採用）` : ''}${r.refined?`，逐字精修 ${r.refined} 句`:''}。${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
+      const nw=markConfidence(a); renderList();
+      aStatus(`${nw?`清單上標 ⚠ 的 ${nw} 句建議優先確認。`:''}AI 輔助對時間完成（${r.model}）：${r.corrected ? `採用 AI 修正 ${r.corrected} 句` : 'AI 檢查後，系統排的位置不需要修正'}${r.rejected ? `（另有 ${r.rejected} 句 AI 的建議和歌聲對不上，沒有採用）` : ''}${r.refined?`，逐字精修 ${r.refined} 句`:''}。${r.stopped?r.stopped+' ':''}按播放確認，不準的地方用時間軸微調。`);
     }
   }catch(err){
     const m = err && err.message;
@@ -2226,6 +2239,7 @@ function drawTL(){
       if(b-a>10){ tg.fillStyle='#fff'; tg.font=`bold ${Math.min(20,Math.max(11,(b-a)*.7))}px "Noto Sans TC",sans-serif`; tg.fillText(l.text[U[k]]||'', (a+b)/2, (TL.chr[0]+TL.chr[1])/2+1); }
       if(l.chars && (b-a>=18 || sel)){ tg.fillStyle= sel ? '#ffc93c' : 'rgba(255,255,255,.75)'; const gh=18, gy=(TL.chr[0]+TL.chr[1])/2-gh/2; tg.fillRect(a+2,gy,3,gh); tg.fillRect(b-5,gy,3,gh); }
     });
+    if(l.warn){ tg.strokeStyle='#ffc93c'; tg.setLineDash([4,3]); tg.lineWidth=1.5; tg.strokeRect(x0+.5,TL.line[0]+.5,Math.max(2,x1-x0)-1,TL.line[1]-TL.line[0]-1); tg.setLineDash([]); }
     { const lsel = tlSelc && tlSelc.i===i && tlSelc.k==null; tg.fillStyle = lsel ? '#ffc93c' : 'rgba(255,255,255,.7)'; tg.fillRect(x0+1,TL.line[0]+3,3,TL.line[1]-TL.line[0]-6); tg.fillRect(x1-4,TL.line[0]+3,3,TL.line[1]-TL.line[0]-6);
       if(lsel){ tg.strokeStyle='#ffc93c'; tg.lineWidth=2; tg.strokeRect(x0+1,TL.line[0]+1,Math.max(2,x1-x0)-2,TL.line[1]-TL.line[0]-2); } }
   });
@@ -2286,7 +2300,7 @@ tl.addEventListener('pointermove', e=>{
 });
 // after the user moves a line's start, the lines around it re-flow to follow (the moved line stays put)
 function reflow(from){
-  const a=audioCache; if(!a || !a.sep || from==null) return false;
+  const a=audioCache; if(lines[from]) lines[from].warn=false; if(!a || !a.sep || from==null) return false;
   // everything up to the edited line stays where it is; only the lines after it (until the next line you adjusted) follow
   const fx=lines.map((l,j)=> j<=from && l.start!=null ? l.start : null);
   const r=localAlign(a, null, fx); if(!r) return false;
