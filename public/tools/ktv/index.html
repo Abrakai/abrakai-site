@@ -79,6 +79,8 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mu
 label.f input[type=text]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px}
 label.f input[type=range]{accent-color:var(--female)}
 .status{font-size:13px;color:var(--gold);min-height:1.4em;margin:0}
+.songinfo{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;font-size:13px;margin:0 0 6px;padding:8px 12px;border:1px solid var(--line);border-radius:10px}
+.songinfo b{color:var(--gold)}
 .rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff3b3b;animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.2}}
 @media (prefers-reduced-motion:reduce){.rec{animation:none}}
@@ -158,7 +160,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 4.5</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 4.6</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -187,9 +189,10 @@ body{margin:0}
         <button id="fs" title="全螢幕">⛶</button>
       </div>
       <p class="status" id="vStatus"></p>
+      <p class="songinfo" id="songInfo" hidden></p>
       <div class="tlwrap" id="tlWrap" hidden>
         <div class="tlhead">
-          <b>時間軸微調</b><span class="hint">紫色＝人聲大小，黃線＝音高（分離人聲後出現）</span>
+          <b>時間軸微調</b><span class="hint">紫色＝人聲大小，黃線＝音高，細直線＝拍點，金色直線與數字＝第幾小節（分離人聲後出現）</span>
           <span class="hint" id="tlSel">點字或整句來選取。拖方塊兩側的白色把手可以拉長、縮短；拖中間是整個移動；拖空白處前後捲動。</span>
         </div>
         <canvas id="tl" height="170"></canvas>
@@ -364,7 +367,7 @@ body{margin:0}
         <div hidden><button id="expBtn"></button><input id="impFile" type="file"></div>
         <p class="hint">要換電腦或之後再繼續，請用上方的「💾 下載專案檔」。</p>
       </div>
-      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.5</p>
+      <p class="legal">影片和歌詞都在你的裝置上處理，不會上傳到我們的伺服器；使用「AI 輔助對時間」時，去掉伴奏後的人聲會傳給 Google 分析。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 4.6</p>
     </aside>
   </div>
 </div>
@@ -692,7 +695,7 @@ function markLoaded(){
   if(hasVideo || !curFile) return;
   if(video.classList.contains('native')){ video.controls=false; video.classList.remove('native'); try{ video.pause(); video.currentTime=0; }catch(e){} }
   sizeCanvas();
-  hasVideo = true; clearTimeout(loadTimer); audioCache = null; projDur=video.duration||projDur; updateButtons(); renderList(); renderParas(); if(projId) pjSave();
+  hasVideo = true; clearTimeout(loadTimer); audioCache = null; showSongInfo(null); projDur=video.duration||projDur; updateButtons(); renderList(); renderParas(); if(projId) pjSave();
   const lowRes = video.videoHeight && video.videoHeight < 720;
   vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+(video.videoWidth?`，${video.videoWidth}×${video.videoHeight}`:'')+'）'+(lowRes?'。畫質偏低：iPhone 從「照片」選影片時會先壓縮，建議先把影片存到「檔案」，再從「瀏覽」選，就能用原始畫質。':''));
 }
@@ -1071,6 +1074,9 @@ async function ensureSep(a, onp){
   const ve=new Float32Array(F), me=new Float32Array(F);
   const reL=new Float32Array(N), imL=new Float32Array(N), reR=new Float32Array(N), imR=new Float32Array(N), re=new Float32Array(N), im=new Float32Array(N);
   const nChunks=Math.ceil(F/CH);
+  // accompaniment features for tempo / meter / key (what's left after removing the voice)
+  const MB=400, mus={ flux:new Float32Array(F), low:new Float32Array(F), chroma:new Float32Array(F*12) }, prevLa=new Float32Array(MB);
+  const pcOf=new Int8Array(B).fill(-1); for(let b=18;b<=190;b++){ const fq=b*SRS/N; pcOf[b]=((Math.round(12*Math.log2(fq/440))+9)%12+12)%12; }
   for(let c=0;c<nChunks;c++){
     onp && onp('分離人聲中', c/nChunks);
     const f0=c*CH, nf=Math.min(CH, F-f0);
@@ -1086,6 +1092,10 @@ async function ensureSep(a, onp){
     const Y=res.y.data;
     for(let k=0;k<nf;k++){
       re.fill(0); im.fill(0);
+      { const ff=f0+k; let fl=0, lo=0;
+        for(let b=1;b<MB;b++){ const A=Math.max(0, X[k*B+b]-Y[k*B+b])+Math.max(0, X[CH*B+k*B+b]-Y[CH*B+k*B+b]), la=Math.log1p(A);
+          const d=la-prevLa[b]; if(d>0){ fl+=d; if(b<=16) lo+=d; } prevLa[b]=la; if(pcOf[b]>=0) mus.chroma[ff*12+pcOf[b]]+=A; }
+        mus.flux[ff]=fl; mus.low[ff]=lo; }
       for(let b=0;b<B;b++){ const q=(k*B+b)*4; const yl=Y[k*B+b], yr=Y[CH*B+k*B+b]; ve[f0+k]+=yl*yl+yr*yr;
         const ml=Math.min(1, yl/(X[k*B+b]+1e-8)), mr=Math.min(1, yr/(X[CH*B+k*B+b]+1e-8));
         re[b]=(spec[q]*ml+spec[q+2]*mr)/2; im[b]=(spec[q+1]*ml+spec[q+3]*mr)/2; }
@@ -1125,8 +1135,63 @@ async function ensureSep(a, onp){
   keep.sort((x,y)=>x-y);
   const dips=keep.map(f=>{ const lim=Math.min(F-1, f+Math.round(0.6*fps)), tgt=vs[f]+dep[f]*0.5; let r=f; while(r<lim && vs[r]<tgt) r++; return { t:r/fps, d:dep[f] }; });
   a.sep={ vox, act, segs:segsOf(2.5), sections:segsOf(5), dips };
+  try{ a.sep.music=analyzeMusic(mus, fps, (N/2)/SRS); }catch(e){ a.sep.music=null; }
+  showSongInfo(a.sep.music);
   a.vocal=vox; peaks=null;
   return a.sep;
+}
+/* ---------- song info from the accompaniment: tempo, beats, bars, meter, key ---------- */
+function analyzeMusic(m, fps, off){
+  const F=m.flux.length; if(F<fps*20) return null;
+  const nov=src=>{ const o=new Float32Array(F), w=Math.round(fps*0.25), P=new Float64Array(F+1);
+    for(let i=0;i<F;i++) P[i+1]=P[i]+src[i];
+    let s=0, s2=0; for(let i=0;i<F;i++){ const a=Math.max(0,i-w), b=Math.min(F,i+w+1); o[i]=Math.max(0, src[i]-(P[b]-P[a])/(b-a)); s+=o[i]; s2+=o[i]*o[i]; }
+    const mu=s/F, sd=Math.sqrt(Math.max(1e-12, s2/F-mu*mu)); for(let i=0;i<F;i++) o[i]/=sd; return o; };
+  const nf=nov(m.flux), nl=nov(m.low), o=new Float32Array(F); for(let i=0;i<F;i++) o[i]=nf[i]+0.7*nl[i];
+  // tempo: autocorrelation with a gentle preference around 100 BPM
+  const lagMin=Math.floor(fps*60/200), lagMax=Math.ceil(fps*60/45), ac=new Float64Array(lagMax*4+2);
+  for(let L=lagMin; L<ac.length; L++){ let q=0; for(let i=0;i+L<F;i++) q+=o[i]*o[i+L]; ac[L]=q/(F-L); }
+  let best=-1, bl=0;
+  for(let L=lagMin; L<=lagMax; L++){ const bpm=60*fps/L, w=Math.exp(-0.5*(Math.log2(bpm/100)/0.9)**2);
+    const v=w*(ac[L]+0.5*ac[2*L]+0.25*ac[Math.min(ac.length-1,3*L)]+0.25*ac[Math.min(ac.length-1,4*L)]); if(v>best){ best=v; bl=L; } }
+  const pa=ac[bl-1], pb=ac[bl], pc=ac[bl+1], den=pa-2*pb+pc; const lag=bl+(den<0 ? 0.5*(pa-pc)/den : 0);
+  // beat tracking (dynamic programming over onset strength)
+  const C=new Float64Array(F), Bk=new Int32Array(F).fill(-1), a0=Math.round(lag/2), a1=Math.round(lag*2);
+  for(let t=0;t<F;t++){ let bv=0, bp=-1;
+    for(let p=t-a1; p<=t-a0; p++){ if(p<0) continue; const v=C[p]-60*Math.log((t-p)/lag)**2; if(bp<0||v>bv){ bv=v; bp=p; } }
+    C[t]=o[t]+(bp>=0?Math.max(0,bv):0); Bk[t]= bp>=0 && bv>0 ? bp : -1; }
+  let te=F-1; for(let t=Math.max(0,F-Math.round(lag)); t<F; t++) if(C[t]>C[te]) te=t;
+  const bt=[]; for(let t=te; t>=0; t=Bk[t]) bt.unshift(t);
+  if(bt.length<16) return null;
+  const ibi=[]; for(let i=1;i<bt.length;i++) ibi.push(bt[i]-bt[i-1]); ibi.sort((x,y)=>x-y);
+  const bpm=60*fps/ibi[ibi.length>>1];
+  // per-beat accent and chord change -> meter and downbeat
+  const nb=bt.length, acc=new Float32Array(nb), ch=[], chg=new Float32Array(nb);
+  for(let i=0;i<nb;i++){ let mx=0; for(let d=-2;d<=2;d++){ const g=bt[i]+d; if(g>=0&&g<F) mx=Math.max(mx, nl[g]+0.5*nf[g]); } acc[i]=mx;
+    const v=new Float64Array(12), e=i+1<nb?bt[i+1]:Math.min(F,bt[i]+Math.round(lag)); for(let f=bt[i]; f<e; f++) for(let k=0;k<12;k++) v[k]+=m.chroma[f*12+k];
+    let n=0; for(let k=0;k<12;k++) n+=v[k]*v[k]; n=Math.sqrt(n)||1; for(let k=0;k<12;k++) v[k]/=n; ch.push(v);
+    if(i){ let c=0; for(let k=0;k<12;k++) c+=v[k]*ch[i-1][k]; chg[i]=1-c; } }
+  const z=x=>{ let s=0,s2=0; x.forEach(v=>{ s+=v; s2+=v*v; }); const mu=s/x.length, sd=Math.sqrt(Math.max(1e-9,s2/x.length-mu*mu)); return Array.from(x,v=>(v-mu)/sd); };
+  const za=z(acc), zc=z(chg), sc=za.map((v,i)=>v+1.2*zc[i]);
+  const meterScore=M=>{ let bs=-1e9, bphi=0; for(let phi=0;phi<M;phi++){ let on=0,cn=0,of=0,cf=0; for(let i=0;i<nb;i++){ if(i%M===phi){ on+=sc[i]; cn++; } else { of+=sc[i]; cf++; } } const v=on/cn-of/cf; if(v>bs){ bs=v; bphi=phi; } } return { s:bs, phi:bphi }; };
+  const m4=meterScore(4), m3=meterScore(3), M = m3.s > m4.s*1.15 && m3.s>0.3 ? 3 : 4, phi = M===3 ? m3.phi : m4.phi;
+  const beats=bt.map(f=>+(f/fps+off).toFixed(3)), bars=[]; for(let i=phi;i<nb;i+=M) bars.push(beats[i]);
+  // key: Krumhansl-Schmuckler profiles against the song's pitch-class profile
+  const prof=new Float64Array(12); ch.forEach(v=>{ for(let k=0;k<12;k++) prof[k]+=v[k]; });
+  const MAJ=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88], MIN=[6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+  const corr=(P,r)=>{ let mx=0,my=0; for(let k=0;k<12;k++){ mx+=prof[k]; my+=P[(k-r+12)%12]; } mx/=12; my/=12; let sxy=0,sx=0,sy=0; for(let k=0;k<12;k++){ const x=prof[k]-mx, y=P[(k-r+12)%12]-my; sxy+=x*y; sx+=x*x; sy+=y*y; } return sxy/Math.sqrt(sx*sy); };
+  const keys=[]; for(let r=0;r<12;r++){ keys.push({ r, mode:'maj', c:corr(MAJ,r) }); keys.push({ r, mode:'min', c:corr(MIN,r) }); }
+  keys.sort((x,y)=>y.c-x.c);
+  return { bpm:+bpm.toFixed(1), meter:M, beats, bars, key:keys[0], key2:keys[1] };
+}
+const KEY_MAJ=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'], KEY_MIN=['C','C♯','D','E♭','E','F','F♯','G','G♯','A','B♭','B'];
+function keyName(k){ return k.mode==='maj' ? `${KEY_MAJ[k.r]} 大調` : `${KEY_MIN[k.r]} 小調`; }
+function showSongInfo(mu){
+  const el=$('songInfo'); if(!el) return;
+  if(!mu){ el.hidden=true; el.textContent=''; return; }
+  const rel = mu.key2 && mu.key2.mode!==mu.key.mode && (mu.key.c-mu.key2.c)<0.05 && ((mu.key.mode==='maj' && mu.key2.r===(mu.key.r+9)%12) || (mu.key.mode==='min' && mu.key2.r===(mu.key.r+3)%12));
+  el.innerHTML=`<b>🎼 歌曲資訊</b><span>速度 <b>♩＝${Math.round(mu.bpm)}</b>（每分鐘 ${Math.round(mu.bpm)} 拍）</span><span>拍號 <b>${mu.meter}/4</b>（以四分音符為一拍，每小節 ${mu.meter} 拍）</span><span>調性 <b>${keyName(mu.key)}</b>${rel?`（也可能是 ${keyName(mu.key2)}）`:''}</span><span class="hint">共 ${mu.bars.length} 小節，由伴奏自動推算，僅供參考</span>`;
+  el.hidden=false;
 }
 // guess which line opens each sung section: split lines by lyric weight in proportion to sung time, at paragraph starts
 function regMismatch(feat, role, t0, t1){
@@ -2234,6 +2299,14 @@ function drawTL(){
   tg.fillStyle='rgba(169,156,187,.8)'; tg.font='10px sans-serif'; tg.textAlign='center';
   const step = tlWin>16 ? 5 : tlWin>6 ? 1 : 0.5;
   for(let t=Math.ceil(v.t0/step)*step; t<v.t0+tlWin; t+=step){ const x=X(t); tg.fillRect(x,12,1,4); if(Math.abs(t%1)<1e-6 || step>=1) tg.fillText(fmtShort(t),x,10); }
+  // beat grid from the accompaniment: faint = beat, gold = start of a bar
+  const mu = audioCache && audioCache.sep && audioCache.sep.music;
+  if(mu){
+    tg.fillStyle='rgba(255,255,255,.07)'; mu.beats.forEach(b=>{ if(b>=v.t0 && b<=v.t0+tlWin) tg.fillRect(X(b),18,1,146); });
+    tg.fillStyle='rgba(255,201,60,.28)'; tg.textAlign='left';
+    mu.bars.forEach((b,j)=>{ if(b>=v.t0 && b<=v.t0+tlWin){ const x=X(b); tg.fillRect(x,18,1,146); if(tlWin<=20){ tg.fillStyle='rgba(255,201,60,.7)'; tg.fillText(String(j+1),x+3,26); tg.fillStyle='rgba(255,201,60,.28)'; } } });
+    tg.textAlign='center';
+  }
   // waveform
   const [w0,w1]=TL.wave, mid=(w0+w1)/2, amp=(w1-w0)/2;
   if(peaks){
@@ -2401,7 +2474,7 @@ $('tlPin').onclick=()=>{
 $('tlUndo').onclick=histUndo; $('tlRedo').onclick=histRedo;
 $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,lines[tlSelc.i].start-1); playVideo(); };
 $('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
-if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
+if(location.hostname==='localhost') window.__ktv={ localAlign:(...x)=>localAlign(...x), repeatFix:(...x)=>repeatFix(...x), splitLine:(...x)=>splitLine(...x), analyzeMusic:(...x)=>analyzeMusic(...x), get a(){ return audioCache; }, get lines(){ return lines; } };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
 restore(); lastSnap=ser(); histBtns(); renderParas(); pjInfo();
