@@ -158,7 +158,7 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 3.2</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 3.3</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
@@ -356,7 +356,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.2</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.3</p>
     </aside>
   </div>
 </div>
@@ -1112,7 +1112,19 @@ async function ensureSep(a, onp){
   for(let t=0;t<n10;t++){ const f=Math.min(F-1, Math.floor((t*0.01)*fps)); act[t]= sm[f] > -8 ? 1 : 0; }
   const segsOf = gap => { const sg=[]; let s0=-1; for(let t=0;t<=n10;t++){ const on=t<n10&&act[t]; if(on&&s0<0) s0=t; if(!on&&s0>=0){ sg.push([s0/100,t/100]); s0=-1; } }
     const m=[]; sg.forEach(x=>{ if(m.length && x[0]-m[m.length-1][1] < gap) m[m.length-1][1]=x[1]; else m.push(x.slice()); }); return m.filter(x=>x[1]-x[0]>=1); };
-  a.sep={ vox, act, segs:segsOf(2.5), sections:segsOf(5) };
+  // phrase breaks: deep dips in vocal energy; a line usually starts where the voice rises after a dip
+  const vdb=new Float32Array(F); for(let f=0;f<F;f++) vdb[f]=10*Math.log10(ve[f]+1e-9);
+  const vs=new Float32Array(F); for(let f=0;f<F;f++){ let q=0,c3=0; for(let d=-1;d<=1;d++){ const g=f+d; if(g>=0&&g<F){ q+=vdb[g]; c3++; } } vs[f]=q/c3; }
+  const Wd=Math.round(1.2*fps), lmax=new Float32Array(F), rmax=new Float32Array(F);
+  for(let f=0;f<F;f++){ let m=-1e9; for(let g=Math.max(0,f-Wd); g<=f; g++) if(vs[g]>m) m=vs[g]; lmax[f]=m; }
+  for(let f=F-1;f>=0;f--){ let m=-1e9; for(let g=f; g<=Math.min(F-1,f+Wd); g++) if(vs[g]>m) m=vs[g]; rmax[f]=m; }
+  const dep=new Float32Array(F); for(let f=0;f<F;f++) dep[f]=Math.min(lmax[f],rmax[f])-vs[f];
+  let pk=[]; for(let f=1;f<F-1;f++) if(dep[f]>=6 && dep[f]>=dep[f-1] && dep[f]>dep[f+1]) pk.push(f);
+  pk.sort((x,y)=>dep[y]-dep[x]); const keep=[];
+  pk.forEach(f=>{ if(keep.every(g=>Math.abs(g-f)>0.3*fps)) keep.push(f); });
+  keep.sort((x,y)=>x-y);
+  const dips=keep.map(f=>{ const lim=Math.min(F-1, f+Math.round(0.6*fps)), tgt=vs[f]+dep[f]*0.5; let r=f; while(r<lim && vs[r]<tgt) r++; return { t:r/fps, d:dep[f] }; });
+  a.sep={ vox, act, segs:segsOf(2.5), sections:segsOf(5), dips };
   a.vocal=vox; peaks=null;
   return a.sep;
 }
@@ -1179,14 +1191,17 @@ function autoFix(times, a){
   w=w.map((t,i)=>{
     if(!t||t.start==null||lines[i].anchor!=null||lines[i].pin) return auto[i]!=null&&t ? Object.assign({},t,{start:auto[i]}) : t;
     if(auto[i]!=null){ const d=auto[i]-t.start; return Object.assign({},t,{ start:auto[i], end:t.end!=null?t.end+d:t.end }); }
-    const c=Math.round(t.start*100); let bf=-1, bv=0.15;
-    for(let f=c-60; f<=c+60; f++){ if(f<20||f>=n-6) continue; const v=mean(f,f+6)-mean(f-20,f); if(v>bv){ bv=v; bf=f; } }
-    if(bf<0) return t; const d=bf/100-t.start; return Object.assign({},t,{ start:bf/100, end:t.end!=null?t.end+d:t.end });
+    let bt=null, bs=0;
+    (a.sep.dips||[]).forEach(dp=>{ const dt=Math.abs(dp.t-t.start); if(dt>0.8 || dp.d<8) return; const sc=dp.d/16 - dt*0.8; if(sc>bs){ bs=sc; bt=dp.t; } });
+    if(bt==null){ const c=Math.round(t.start*100); let bf=-1, bv=0.15;
+      for(let f=c-60; f<=c+60; f++){ if(f<20||f>=n-6) continue; const v=mean(f,f+6)-mean(f-20,f); if(v>bv){ bv=v; bf=f; } }
+      if(bf<0) return t; bt=bf/100; }
+    const d=bt-t.start; return Object.assign({},t,{ start:bt, end:t.end!=null?t.end+d:t.end });
   });
   return w;
 }
 function expectedDur(l, rate){ const c = l.text.replace(/[\s　,，。.!！?？、]/g,'').length || 1; return Math.max(1.2, c*rate) + 0.3; }
-function localAlign(a){
+function localAlign(a, prior){
   const { vocal, SR, duration } = a, hop = Math.round(SR*0.02), F = Math.floor(vocal.length/hop);
   const e = new Float32Array(F);
   for(let f=0; f<F; f++){ let s=0; const o=f*hop; for(let i=0;i<hop;i++){ const v=vocal[o+i]; s+=v*v; } e[f]=Math.log10(Math.sqrt(s/hop)+1e-5); }
@@ -1206,7 +1221,8 @@ function localAlign(a){
   cands.forEach(c=>c.s/=mx);
   const act = a.sep ? a.sep.act : null;
   if(act){
-    cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]);
+    cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]).map(c=>({ t:c.t, s:c.s*0.25 }));
+    (a.sep.dips||[]).forEach(dp=>{ if(act[Math.min(act.length-1, Math.round(dp.t*100)+10)]) cands.push({ t:dp.t, s:Math.min(1.3, dp.d/15) }); });
     a.sep.segs.forEach(sg=>cands.push({ t:sg[0], s:1.5 }));
   }
   const secA = (act && !lines.some(l=>l.anchor!=null)) ? sectionAnchors(a) : {};
@@ -1218,12 +1234,28 @@ function localAlign(a){
   const SIL = new Float64Array((act?act.length:0)+1); if(act) for(let i=0;i<act.length;i++) SIL[i+1]=SIL[i]+(act[i]?0:1);
   const silFrac = (t0,t1) => { if(!act) return 0; const p=Math.max(0,Math.round(t0*100)), q=Math.min(act.length,Math.round(t1*100)); return q>p ? (SIL[q]-SIL[p])/(q-p) : 0; };
   const firstSing = act && a.sep.segs.length ? a.sep.segs[0][0] : 0;
-  const pen = (d,E,t0) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : 0.5*Math.log(r)) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0); };
+  // per-section timing: each sung section's lines must fill it from its start to its end (both interludes)
+  const secOf=new Int32Array(N).fill(-1), secEndAt=new Array(N).fill(null), secRate=new Array(N).fill(null);
+  const secKeys=Object.keys(secA).map(Number).sort((x,y)=>x-y);
+  if(act && secKeys.length){
+    secKeys.forEach((i0,k)=>{
+      const i1 = k+1<secKeys.length ? secKeys[k+1] : N;
+      const sc = a.sep.sections.find(x=>Math.abs(x[0]-secA[i0])<0.05) || [secA[i0], (k+1<secKeys.length ? secA[secKeys[k+1]] : duration)];
+      let W=0; for(let i=i0;i<i1;i++) W+=unitsOf(lines[i].text).length+1.2;
+      const r=(sc[1]-sc[0])/Math.max(1,W);
+      for(let i=i0;i<i1;i++){ secOf[i]=k; secRate[i]=r; }
+      secEndAt[i1-1]=sc[1];
+    });
+  }
+  const secMode = act && secKeys.length;
+  const pen = (d,E,t0) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : (secMode ? 2*Math.log(r)**2 : 0.5*Math.log(r))) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0); };
   let best=null;
-  for(let rate=0.30; rate<=0.85; rate+=0.05){
-    const E = lines.map(l=>expectedDur(l,rate));
-    const okAt = (i,j) => pins[i]==null || Math.abs(T[j]-pins[i])<0.011;
-    let prev = Float64Array.from(S, (v,j)=> okAt(0,j) && (pins[0]!=null || T[j] >= firstSing-0.6) ? v : -1e9);
+  const factors = secMode ? [0.85,0.9,0.95,1,1.05,1.1,1.15] : [0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85];
+  for(const rate of factors){
+    const E = secMode ? lines.map((l,i)=>Math.max(0.8,(unitsOf(l.text).length+1.2)*(secRate[i]||0.5)*rate)) : lines.map(l=>expectedDur(l,rate));
+    const okAt = (i,j) => pins[i]!=null ? Math.abs(T[j]-pins[i])<0.011 : !(prior && prior[i]!=null && Math.abs(T[j]-prior[i])>5);
+    const pc = (i,j) => (prior && prior[i]!=null && pins[i]==null) ? 0.6*((T[j]-prior[i])/1.5)**2 : 0;
+    let prev = Float64Array.from(S, (v,j)=> okAt(0,j) && (pins[0]!=null || T[j] >= firstSing-0.6) ? v-pc(0,j) : -1e9);
     const back = [];
     for(let i=1;i<N;i++){
       const cur = new Float64Array(M).fill(-1e9), bk = new Int32Array(M).fill(-1);
@@ -1235,16 +1267,17 @@ function localAlign(a){
           if(d < (pins[i]!=null||pins[i-1]!=null ? 0.2 : 0.35*E[i-1])) continue;
           if(d > 6*E[i-1]+25) break;
           if(prev[jp] <= -1e8) continue;
-          const v = prev[jp] - pen(d,E[i-1],T[jp]);
+          const dEff = (secMode && secEndAt[i-1]!=null) ? Math.max(0.3, secEndAt[i-1]-T[jp]) : d;
+          const v = prev[jp] - pen(dEff,E[i-1],T[jp]);
           if(v>bv){ bv=v; bj=jp; }
         }
-        if(bj>=0){ cur[j]=bv+S[j]; bk[j]=bj; }
+        if(bj>=0){ cur[j]=bv+S[j]-pc(i,j); bk[j]=bj; }
       }
       back.push(bk); prev=cur;
     }
     let bj=-1, bv=-1e9;
     const lastSing = act && a.sep.segs.length ? a.sep.segs[a.sep.segs.length-1][1] : null;
-    for(let j=0;j<M;j++){ let v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(lastSing!=null){ const gap=lastSing-(T[j]+E[N-1]); if(gap>2) v-=0.5*gap; } if(v>bv){ bv=v; bj=j; } }
+    for(let j=0;j<M;j++){ let v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(secMode && secEndAt[N-1]!=null) v-=pen(Math.max(0.3,secEndAt[N-1]-T[j]),E[N-1],T[j]); else if(lastSing!=null){ const gap=lastSing-(T[j]+E[N-1]); if(gap>2) v-=0.5*gap; } if(v>bv){ bv=v; bj=j; } }
     if(bj<0) continue;
     if(!best || bv>best.score){
       const idx=[bj]; for(let i=N-2;i>=0;i--) idx.unshift(back[i][idx[0]]);
@@ -1254,7 +1287,8 @@ function localAlign(a){
   if(!best) return null;
   return best.starts.map((st,i)=>{
     const nx = best.starts[i+1], E = best.E[i];
-    const end = (nx!=null && nx-st > E*1.8+1.5) ? +(st+E*1.15).toFixed(2) : null;
+    let end = (nx!=null && nx-st > E*1.8+1.5) ? +(st+E*1.15).toFixed(2) : null;
+    if(secMode && secEndAt[i]!=null) end = +Math.max(st+0.5, secEndAt[i]).toFixed(2);
     return { start:+st.toFixed(2), end };
   });
 }
@@ -1632,7 +1666,13 @@ ${list1}`;
     if(err.message==='msg:QUOTA') throw gErr(`你的 Gemini 模型今天的額度都用完了，約在 ${hhmm(nextPacificMidnight())} 重置。也可以先用「快速自動對時間」。`);
     throw err;
   }
-  applyTimes(autoFix(warpToAnchors(times), a), '');
+  let fixed = autoFix(warpToAnchors(times), a);
+  if(a.sep){
+    // combine: AI decides roughly where each line is, the singing's phrase breaks decide exactly where it starts
+    const r = localAlign(a, fixed.map(x=>x&&x.start!=null?x.start:null));
+    if(r) fixed = fixed.map((x,i)=>{ if(!x||!r[i]||lines[i].pin||lines[i].anchor!=null) return x; const d=r[i].start-x.start; return Object.assign({},x,{ start:r[i].start, end:x.end!=null?x.end+d:x.end }); });
+  }
+  applyTimes(fixed, '');
   estimateChars(a); persist(); renderList();
   const r2 = await refineChars(a, key, orderModels(models, r1.model), false);
   return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
