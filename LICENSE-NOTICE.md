@@ -5,3 +5,5 @@
 - `assets/vendor/qrcode.min.js`：QRCode.js（MIT License, davidshimjs），授權全文見 `assets/vendor/qrcode-LICENSE.txt`。
 - `assets/vendor/lz-string.min.js`：lz-string（MIT License, pieroxy）。
 - `assets/vendor/fontawesome/`：Font Awesome Free（圖示 CC BY 4.0、字型 SIL OFL 1.1、程式 MIT），授權全文見 `assets/vendor/fontawesome/LICENSE.txt`。
+- `tools/ktv/models/spleeter-vocals.fp16.onnx`：Deezer Spleeter 2-stems 人聲模型（MIT License），ONNX 版本取自 k2-fsa/sherpa-onnx（Apache-2.0）。
+- KTV 字幕機於瀏覽器載入 onnxruntime-web（MIT License, Microsoft）。

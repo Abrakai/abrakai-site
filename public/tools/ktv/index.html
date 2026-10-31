@@ -125,7 +125,13 @@ details > .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .chars span.cur{color:var(--gold);border-bottom-color:var(--gold)}
 .hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;padding:26px 10px!important;font-size:18px!important}
 .hold.down{filter:brightness(1.35);transform:scale(.98)}
-select.tlwrap{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+select.projbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.projbar .bar button,.projbar .btn{padding:6px 10px;font-size:13px}
+.projpanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.pjrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line)}
+.pjrow:last-child{border-bottom:0}.pjrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pjrow small{color:var(--muted);font-size:12px}
+.pjrow.cur{background:color-mix(in srgb,var(--female) 14%,transparent)}.pjrow .bar button{padding:4px 10px;font-size:13px}
+.tlwrap{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
 .tlhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.tlhead b{font-size:15px}
 #tl{width:100%;height:170px;display:block;border-radius:8px;background:var(--bg);touch-action:none;cursor:grab}
 #tl.dragging{cursor:grabbing}
@@ -152,10 +158,23 @@ body{margin:0}
   <div class="topbar"><a href="/tools/">← 回工具中心</a><span>ABRA-KAI STUDIO · 免費工具</span></div>
   <header>
     <h1>KTV <span>字幕機</span></h1>
-    <span class="ver" id="verBadge" title="目前版本">版本 3.0</span>
+    <span class="ver" id="verBadge" title="目前版本">版本 3.2</span>
     <span class="sub">自己的影片＋自己貼的歌詞 → 逐字變色 KTV 影片</span>
     <div class="legend"><span><b style="background:var(--female)"></b>女聲</span><span><b style="background:var(--male)"></b>男聲</span><span><b style="background:var(--duet)"></b>合唱</span></div>
   </header>
+  <div class="projbar">
+    <span class="hint" id="projInfo">尚未開始編輯</span>
+    <span class="bar">
+      <button id="projList">📂 我的專案</button>
+      <button id="projNew">＋ 新專案</button>
+      <button id="projSave">💾 下載專案檔</button>
+      <label class="btn" for="projFile">📥 開啟專案檔<input id="projFile" type="file" accept=".json,application/json"></label>
+    </span>
+  </div>
+  <div class="projpanel" id="projPanel" hidden>
+    <div class="tlhead"><b>我的專案</b><span class="hint">編輯內容會自動存在這台裝置的瀏覽器裡。換電腦或清除瀏覽資料前，請先「下載專案檔」。</span></div>
+    <div class="list" id="projItems"></div>
+  </div>
 
   <div class="main">
     <section class="stage">
@@ -201,10 +220,10 @@ body{margin:0}
 
       <div class="pane" data-pane="1" hidden>
         <section class="sec">
-          <details id="paraBox" open>
-            <summary><span>🎯 先標段落開頭（建議，自動對時間會準很多）</span><span id="paraState" class="hint"></span></summary>
+          <details id="paraBox">
+            <summary><span>🎯 手動標段落開頭（選用）</span><span id="paraState" class="hint"></span></summary>
             <div class="in">
-              <p class="hint">歌曲通常有前奏、間奏，AI 最容易在這裡抓錯。播放影片，聽到每一段<b>開始唱的瞬間</b>按那一段的 📍，至少標「第一句」和「間奏後的第一句」。標好的段落開頭會固定不動，其他句子依照它們來對。</p>
+              <p class="hint">自動對時間會先分離人聲、自動找出前奏和間奏，一般不需要手動標。如果某一段還是抓錯，可以播放到那一段<b>開始唱的瞬間</b>按 📍，標好的段落開頭會固定不動，其他句子依照它們來對。</p>
               <div class="bar"><button id="paraPlay">▶ 從頭播放</button><button id="paraClear">清除段落標記</button></div>
               <div class="list" id="paraList"></div>
             </div>
@@ -218,6 +237,7 @@ body{margin:0}
             <button class="primary" id="aGemini" disabled>✨ AI 精準對時間<small>使用你的 Gemini 金鑰</small></button>
           </div>
           <button id="aRefine" hidden>✨ 補精修剩下的句子<small id="aRefineN"></small></button>
+          <label class="chk"><input type="checkbox" id="useSep" checked> 🎤 先分離人聲再對時間（建議；自動找出前奏、間奏，第一次會下載約 20 MB）</label>
           <label class="chk"><input type="checkbox" id="keepPins"> 保留我手動調過的句子（亮黃燈的句子不重新對）</label>
           <p class="status" id="aStatus"></p>
           <div class="bar"><button id="aCancel" hidden>取消 AI 對時間</button></div>
@@ -336,7 +356,7 @@ body{margin:0}
         </div>
         <p class="hint">時間檔會記下歌詞和每句的時間，下次選同一支影片再讀進來就能直接錄。</p>
       </div>
-      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.0</p>
+      <p class="legal">影片和歌詞都只在你的裝置上處理，不會上傳到任何伺服器。公開分享影片前，請確認你有權使用其中的音樂與歌詞。<br>版本 3.2</p>
     </aside>
   </div>
 </div>
@@ -377,13 +397,37 @@ function histApply(state){
 function histUndo(){ if(!undoS.length||aligning) return; redoS.push(ser()); histApply(undoS.pop()); aStatus('已復原上一步。'); }
 function histRedo(){ if(!redoS.length||aligning) return; undoS.push(ser()); histApply(redoS.pop()); aStatus('已重做。'); }
 function histBtns(){ const u=$('tlUndo'), r=$('tlRedo'); if(u){ u.disabled=!undoS.length; r.disabled=!redoS.length; } }
+const PJ='abrakai-ktv-projects', PJCUR='abrakai-ktv-cur';
+let projId=null, projVideo='', projDur=0, projSavedAt=0;
+function pjAll(){ try{ return JSON.parse(localStorage.getItem(PJ)||'{}'); }catch(e){ return {}; } }
+function pjWrite(all){ try{ localStorage.setItem(PJ, JSON.stringify(all)); return true; }catch(e){ return false; } }
+function pjName(){ return meta.title || (lines[0] && lines[0].text) || '未命名專案'; }
+function pjState(){ return { text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0,l.anchor??null]), meta, size }; }
+function pjSave(){
+  if(!$('lyrics').value.trim() && !projId) return;
+  if(!projId){ projId='p'+Date.now().toString(36); try{ localStorage.setItem(PJCUR, projId); }catch(e){} }
+  const all=pjAll();
+  all[projId]={ id:projId, name:pjName(), video:projVideo, dur:projDur, updated:Date.now(), lines:lines.length, timed:lines.filter(l=>l.start!=null).length, state:pjState() };
+  const ids=Object.keys(all).sort((a,b)=>all[b].updated-all[a].updated); ids.slice(12).forEach(id=>delete all[id]);
+  if(pjWrite(all)) projSavedAt=Date.now();
+  pjInfo();
+}
+function pjInfo(){
+  const el=$('projInfo'); if(!el) return;
+  if(!projId){ el.textContent='貼上歌詞後會自動建立專案並自動儲存'; return; }
+  el.innerHTML=''; const b=document.createElement('b'); b.textContent=pjName();
+  el.append('專案：', b, projSavedAt ? `　💾 已自動儲存 ${hhmm(projSavedAt)}` : '');
+}
 function persist(){
   histTrack();
+  clearTimeout(persist.t); persist.t=setTimeout(pjSave, 400);
   try{ localStorage.setItem(KEY, JSON.stringify({ text:$('lyrics').value, times:lines.map(l=>[l.start,l.end,l.pin?1:0,l.chars||null,l.ref?1:0,l.anchor??null]), meta, size })); }catch(e){}
 }
 function restore(){
   try{
-    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    const cur=localStorage.getItem(PJCUR), all=pjAll();
+    if(cur && all[cur]){ projId=cur; projVideo=all[cur].video||''; projDur=all[cur].dur||0; projSavedAt=all[cur].updated; }
+    const d = (cur && all[cur]) ? all[cur].state : JSON.parse(localStorage.getItem(KEY) || 'null');
     if(!d) return;
     $('lyrics').value = d.text || '';
     meta = Object.assign(meta, d.meta || {});
@@ -648,7 +692,7 @@ function markLoaded(){
   if(hasVideo || !curFile) return;
   if(video.classList.contains('native')){ video.controls=false; video.classList.remove('native'); try{ video.pause(); video.currentTime=0; }catch(e){} }
   sizeCanvas();
-  hasVideo = true; clearTimeout(loadTimer); audioCache = null; updateButtons(); renderList(); renderParas();
+  hasVideo = true; clearTimeout(loadTimer); audioCache = null; projDur=video.duration||projDur; updateButtons(); renderList(); renderParas(); if(projId) pjSave();
   const lowRes = video.videoHeight && video.videoHeight < 720;
   vStatus('影片已載入：'+videoName+'（'+fmtShort(video.duration)+(video.videoWidth?`，${video.videoWidth}×${video.videoHeight}`:'')+'）'+(lowRes?'。畫質偏低：iPhone 從「照片」選影片時會先壓縮，建議先把影片存到「檔案」，再從「瀏覽」選，就能用原始畫質。':''));
 }
@@ -660,6 +704,8 @@ video.addEventListener('error', () => {
 $('vfile').onchange = e => {
   const f=e.target.files[0]; if(!f) return;
   videoName = f.name.replace(/\.[^.]+$/,'');
+  if(projVideo && projVideo!==videoName && lines.some(l=>l.start!=null)) setTimeout(()=>vStatus(`提醒：這個專案原本用的是「${projVideo}」，現在選的是「${videoName}」。如果是同一支影片可以忽略。`), 1500);
+  projVideo=videoName;
   hasVideo = false; curFile = f; updateButtons();
   if(curUrl) URL.revokeObjectURL(curUrl);
   curUrl = URL.createObjectURL(f);
@@ -773,7 +819,7 @@ async function offer(filename,data,statusEl){
     try{
       const blob = data instanceof Blob ? data : new Blob([data]);
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
-      document.body.append(a); a.click(); a.remove();
+      document.body.append(a); a.click(); setTimeout(()=>{ a.remove(); URL.revokeObjectURL(a.href); }, 4000);
       statusEl.textContent='已存好：'+filename; return true;
     }catch(e){ statusEl.textContent='存檔沒有成功，請再試一次。'; return false; }
   }
@@ -840,6 +886,65 @@ $('impFile').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); $('lyrics').value=d.text||''; meta=Object.assign({title:'',artist:'',sub:'',ts:'4/4',bpm:null,off:null,grid:0.5,autoSnap:true},d.meta||{}); size=d.size||size; parse(d.times||[]); persist(); $('recStatus').textContent='時間檔讀好了。'; }catch(err){ $('recStatus').textContent='這個檔案不是時間檔，請選「存時間檔」存下來的 .json。'; } };
+  r.readAsText(f); e.target.value='';
+};
+
+/* ---------- projects ---------- */
+function pjLoadState(st){
+  $('lyrics').value=st.text||'';
+  meta=Object.assign({title:'',artist:'',sub:'',ts:'4/4',bpm:null,off:null,grid:0.5,autoSnap:true}, st.meta||{});
+  size=st.size||size; parse(st.times||[]); syncMetaInputs(); syncPro(); renderParas();
+  lastSnap=ser(); histBtns();
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){}
+}
+function pjOpen(id){
+  const p=pjAll()[id]; if(!p) return;
+  projId=id; projVideo=p.video||''; projDur=p.dur||0; try{ localStorage.setItem(PJCUR,id); }catch(e){}
+  pjLoadState(p.state); projSavedAt=p.updated; pjInfo(); $('projPanel').hidden=true;
+  pjVideoHint(true);
+}
+function pjVideoHint(opened){
+  if(!projVideo) return;
+  const same = hasVideo && videoName===projVideo;
+  if(!same) vStatus(`${opened?'已開啟專案「'+pjName()+'」。':''}請按「選影片」選擇這個專案用的影片「${projVideo}」，就能接著編輯。`);
+}
+function pjRender(){
+  const box=$('projItems'), all=pjAll(), ids=Object.keys(all).sort((a,b)=>all[b].updated-all[a].updated);
+  box.innerHTML='';
+  if(!ids.length){ box.innerHTML='<div class="empty">還沒有專案。貼上歌詞後會自動建立。</div>'; return; }
+  ids.forEach(id=>{
+    const p=all[id], r=document.createElement('div'); r.className='pjrow'+(id===projId?' cur':'');
+    const info=document.createElement('div'); const b=document.createElement('b'); b.textContent=p.name; const sm=document.createElement('small');
+    sm.textContent=`${new Date(p.updated).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}．${p.lines||0} 句（${p.timed||0} 句有時間）${p.video?'．影片：'+p.video:''}`;
+    info.append(b,sm);
+    const bar=document.createElement('span'); bar.className='bar';
+    const op=document.createElement('button'); op.textContent= id===projId ? '目前專案' : '開啟'; op.disabled = id===projId; op.onclick=()=>pjOpen(id);
+    const del=document.createElement('button'); del.textContent='刪除';
+    del.onclick=()=>{ if(del.dataset.armed!=='1'){ del.dataset.armed='1'; del.textContent='確定刪除？'; setTimeout(()=>{ del.dataset.armed=''; del.textContent='刪除'; },4000); return; }
+      const a2=pjAll(); delete a2[id]; pjWrite(a2); if(id===projId){ projId=null; try{ localStorage.removeItem(PJCUR); }catch(e){} pjInfo(); } pjRender(); };
+    bar.append(op,del); r.append(info,bar); box.append(r);
+  });
+}
+$('projList').onclick=()=>{ const p=$('projPanel'); p.hidden=!p.hidden; if(!p.hidden) pjRender(); };
+$('projNew').onclick=()=>{
+  const b=$('projNew');
+  if(projId && lines.some(l=>l.start!=null) && b.dataset.armed!=='1'){ b.dataset.armed='1'; b.textContent='目前專案已自動儲存，再按一次開新專案'; setTimeout(()=>{ b.dataset.armed=''; b.textContent='＋ 新專案'; },4000); return; }
+  b.dataset.armed=''; b.textContent='＋ 新專案';
+  pjSave(); projId=null; projVideo=hasVideo?videoName:''; projDur=hasVideo?video.duration:0; try{ localStorage.removeItem(PJCUR); }catch(e){}
+  pjLoadState({ text:'', times:[], meta:{}, size }); pjInfo(); $('projPanel').hidden=true;
+  document.querySelector('.tabs button[data-tab="0"]').click(); $('lyrics').focus();
+};
+$('projSave').onclick=()=>{
+  const data=JSON.stringify(Object.assign({ app:'abrakai-ktv', kind:'project', name:pjName(), video:projVideo, dur:projDur, saved:new Date().toISOString() }, pjState()),null,1);
+  offer(pjName()+'_KTV專案.json', data, $('aStatus'));
+};
+$('projFile').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!('text' in d)) throw 0;
+      pjSave(); projId='p'+Date.now().toString(36); projVideo=d.video||''; projDur=d.dur||0; try{ localStorage.setItem(PJCUR,projId); }catch(_){}
+      pjLoadState(d); pjSave(); pjVideoHint(true); aStatus('專案檔已開啟。'); }
+    catch(err){ aStatus('這個檔案不是 KTV 字幕機的專案檔。'); } };
   r.readAsText(f); e.target.value='';
 };
 
@@ -916,8 +1021,169 @@ async function getAudio(){
   };
   const mono = await render(false);
   const vocal = await render(true);
-  audioCache = { mono, vocal, SR, duration: decoded.duration };
+  audioCache = { mono, vocal, SR, duration: decoded.duration, decoded };
   return audioCache;
+}
+/* ---------- vocal separation (Spleeter 2-stems, vocals model, runs in the browser) ---------- */
+const ORT_URL='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+const SEP_MODEL='/tools/ktv/models/spleeter-vocals.fp16.onnx';
+let ortReady=null, sepSession=null;
+function loadOrt(){
+  if(window.ort) return Promise.resolve();
+  if(!ortReady) ortReady=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src=ORT_URL+'ort.wasm.min.js'; sc.onload=()=>res(); sc.onerror=()=>{ ortReady=null; rej(new Error('ort')); }; document.head.append(sc); });
+  return ortReady;
+}
+async function fetchModel(onp){
+  let cache=null; try{ cache=await caches.open('abrakai-ktv-models'); const hit=await cache.match(SEP_MODEL); if(hit) return await hit.arrayBuffer(); }catch(e){ cache=null; }
+  const r=await fetch(SEP_MODEL); if(!r.ok) throw new Error('model');
+  const total=+r.headers.get('content-length')||19681017;
+  const rd=r.body.getReader(), parts=[]; let got=0;
+  for(;;){ const {value,done}=await rd.read(); if(done) break; parts.push(value); got+=value.length; onp && onp(got/total); }
+  const buf=new Uint8Array(got); let o=0; parts.forEach(p=>{ buf.set(p,o); o+=p.length; });
+  try{ if(cache) await cache.put(SEP_MODEL, new Response(buf.slice(0), { headers:{ 'content-type':'application/octet-stream' } })); }catch(e){}
+  return buf.buffer;
+}
+function makeFFT(n){
+  const lg=Math.log2(n), rev=new Uint32Array(n), cs=new Float32Array(n/2), sn=new Float32Array(n/2);
+  for(let i=0;i<n;i++){ let r=0; for(let b=0;b<lg;b++) r|=((i>>b)&1)<<(lg-1-b); rev[i]=r; }
+  for(let i=0;i<n/2;i++){ cs[i]=Math.cos(2*Math.PI*i/n); sn[i]=-Math.sin(2*Math.PI*i/n); }
+  return (re,im)=>{
+    for(let i=0;i<n;i++){ const j=rev[i]; if(j>i){ let t=re[i]; re[i]=re[j]; re[j]=t; t=im[i]; im[i]=im[j]; im[j]=t; } }
+    for(let size=2; size<=n; size<<=1){ const half=size>>1, step=n/size;
+      for(let st=0; st<n; st+=size){ for(let k=0;k<half;k++){ const a=st+k, b=a+half, w=k*step, wr=cs[w], wi=sn[w];
+        const xr=re[b]*wr-im[b]*wi, xi=re[b]*wi+im[b]*wr; re[b]=re[a]-xr; im[b]=im[a]-xi; re[a]+=xr; im[a]+=xi; } } }
+  };
+}
+async function ensureSep(a, onp){
+  if(a.sep) return a.sep;
+  onp && onp('下載人聲分離模型（約 20 MB，只需下載一次）', 0);
+  await loadOrt();
+  ort.env.wasm.wasmPaths=ORT_URL; ort.env.wasm.numThreads=1;
+  if(!sepSession){ const mb=await fetchModel(f=>onp && onp('下載人聲分離模型（約 20 MB，只需下載一次）', f)); sepSession=await ort.InferenceSession.create(mb,{ executionProviders:['wasm'] }); }
+  // 44.1 kHz stereo
+  const SRS=44100, dec=a.decoded, len=Math.ceil(dec.duration*SRS);
+  const oc=new OfflineAudioContext(2,len,SRS); const src=oc.createBufferSource(); src.buffer=dec; src.connect(oc.destination); src.start();
+  const st=await oc.startRendering(); const L=st.getChannelData(0), R=st.getChannelData(1);
+  const N=4096, H=1024, B=1024, CH=512, F=Math.max(0,1+Math.floor((len-N)/H));
+  const win=new Float32Array(N); for(let i=0;i<N;i++) win[i]=0.5-0.5*Math.cos(2*Math.PI*i/N);
+  const fft=makeFFT(N);
+  const out=new Float32Array(len), wsum=new Float32Array(len);
+  const ve=new Float32Array(F), me=new Float32Array(F);
+  const reL=new Float32Array(N), imL=new Float32Array(N), reR=new Float32Array(N), imR=new Float32Array(N), re=new Float32Array(N), im=new Float32Array(N);
+  const nChunks=Math.ceil(F/CH);
+  for(let c=0;c<nChunks;c++){
+    onp && onp('分離人聲中', c/nChunks);
+    const f0=c*CH, nf=Math.min(CH, F-f0);
+    const X=new Float32Array(2*CH*B), spec=new Float32Array(nf*B*4); // Lre,Lim,Rre,Rim
+    for(let k=0;k<nf;k++){
+      const o=(f0+k)*H;
+      for(let i=0;i<N;i++){ reL[i]=L[o+i]*win[i]; imL[i]=0; reR[i]=R[o+i]*win[i]; imR[i]=0; }
+      fft(reL,imL); fft(reR,imR);
+      for(let b=0;b<B;b++){ const q=(k*B+b)*4; spec[q]=reL[b]; spec[q+1]=imL[b]; spec[q+2]=reR[b]; spec[q+3]=imR[b];
+        const mL=Math.hypot(reL[b],imL[b]), mR=Math.hypot(reR[b],imR[b]); X[k*B+b]=mL; X[CH*B+k*B+b]=mR; me[f0+k]+=mL*mL+mR*mR; }
+    }
+    const res=await sepSession.run({ x:new ort.Tensor('float32', X, [2,1,CH,B]) });
+    const Y=res.y.data;
+    for(let k=0;k<nf;k++){
+      re.fill(0); im.fill(0);
+      for(let b=0;b<B;b++){ const q=(k*B+b)*4; const yl=Y[k*B+b], yr=Y[CH*B+k*B+b]; ve[f0+k]+=yl*yl+yr*yr;
+        const ml=Math.min(1, yl/(X[k*B+b]+1e-8)), mr=Math.min(1, yr/(X[CH*B+k*B+b]+1e-8));
+        re[b]=(spec[q]*ml+spec[q+2]*mr)/2; im[b]=(spec[q+1]*ml+spec[q+3]*mr)/2; }
+      for(let b=1;b<N/2;b++){ re[N-b]=re[b]; im[N-b]=-im[b]; }
+      for(let i=0;i<N;i++) im[i]=-im[i];
+      fft(re,im);
+      const o=(f0+k)*H;
+      for(let i=0;i<N;i++){ out[o+i]+=re[i]/N*win[i]; wsum[o+i]+=win[i]*win[i]; }
+    }
+    await new Promise(r=>setTimeout(r,0));
+  }
+  for(let i=0;i<len;i++) out[i]=wsum[i]>1e-3 ? out[i]/wsum[i] : 0;
+  onp && onp('整理人聲', 1);
+  // resample vocals to 16 kHz
+  const len16=Math.ceil(dec.duration*16000), oc2=new OfflineAudioContext(1,len16,16000);
+  const ab=oc2.createBuffer(1,len,SRS); ab.copyToChannel(out,0);
+  const s2=oc2.createBufferSource(); s2.buffer=ab; s2.connect(oc2.destination); s2.start();
+  const vox=(await oc2.startRendering()).getChannelData(0);
+  // vocal activity (10 ms grid) from vocal share of energy
+  const fps=SRS/H, n10=Math.ceil(dec.duration*100), act=new Uint8Array(n10), ratio=new Float32Array(F);
+  for(let f=0;f<F;f++) ratio[f]=10*Math.log10((ve[f]+1e-9)/(Math.max(me[f]-ve[f],me[f]*0.02)+1e-9));
+  const sm=new Float32Array(F), w=Math.round(fps*0.5);
+  for(let f=0;f<F;f++){ let s=0,c2=0; for(let d=-w;d<=w;d++){ const g=f+d; if(g>=0&&g<F){ s+=ratio[g]; c2++; } } sm[f]=s/c2; }
+  for(let t=0;t<n10;t++){ const f=Math.min(F-1, Math.floor((t*0.01)*fps)); act[t]= sm[f] > -8 ? 1 : 0; }
+  const segsOf = gap => { const sg=[]; let s0=-1; for(let t=0;t<=n10;t++){ const on=t<n10&&act[t]; if(on&&s0<0) s0=t; if(!on&&s0>=0){ sg.push([s0/100,t/100]); s0=-1; } }
+    const m=[]; sg.forEach(x=>{ if(m.length && x[0]-m[m.length-1][1] < gap) m[m.length-1][1]=x[1]; else m.push(x.slice()); }); return m.filter(x=>x[1]-x[0]>=1); };
+  a.sep={ vox, act, segs:segsOf(2.5), sections:segsOf(5) };
+  a.vocal=vox; peaks=null;
+  return a.sep;
+}
+// guess which line opens each sung section: split lines by lyric weight in proportion to sung time, at paragraph starts
+function sectionAnchors(a){
+  const out={}; if(!a.sep || !a.sep.sections.length || !lines.length) return out;
+  const secs=a.sep.sections, tot=secs.reduce((s,x)=>s+(x[1]-x[0]),0);
+  const w=lines.map(l=>unitsOf(l.text).length+2), W=w.reduce((s,x)=>s+x,0);
+  const cum=[0]; w.forEach(x=>cum.push(cum[cum.length-1]+x));
+  out[0]=secs[0][0];
+  let acc=0, lastI=0;
+  for(let k=1;k<secs.length;k++){
+    acc+=secs[k-1][1]-secs[k-1][0]; const f=acc/tot;
+    let bi=-1, bd=1e9;
+    for(let i=lastI+1;i<lines.length;i++){ if(!lines[i].para) continue; const d=Math.abs(cum[i]/W-f); if(d<bd){ bd=d; bi=i; } }
+    if(bi<0 || bd>0.12) continue;
+    out[bi]=secs[k][0]; lastI=bi;
+  }
+  return out;
+}
+function sepHint(a){
+  if(!a.sep || !a.sep.sections.length) return '';
+  return `\n程式分析人聲後，偵測到有人在唱的區段大約是：${a.sep.sections.map(x=>`${x[0].toFixed(1)}～${x[1].toFixed(1)} 秒`).join('、')}。這些區段以外是前奏、間奏或尾奏，沒有歌詞。\n`;
+}
+// after AI: anchor each sung section's first line to where singing starts, warp the rest, then snap starts to vocal onsets
+function autoFix(times, a){
+  if(!a.sep) return times;
+  const sec=a.sep.sections, prop=sectionAnchors(a), auto={};
+  const manual=lines.some(l=>l.anchor!=null);
+  if(!manual){
+    Object.keys(prop).forEach(k=>{
+      const i=+k, s0=prop[k];
+      // trust the AI's own choice when it put a paragraph start right where singing resumes
+      let use=i;
+      for(let j=Math.max(0,i-2); j<=Math.min(lines.length-1,i+2); j++){ const x=times[j]; if(x && x.start!=null && lines[j].para && Math.abs(x.start-s0)<3){ use=j; break; } }
+      auto[use]=s0;
+    });
+  }
+  let w;
+  const keys=Object.keys(auto).map(Number).sort((x,y)=>x-y);
+  if(!manual && keys.length){
+    // map each sung section's lines from the AI's span onto the section where singing was detected
+    w=times.map(x=>x?Object.assign({},x):x);
+    keys.forEach((i0,k)=>{
+      const i1 = k+1<keys.length ? keys[k+1] : lines.length;
+      const s0=auto[i0], secEnd=(sec.find(x=>Math.abs(x[0]-s0)<0.05)||[s0, s0+60])[1];
+      const A0 = times[i0] && times[i0].start!=null ? times[i0].start : null;
+      let lastI=i1-1; while(lastI>i0 && !(times[lastI] && times[lastI].start!=null)) lastI--;
+      const lt=times[lastI];
+      let A1 = lt ? (lt.end!=null && lt.end>lt.start ? lt.end : lt.start+3) : null;
+      if(A0==null || A1==null || A1-A0<1) return;
+      const T0=s0, T1=Math.max(s0+1, secEnd);
+      const f=t=>T0+(t-A0)*(T1-T0)/(A1-A0);
+      for(let i=i0;i<i1;i++){ const x=times[i]; if(!x||x.start==null) continue; w[i]=Object.assign({},x,{ start:f(x.start), end:x.end!=null?f(x.end):x.end }); }
+    });
+    // lines before the first section's opener (should not happen) follow its offset
+    if(keys[0]>0){ const d=auto[keys[0]]-(times[keys[0]]?.start??auto[keys[0]]); for(let i=0;i<keys[0];i++) if(w[i]&&w[i].start!=null) w[i]=Object.assign({},w[i],{start:w[i].start+d,end:w[i].end!=null?w[i].end+d:null}); }
+  } else w=times;
+  // snap
+  const x=a.sep.vox, SR=a.SR, hop=Math.round(SR*0.01), n=Math.floor(x.length/hop), e=new Float32Array(n);
+  for(let f=0;f<n;f++){ let q=0; const o=f*hop; for(let j=0;j<hop;j++){ const v=x[o+j]; q+=v*v; } e[f]=Math.log10(Math.sqrt(q/hop)+1e-5); }
+  const P=new Float64Array(n+1); for(let f=0;f<n;f++) P[f+1]=P[f]+e[f];
+  const mean=(p,q)=>{ p=Math.max(0,p); q=Math.min(n,q); return q>p?(P[q]-P[p])/(q-p):0; };
+  w=w.map((t,i)=>{
+    if(!t||t.start==null||lines[i].anchor!=null||lines[i].pin) return auto[i]!=null&&t ? Object.assign({},t,{start:auto[i]}) : t;
+    if(auto[i]!=null){ const d=auto[i]-t.start; return Object.assign({},t,{ start:auto[i], end:t.end!=null?t.end+d:t.end }); }
+    const c=Math.round(t.start*100); let bf=-1, bv=0.15;
+    for(let f=c-60; f<=c+60; f++){ if(f<20||f>=n-6) continue; const v=mean(f,f+6)-mean(f-20,f); if(v>bv){ bv=v; bf=f; } }
+    if(bf<0) return t; const d=bf/100-t.start; return Object.assign({},t,{ start:bf/100, end:t.end!=null?t.end+d:t.end });
+  });
+  return w;
 }
 function expectedDur(l, rate){ const c = l.text.replace(/[\s　,，。.!！?？、]/g,'').length || 1; return Math.max(1.2, c*rate) + 0.3; }
 function localAlign(a){
@@ -938,17 +1204,26 @@ function localAlign(a){
   cands.sort((x,y)=>y.s-x.s); cands = cands.slice(0, Math.min(400, Math.max(N*7, 60)));
   const mx = cands.length ? cands[0].s : 1;
   cands.forEach(c=>c.s/=mx);
-  const pins = lines.map(l=> l.anchor!=null ? l.anchor : (l.pin && l.start!=null ? l.start : null));
+  const act = a.sep ? a.sep.act : null;
+  if(act){
+    cands = cands.filter(c=>act[Math.min(act.length-1, Math.round(c.t*100)+15)]);
+    a.sep.segs.forEach(sg=>cands.push({ t:sg[0], s:1.5 }));
+  }
+  const secA = (act && !lines.some(l=>l.anchor!=null)) ? sectionAnchors(a) : {};
+  const pins = lines.map((l,i)=> l.anchor!=null ? l.anchor : (l.pin && l.start!=null ? l.start : (secA[i]!=null ? secA[i] : null)));
   pins.forEach(pt=>{ if(pt!=null) cands.push({ t:pt, s:1, fixed:true }); });
   if(cands.length < N+2){ for(let i=0;i<N+2;i++) cands.push({ t: duration*(i+0.5)/(N+2), s:0 }); }
   cands.sort((x,y)=>x.t-y.t);
   const M = cands.length, T = cands.map(c=>c.t), S = cands.map(c=>c.s);
-  const pen = (d,E) => { const r=d/E; return r<1 ? 4*Math.log(r)**2 : 0.5*Math.log(r); };
+  const SIL = new Float64Array((act?act.length:0)+1); if(act) for(let i=0;i<act.length;i++) SIL[i+1]=SIL[i]+(act[i]?0:1);
+  const silFrac = (t0,t1) => { if(!act) return 0; const p=Math.max(0,Math.round(t0*100)), q=Math.min(act.length,Math.round(t1*100)); return q>p ? (SIL[q]-SIL[p])/(q-p) : 0; };
+  const firstSing = act && a.sep.segs.length ? a.sep.segs[0][0] : 0;
+  const pen = (d,E,t0) => { const r=d/E; return (r<1 ? 4*Math.log(r)**2 : 0.5*Math.log(r)) + (act ? 8*silFrac(t0, t0+Math.min(d,E)) : 0); };
   let best=null;
   for(let rate=0.30; rate<=0.85; rate+=0.05){
     const E = lines.map(l=>expectedDur(l,rate));
     const okAt = (i,j) => pins[i]==null || Math.abs(T[j]-pins[i])<0.011;
-    let prev = Float64Array.from(S, (v,j)=> okAt(0,j) ? v : -1e9);
+    let prev = Float64Array.from(S, (v,j)=> okAt(0,j) && (pins[0]!=null || T[j] >= firstSing-0.6) ? v : -1e9);
     const back = [];
     for(let i=1;i<N;i++){
       const cur = new Float64Array(M).fill(-1e9), bk = new Int32Array(M).fill(-1);
@@ -960,7 +1235,7 @@ function localAlign(a){
           if(d < (pins[i]!=null||pins[i-1]!=null ? 0.2 : 0.35*E[i-1])) continue;
           if(d > 6*E[i-1]+25) break;
           if(prev[jp] <= -1e8) continue;
-          const v = prev[jp] - pen(d,E[i-1]);
+          const v = prev[jp] - pen(d,E[i-1],T[jp]);
           if(v>bv){ bv=v; bj=jp; }
         }
         if(bj>=0){ cur[j]=bv+S[j]; bk[j]=bj; }
@@ -968,7 +1243,8 @@ function localAlign(a){
       back.push(bk); prev=cur;
     }
     let bj=-1, bv=-1e9;
-    for(let j=0;j<M;j++){ const v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(v>bv){ bv=v; bj=j; } }
+    const lastSing = act && a.sep.segs.length ? a.sep.segs[a.sep.segs.length-1][1] : null;
+    for(let j=0;j<M;j++){ let v=prev[j] - (T[j]+E[N-1]*0.6>duration ? 5 : 0); if(lastSing!=null){ const gap=lastSing-(T[j]+E[N-1]); if(gap>2) v-=0.5*gap; } if(v>bv){ bv=v; bj=j; } }
     if(bj<0) continue;
     if(!best || bv>best.score){
       const idx=[bj]; for(let i=N-2;i>=0;i--) idx.unshift(back[i][idx[0]]);
@@ -1036,6 +1312,10 @@ async function runAlign(kind){
   try{
     aStatus('讀取影片聲音中…'); await tick();
     const a = await getAudio();
+    if($('useSep').checked && !a.sep){
+      try{ await ensureSep(a, (m,f)=>aStatus(`${m} ${Math.round((f||0)*100)}%`)); }
+      catch(e){ aStatus('這台裝置無法分離人聲，改用原本的方式繼續…'); await new Promise(r=>setTimeout(r,1200)); }
+    }
     if(kind==='local'){
       aStatus('分析歌聲中…'); await tick();
       const r = localAlign(a);
@@ -1211,7 +1491,7 @@ function xhrStream(url, key, payload, h){
     x.send(payload);
   });
 }
-function wavClip(a, t0, t1){ const SR=a.SR; return wavB64(a.mono.subarray(Math.max(0,Math.floor(t0*SR)), Math.min(a.mono.length, Math.ceil(t1*SR))), SR); }
+function wavClip(a, t0, t1){ const SR=a.SR, src=a.sep ? a.sep.vox : a.mono; return wavB64(src.subarray(Math.max(0,Math.floor(t0*SR)), Math.min(src.length, Math.ceil(t1*SR))), SR); }
 function gErr(m){ return new Error('msg:'+m); }
 // one Gemini call with model fallback; onObj gets each complete JSON object as it streams in
 // try one model; gate(model) decides whether this model's results are accepted (for racing two models)
@@ -1317,15 +1597,15 @@ async function geminiAlign(a){
   const models = await gModels(key);
   if(a.duration > 600) throw gErr('影片超過 10 分鐘，請先剪短再試。');
   aStatus('整理聲音檔中…'); await tick();
-  const b64 = wavB64(a.mono, a.SR), MB=(b64.length*0.75/1048576).toFixed(1);
+  const b64 = wavB64(a.sep ? a.sep.vox : a.mono, a.SR), MB=(b64.length*0.75/1048576).toFixed(1);
   const backup = lines.map(l=>({ start:l.start, end:l.end, chars:l.chars }));
   const restoreBackup = () => { lines.forEach((l,i)=>{ if(!l.pin){ l.start=backup[i].start; l.end=backup[i].end; l.chars=backup[i].chars; } }); renderList(); };
   // ---- phase 1: every line's start / end over the whole song
   const list1 = lines.map((l,i)=>`${i+1}. [${l.role||'唱'}] ${l.text}`).join('\n');
   const prompt1 = `這是一段歌曲演唱的錄音，長度約 ${a.duration.toFixed(1)} 秒，可能是台語或華語歌，可能有伴奏、現場人聲或雜音。
 下面是依照演唱順序排列的歌詞，共 ${lines.length} 句，每句前面是編號和演唱者（女／男／合）。重複的段落會再唱一次，請分別標出每一次。
-請仔細聽音檔，找出每一句第一個字開始唱的時間 start，以及最後一個字唱完、聲音停下來的時間 end，單位是秒，精確到小數點後一位。時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。歌曲開頭的前奏、中間的間奏只有伴奏沒有人唱，不要把歌詞放在那裡。
-${anchorHint()}${beatHint()}
+請仔細聽音檔，找出每一句第一個字開始唱的時間 start，以及最後一個字唱完、聲音停下來的時間 end，單位是秒，精確到小數點後一位。時間必須依編號遞增。每一句都要回傳，聽不清楚的請依前後推估。歌曲開頭的前奏、中間的間奏只有伴奏沒有人唱，不要把歌詞放在那裡。${a.sep?'這段聲音已經用程式把伴奏去掉，只留下人聲。':''}
+${sepHint(a)}${anchorHint()}${beatHint()}
 ${list1}`;
   const times = lines.map(()=>null);
   let cleared=false, got=0, r1;
@@ -1352,7 +1632,7 @@ ${list1}`;
     if(err.message==='msg:QUOTA') throw gErr(`你的 Gemini 模型今天的額度都用完了，約在 ${hhmm(nextPacificMidnight())} 重置。也可以先用「快速自動對時間」。`);
     throw err;
   }
-  applyTimes(warpToAnchors(times), '');
+  applyTimes(autoFix(warpToAnchors(times), a), '');
   estimateChars(a); persist(); renderList();
   const r2 = await refineChars(a, key, orderModels(models, r1.model), false);
   return { times:null, model:r1.model, refined:r2.refined, stopped:r2.stopped };
@@ -1827,7 +2107,9 @@ $('tlPlayLine').onclick=()=>{ if(!tlSelc) return; video.currentTime=Math.max(0,l
 $('tlAI').onclick=()=>{ if(!tlSelc) return; runAlign('one'); };
 (function tlLoop(){ try{ drawTL(); }catch(e){} requestAnimationFrame(tlLoop); })();
 
-restore(); lastSnap=ser(); histBtns(); renderParas(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
+restore(); lastSnap=ser(); histBtns(); renderParas(); pjInfo();
+if(projId && lines.some(l=>l.start!=null)) vStatus(`已恢復上次的編輯「${pjName()}」（${hhmm(projSavedAt||Date.now())} 儲存）。${projVideo?`請按「選影片」選擇「${projVideo}」接著編輯。`:'請按「選影片」接著編輯。'}`);
+else if(!projId && $('lyrics').value.trim()) pjSave(); syncMetaInputs(); updateCue(); updateButtons(); showKeyState(); syncPro(); renderModels();
 try{ const tb=localStorage.getItem(KEY+'-tab'); if(tb) document.querySelector('.tabs button[data-tab="'+tb+'"]')?.click(); }catch(e){}
 (document.fonts?.load ? document.fonts.load(`900 40px "Noto Sans TC"`) : Promise.resolve()).catch(()=>{}).finally(()=>requestAnimationFrame(frame));
 })();
